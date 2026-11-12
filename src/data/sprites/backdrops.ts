@@ -2,7 +2,7 @@ import type { PixelArt } from '../../engine/pixels';
 
 // Two 16x24 strips that tile sideways behind a battle. Both edges match, so repeats are seamless.
 
-// Grass: sky is left to the black field; a low horizon line with tufts, then turf. 6 green, 7 light green, 21 dark green.
+// Grass: the ground surface is row 8, with tufts rising above it and turf below. 6 green, 7 light green, 21 dark green.
 const GRASS: PixelArt = {
   w: 16,
   h: 24,
@@ -13,18 +13,9 @@ const GRASS: PixelArt = {
     '................',
     '................',
     '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
     '.......l........',
     '...l...l...l..l.',
+    '..ll...l...l..l.',
     'gggggggggggggggg',
     'gggglggggggglggg',
     'ggggggggggggdggg',
@@ -32,10 +23,19 @@ const GRASS: PixelArt = {
     'ggggggggggglgggg',
     'gdgggggggggggdgg',
     'gggglgggggggggdg',
+    'ggddgggggggggggg',
+    'gggggggldggggggg',
+    'gglgggggggggdggg',
+    'ggggggdgggglgggg',
+    'dggggggggggggggg',
+    'gggldgggggggggdg',
+    'gggggggggglggggg',
+    'ggdgggggggggggld',
+    'gggglgggggggggdg',
   ],
 };
 
-// Murk: flat dark water with reed stubs. 19 deep teal, 20 teal, 21 dark green.
+// Murk: flat dark water whose surface is row 8, with reed stubs rising above it. 19 deep teal, 20 teal, 21 dark green.
 const MURK: PixelArt = {
   w: 16,
   h: 24,
@@ -44,16 +44,9 @@ const MURK: PixelArt = {
     '................',
     '................',
     '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
     '....r.......r...',
     '....r.......r...',
+    '...rr...r...rr..',
     '...rr...r...rr..',
     '...rr...r...rr..',
     'wwwrrwwwrwwwrrww',
@@ -65,6 +58,13 @@ const MURK: PixelArt = {
     'wtttwwwwwwtttwww',
     'wwwwwwwwwwwwwwww',
     'wwwwwtttwwwwwwww',
+    'wwwwwwwwwwwwwwww',
+    'wwwtttwwwwwwwwtt',
+    'wwwwwwwwwwwwwwww',
+    'wwwwwwwwwtttwwww',
+    'wwtwwwwwwwwwwwww',
+    'wwwwwwwwwwwwwwww',
+    'wwwwtttwwwwwwwtt',
   ],
 };
 

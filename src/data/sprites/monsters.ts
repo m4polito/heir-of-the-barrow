@@ -1,33 +1,33 @@
 import type { PixelArt } from '../../engine/pixels';
 
-// Mireling: a pale, slumped, marsh-wet figure. Its head hangs forward (left) off a high humped back;
-// one long arm trails to the ground and the legs have melted into a puddle.
+// Mireling: a pale, slumped, marsh-wet figure seen from the front. Its head sits sunk between steeply
+// sloping shoulders, two long arms hang apart from the torso, and short bent legs melt into a puddle.
 // b body, s shade, h highlight, e eye, g eye glint. No outline: the battle field is black.
 const MIRELING_ROWS = [
   '........................',
   '........................',
   '........................',
-  '......hhhhhh............',
-  '.....hbbbbbbb...........',
-  '.....bbegbbegb..hhhhh...',
-  '.....bbeebbeeb.hbbbbbs..',
-  '.....sbbbbbbbbbbbbbbbbs.',
-  '.....sbbssssbbbbbbbbbbs.',
-  '....sbbbbbbbbbbbbbbbbbs.',
-  '...hbbbbbbbbbbbbbbbbbbbs',
-  '...bbbhbbbbbbbbbbbbbbbbs',
-  '..sbbbbbbbbbbbbbbbbbbbs.',
-  '..sbbsbbbbbbbbbbbbbbbbs.',
-  '..sbbsbbbbbbbbbbbbbbbs..',
-  '..sbbsbbbbbbbbbbbbbbbs..',
-  '..sbbs.sbbbbbbbbbbbbs...',
-  '..sbbs..sbbbbbbbbbbbs...',
-  '..sbbs...sbbbbbbbbbss...',
-  '.sbbbbs..ssbbbbbbbbss...',
-  '.sbbbbs...ssbbbbbbbs....',
-  '..ssss..sbbbbbbbbbbbbss.',
-  '.ssbbbbbbbbbbbbbbbbbbbss',
-  '..ssssssssssssssssssss..',
+  '........hhhhhh..........',
+  '.......hbbbbbbbs........',
+  '.......bbegbbegb........',
+  '.......bbeebbeeb........',
+  '......hbbsssssbbs.......',
+  '.....hbbbbbbbbbbbs......',
+  '...hbbbbbbbbbbbbbbbs....',
+  '..hbb.bbbbbbbbbbbs.bbs..',
+  '..hbb.bbsbbbbbbbbs.bbs..',
+  '..bbs.bbsbbbbbbbbs.bbs..',
+  '..bbs.bbbbbbsbbbbs.bbs..',
+  '..bbs..bbbbbbbbbs..bbs..',
+  '..bbs..bsbbbbbbbs..bbs..',
+  '..bbs..bbbbbbsbbs..bbs..',
+  '..bbs...bbbbbbbs...bbs..',
+  '..bbbs..bbsbbbbs..bbbs..',
+  '..bbbs..bbbs.sbbs.......',
+  '..sss...bbs...bbbs......',
+  '......bbbbs.sbbbbs......',
+  '....sbbbbbbbbbbbbbbs....',
+  '....ssssssssssssssss....',
 ];
 
 const MIRELING_PALETTES: Record<string, number>[] = [
