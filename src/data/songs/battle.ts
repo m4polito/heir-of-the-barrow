@@ -7,10 +7,14 @@ import type { Song, Track } from '../../engine/audio/sequencer';
 //   loop   Am | Am | Bb | E      (the motif, developed, then a Bb jolt and E)
 //          Am | Dm | F  | Bb
 //          E  | E                (dominant; G#4 leads back up to A4 at row 32)
+// A D natural passing over E (bars 6 and 12) makes that bar E7. The motif (rising
+// chord tones, the upper neighbour, back) returns on Bb, Dm, F and E; the other
+// bars break the rhythm with sixteenth pickups, a rest on beat 3 and held syncopations.
 // p1 states BATTLE_MOTIF at row 32 and develops it. p2 repeats eighth notes on
 // two chord tones per bar. tri pumps eighths, root and octave (for A and Bb the
 // octave reaches A3 and Bb3, a little above the usual bass ceiling). Noise is
-// kick on 1 and 3, snare on 2 and 4, hat on the off-eighths.
+// kick on 1 and 3, snare on 2 and 4, hat on the off-eighths; intro bar 2 ends in a
+// snare fill.
 
 /** The battle theme's four-to-six note hook; the boss theme quotes it slower. */
 export const BATTLE_MOTIF: string[] = ['A4', 'C5', 'E5', 'F5', 'E5'];
@@ -59,15 +63,15 @@ const melody = flat([
   bar(['B4', 2], ['E5', 2], ['G#5', 2], ['B5', 2], ['E5', 2], ['G#5', 2], ['B5', 2], ['off', 2]), // E
   // loop, row 32: the motif, then development
   bar(['A4', 2], ['C5', 2], ['E5', 2], ['F5', 2], ['E5', 4], ['C5', 2], ['A4', 2]),               // Am
-  bar(['E5', 2], ['A5', 2], ['E5', 2], ['C5', 2], ['A4', 4], ['C5', 2], ['E5', 2]),               // Am
+  bar(['A4', 1], ['C5', 1], ['E5', 2], ['A5', 3], ['E5', 1], ['off', 2], ['A4', 1], ['C5', 1], ['E5', 2], ['C5', 2]), // Am
   bar(['Bb4', 2], ['D5', 2], ['F5', 2], ['G5', 2], ['F5', 4], ['D5', 2], ['Bb4', 2]),             // Bb
-  bar(['G#4', 2], ['B4', 2], ['E5', 2], ['D5', 2], ['B4', 4], ['G#4', 4]),                        // E
-  bar(['A4', 2], ['C5', 2], ['E5', 2], ['A5', 2], ['E5', 4], ['C5', 4]),                          // Am
-  bar(['D5', 2], ['F5', 2], ['A5', 2], ['F5', 2], ['D5', 4], ['A4', 2], ['D5', 2]),               // Dm
-  bar(['C5', 2], ['F5', 2], ['A5', 2], ['F5', 2], ['C5', 4], ['A4', 4]),                          // F
-  bar(['D5', 2], ['F5', 2], ['Bb5', 2], ['F5', 2], ['D5', 4], ['Bb4', 4]),                        // Bb
-  bar(['B4', 2], ['E5', 2], ['G#5', 2], ['E5', 2], ['B4', 4], ['G#4', 2], ['E5', 2]),             // E
-  bar(['E5', 2], ['D5', 2], ['B4', 2], ['G#4', 2], ['B4', 2], ['D5', 2], ['E5', 2], ['G#4', 2]),  // E
+  bar(['G#4', 2], ['B4', 2], ['E5', 3], ['D5', 1], ['B4', 4], ['G#4', 4]),                        // E (D5 passing: E7)
+  bar(['A4', 2], ['C5', 2], ['E5', 2], ['A5', 5], ['E5', 1], ['C5', 4]),                          // Am
+  bar(['D5', 2], ['F5', 2], ['A5', 2], ['Bb5', 2], ['A5', 4], ['F5', 2], ['D5', 2]),              // Dm (motif)
+  bar(['F4', 2], ['A4', 2], ['C5', 2], ['D5', 2], ['C5', 4], ['A4', 2], ['F4', 2]),               // F (motif)
+  bar(['D5', 1], ['F5', 1], ['Bb5', 4], ['F5', 2], ['D5', 4], ['Bb4', 4]),                        // Bb
+  bar(['B4', 2], ['E5', 2], ['G#5', 2], ['A5', 2], ['G#5', 4], ['E5', 2], ['B4', 2]),             // E (motif)
+  bar(['E5', 2], ['D5', 1], ['B4', 1], ['B4', 2], ['G#4', 2], ['B4', 2], ['D5', 1], ['B4', 1], ['E5', 2], ['G#4', 2]), // E7
 ]);
 
 const ostinato = flat([

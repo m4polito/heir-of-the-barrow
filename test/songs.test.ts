@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { validateSong } from '../src/engine/audio/sequencer';
 import { HOLLOWMERE_SONG } from '../src/data/songs/hollowmere';
 import { SONGS } from '../src/data/songs';
+import { noteToMidi } from '../src/engine/audio/notes';
 import { BATTLE_MOTIF } from '../src/data/songs/battle';
 
 describe('HOLLOWMERE_SONG', () => {
@@ -177,5 +178,44 @@ describe('SONGS.fallen', () => {
 
   it('ends every track with off', () => {
     for (const t of song.tracks) expect(t.rows[lastNonNull(t.rows)]).toBe('off');
+  });
+});
+
+describe('marsh and battle development', () => {
+  const sounded = (rows: (string | null)[]) => rows.filter((c): c is string => c !== null && c !== 'off');
+
+  it('marsh p1 has at least three octave leaps', () => {
+    const notes = sounded(SONGS.marsh.tracks[0]!.rows).map(noteToMidi);
+    let leaps = 0;
+    for (let i = 1; i < notes.length; i++) if (Math.abs(notes[i]! - notes[i - 1]!) === 12) leaps++;
+    expect(leaps).toBeGreaterThanOrEqual(3);
+  });
+
+  it('marsh echo sounds alone: p1 is silent whenever p2 sounds in the phrase-end bars', () => {
+    const [p1, p2] = SONGS.marsh.tracks;
+    let s1 = false;
+    let s2 = false;
+    p1!.rows.forEach((_, r) => {
+      const a = p1!.rows[r]!;
+      const b = p2!.rows[r]!;
+      if (a !== null) s1 = a !== 'off';
+      if (b !== null) s2 = b !== 'off';
+      if ([3, 7, 11, 15].includes(Math.floor(r / 16)) && s2) expect(s1, `row ${r}`).toBe(false);
+    });
+    expect(s1 || s2).toBe(false);
+  });
+
+  it('battle breaks the rhythm in at least three loop bars', () => {
+    const rows = SONGS.battle.tracks[0]!.rows;
+    let varied = 0;
+    for (let b = 2; b <= 11; b++) {
+      let hit = false;
+      for (let r = b * 16; r < b * 16 + 16; r++) {
+        const c = rows[r]!;
+        if (c === 'off' || (c !== null && rows[r + 1] !== null && rows[r + 1] !== undefined)) hit = true;
+      }
+      if (hit) varied++;
+    }
+    expect(varied).toBeGreaterThanOrEqual(3);
   });
 });

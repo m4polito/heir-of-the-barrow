@@ -7,8 +7,9 @@ import type { Song, Track } from '../../engine/audio/sequencer';
 //   3  C  | G  | Am | Em       (the relative major answers, back home)
 //   4  C  | D  | B  | Em       (closes on a low E, then loops to bar 1)
 // p1 leaps (fifths, sixths, octaves) between chord tones and ends each phrase
-// on a long note and a rest. p2 echoes the last two p1 notes of each phrase one
-// beat later and is silent otherwise. tri walks root, fifth, root, fifth in
+// on a long note and a rest, and has octave leaps (E4-E5, G4-G5, A4-A5, E5-E4).
+// In each phrase's last bar p1 plays its two closing notes and releases at row 8;
+// p2 then echoes the same two notes alone in the gap, and is silent otherwise. tri walks root, fifth, root, fifth in
 // quarter notes. The noise track is a soft hat on beats 2 and 4.
 
 type Row = string | null;
@@ -43,37 +44,37 @@ const flat = (bars: Row[][]): Row[] => bars.flat();
 
 const melody = flat([
   // phrase 1
-  bar(['E4', 4], ['B4', 4], ['G4', 4], ['E5', 4]),            // Em
+  bar(['E4', 6], ['E5', 2], ['B4', 4], ['G4', 4]),            // Em
   bar(['B4', 6], ['A4', 2], ['G4', 8]),                       // Em
-  bar(['C5', 4], ['G4', 4], ['E5', 8]),                       // C
-  bar(['F#4', 4], ['D5', 8], ['off', 4]),                     // D
+  bar(['G4', 6], ['G5', 2], ['E5', 8]),                       // C
+  bar(['F#4', 2], ['D5', 6], ['off', 8]),                     // D
   // phrase 2
   bar(['E5', 6], ['D5', 2], ['B4', 4], ['G4', 4]),            // Em
-  bar(['D5', 4], ['G4', 4], ['B4', 4], ['G5', 4]),            // G
-  bar(['E5', 4], ['A4', 4], ['C5', 4], ['A5', 4]),            // Am
-  bar(['F#5', 4], ['B4', 8], ['off', 4]),                     // B
+  bar(['D5', 8], ['G4', 4], ['G5', 4]),                       // G
+  bar(['E5', 4], ['A4', 4], ['A5', 8]),                       // Am
+  bar(['F#5', 2], ['B4', 6], ['off', 8]),                     // B
   // phrase 3
-  bar(['E4', 4], ['C5', 4], ['G4', 4], ['E5', 4]),            // C
+  bar(['E4', 6], ['C5', 2], ['G4', 8]),                       // C
   bar(['D5', 8], ['B4', 4], ['G4', 4]),                       // G
-  bar(['A4', 4], ['E5', 4], ['C5', 4], ['A4', 4]),            // Am
-  bar(['G4', 4], ['E5', 8], ['off', 4]),                      // Em
+  bar(['A4', 6], ['E5', 2], ['C5', 4], ['A4', 4]),            // Am
+  bar(['G4', 2], ['E5', 6], ['off', 8]),                      // Em
   // phrase 4
-  bar(['C5', 4], ['G4', 4], ['E5', 4], ['G5', 4]),            // C
+  bar(['C5', 6], ['G4', 2], ['E5', 4], ['G5', 4]),            // C
   bar(['A4', 4], ['D5', 4], ['F#5', 4], ['D5', 4]),           // D
   bar(['B4', 4], ['F#5', 4], ['D#5', 4], ['B4', 4]),          // B
-  bar(['E5', 4], ['B4', 4], ['E4', 6], ['off', 2]),           // Em
+  bar(['E5', 2], ['E4', 6], ['off', 8]),                      // Em
 ]);
 
-/** Echo of each phrase's last two melody notes, one beat (4 rows) later. */
+/** Echo of each phrase's two closing melody notes, played alone once p1 has released (row 8). */
 const echo = flat([
   silent(), silent(), silent(),
-  bar([null, 4], ['F#4', 4], ['D5', 6], ['off', 2]),          // D
+  bar([null, 8], ['F#4', 2], ['D5', 5], ['off', 1]),          // D
   silent(), silent(), silent(),
-  bar([null, 4], ['F#5', 4], ['B4', 6], ['off', 2]),          // B
+  bar([null, 8], ['F#5', 2], ['B4', 5], ['off', 1]),          // B
   silent(), silent(), silent(),
-  bar([null, 4], ['G4', 4], ['E5', 6], ['off', 2]),           // Em
+  bar([null, 8], ['G4', 2], ['E5', 5], ['off', 1]),           // Em
   silent(), silent(), silent(),
-  bar([null, 8], ['B4', 4], ['E4', 3], ['off', 1]),           // Em
+  bar([null, 8], ['E5', 2], ['E4', 5], ['off', 1]),           // Em
 ]);
 
 const bassline = flat([
