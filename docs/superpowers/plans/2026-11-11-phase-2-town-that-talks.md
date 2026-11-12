@@ -10,9 +10,10 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md` (§4.4, §4.6, §5.2–5.3, §6.1, §7, §8, §10.1–10.4, §12.3–12.5, §13, §14 Phase 2). Carry-forward notes: `docs/superpowers/notes/2026-11-11-phase-1-review-notes.md`.
 
-## Execution status (updated 2026-11-11, second session stop)
+## Execution status (updated 2026-11-12, phase stop)
 
-- Branch `phase-2` from `master` (Phase 1 merged). **Tasks 1–8 complete** and reviewed (ticked below). **Next: Task 9.** Execution method: subagent-driven; Sonnet implementers, Sonnet reviewers, Opus for audio (Task 4 done), integration (Tasks 9, 10) and the final whole-branch review; the orchestrator (Fable) reviews creative calls (dialog text, art) itself. Gated: stop after Task 14 for the owner's play-test.
+- **All 14 tasks complete and reviewed; the final whole-branch review and its fix wave are done (head `b743657`). Stopped for the owner's play-test; not merged.** Rulings, open questions for the owner, and the play-test list are in the carry-forward notes. Amendments made during Tasks 9–14 that differ from the task text below: Task 10 talks across one non-walkable tile and snaps a stepping NPC before turning it; Task 11's `candidates` is `string[]` and the Equip window widens to fit its longest line (Status is 128 wide); Task 5's `hasMore` is also true when a later script step is pending; a text blip no longer interrupts another sound effect; Task 14 injects the item table through `Game.items`.
+- History: branch `phase-2` from `master` (Phase 1 merged). Execution method: subagent-driven; Sonnet implementers, Sonnet reviewers, Opus for audio (Task 4 done), integration (Tasks 9, 10) and the final whole-branch review; the orchestrator (Fable) reviews creative calls (dialog text, art) itself. Gated: stop after Task 14 for the owner's play-test.
 - Handoff notes for the next session: `docs/superpowers/notes/2026-11-11-phase-2-carry-forward.md` (rulings, deferred minors, what the SDD ledger held). The SDD workspace under `.superpowers/sdd/` is git-ignored; if it is still on disk the next session reuses its ledger and briefs, otherwise it recreates the briefs with the skill's `task-brief` script and treats Tasks 1–8 as done.
 - Agreed and already folded into the tasks below: the owner's stack/transition discipline (Global Constraints and Tasks 9, 10, 12, 13); the Task 1 test replacement; `menuConfirm` duty 0.5; the Task 4 synth redesign (see Task 4's "Delivered" note); the owner's **story-free engine rule** (CLAUDE.md; Global Constraints; Tasks 5, 7, 9, 10, 12, 13 updated; Task 14 cleans up Tasks 1–4 and Phase 1 code at the end of the phase). Rulings made while executing Tasks 5–8 that later tasks must honour are in the carry-forward notes under "Rulings made during execution (session 2)"; the one that changes a task's text is **Task 10's talk reach** (talk across one non-walkable tile so counters work).
 
@@ -403,23 +404,23 @@ git commit -m "feat: NPC sprites and wander logic"
   - `ExploreState`: `constructor(game: Game, mapId: string, entry: string)` (no DOM access; throws if `game.maps[mapId]` or the entry is missing); `get hero(): HeroState`; `get map(): GameMap`; `get mapId(): string`; `readonly npcs: NpcState[]`; `warpTo(mapId: string, entry: string): void` (plays `door` SFX, pushes a `TransitionState` whose `onMid` loads the new map, places the hero at the entry, rebuilds `npcs`, calls `game.audio.playSong(game.songs[map.music]!)`, and sets a private `enteredMap = true`; the constructor also sets `enteredMap = true`). `update`: `canEnter(x, y)` = `isWalkable` and no NPC at `(x, y)`; `onArrive` = if `warpAt(map, x, y)` → `warpTo` and return `true`; NPC `canEnter` additionally excludes the hero's tile, door tiles, every `entry` tile, and every warp tile. Render: tiles, then NPCs and hero sorted by `y` (hero last on ties), via `game.sprites`. The `hero` field is private with a getter. (`enteredMap` is consumed in Task 10.)
   - `main.ts`: builds `createGame({ …, maps: MAPS, dialogs: DIALOGS, songs: SONGS, story: STORY, player: createPlayer(STORY.defaultHeroName), rng: createRng(Date.now()) })`; `BootState.onStart` → `stack.reset(new ExploreState(game, STORY.newGame.map, STORY.newGame.entry))` and the Explore plays its map's song (interim until Task 12 adds the title flow; `main.ts` is wiring and may import data).
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/transition.test.ts`: `transitionAlpha(0, 12) === 0`, `(6,12) === 0.5`, `(12,12) === 1`, `(18,12) === 0.5`, `(24,12) === 0`; on a real `StateStack` with a fake input, a `TransitionState({ frames: 12 })` calls `onMid` exactly once across 30 updates and is gone from `stack.states` by update 24; when `onMid` calls `stack.reset(fakeC)`, after the transition finishes `stack.states` is exactly `[fakeC]` and `fakeC.enter` was called once.
   - `test/state.test.ts`: `reset(c)` on `[a, b]` calls `b.exit` then `a.exit`, then `c.enter`, and `states` is `[c]`; `remove(b)` on `[a, b, c]` leaves `[a, c]` with `c` still `top` and `b.exit` called; a `TransitionState` with a fake state pushed on top of it (`[a, T, b]`): driving `T.update(input)` directly until it finishes leaves `[a, b]` (the owner's case: a transition under a pushed state removes only itself).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/transition.test.ts test/state.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** the new modules and the Explore refactor; wire `main.ts`.
+- [x] **Step 3: Implement** the new modules and the Explore refactor; wire `main.ts`.
 
-- [ ] **Step 4: Run tests, typecheck, build**
+- [x] **Step 4: Run tests, typecheck, build**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform): the game now starts inside Maren's house (interim, per `STORY.newGame`); walk out and into each of the four doors, fade to black, arrive inside facing up, walk back out through the door and arrive outside it; the door sound plays on each warp; Pip and two villagers wander near their homes and never walk through you or onto a door; Bram, Tobin, Maren, Hesta, Garrik, Odo stand still; the town theme does not restart when entering a building; no console errors.
+- [x] **Step 5: List owner checks** (do not perform): the game now starts inside Maren's house (interim, per `STORY.newGame`); walk out and into each of the four doors, fade to black, arrive inside facing up, walk back out through the door and arrive outside it; the door sound plays on each warp; Pip and two villagers wander near their homes and never walk through you or onto a door; Bram, Tobin, Maren, Hesta, Garrik, Odo stand still; the town theme does not restart when entering a building; no console errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/game.ts src/engine/spriteCache.ts src/game/transition.ts src/data/songs/index.ts src/game/explore.ts src/game/map.ts src/main.ts src/engine/state.ts test/transition.test.ts test/state.test.ts
 git commit -m "feat: game context, transitions, door warps, NPCs on the map"
@@ -439,21 +440,21 @@ git commit -m "feat: game context, transitions, door warps, NPCs on the map"
   - `class DialogState implements State { constructor(game: Game, script: DialogScript, opts?: { onDone?: () => void }) }` (no DOM access in the constructor) — builds a `ScriptEnv` over `game.player` (`has/set` via flags, `give` via `addItem` writing back `game.player`, `gold` adds, `heal` sets hp/mp to max, `sfx` → `game.audio.playSfx`, `name` = player name) and a `DialogModel`. `update`: `tick()` each frame; when it returns true and the revealed character index is even, play `blip`; `confirm` → `model.confirm()` (play `menuConfirm` when submitting a choice); on a choice page, up/down/left/right move the cursor (`menuMove`); when `model.done`, pop and call `onDone`. `render`: `drawWindow(ctx, 8, 176, 240, 56)`; lines at `x = 16`, `y = 184 + 10 * i`; when revealed and `hasMore`, draw `▼` at `(232, 220)` blinking on `floor(frame / 16) % 2 === 0`; a choice page draws the two options at `(32, 194)` and `(32, 204)` with `▶` at `x = 24` on the cursor row.
   - `ExploreState` additions: on `pressed('confirm')` while `heroIdle`, find an NPC on `facingTile(hero)`; if found set `npc.facing = opposite(hero.facing)` and push `new DialogState(game, game.dialogs[npc.def.dialog]!)` (throw a clear error if the dialog id is unknown). **Auto triggers:** at the start of `update()` (which only runs while Explore is the top state, so after any transition has removed itself), if `enteredMap` is set: clear it, and for the first `auto` trigger whose flag is unset push `DialogState` with `onDone` setting that flag (`game.player = setFlag(...)`), then return for this tick. Never from the constructor or an `onMid`.
 
-- [ ] **Step 1: Write the failing test** in `test/state.test.ts` ("an auto trigger fires once, after the Transition is gone"): build a `Game` in node (`createGame` with `font: {} as Font`, `new AudioManager(null)`, a lazy `SpriteCache`, `createRng(1)`, `maps: MAPS, dialogs: DIALOGS, songs: SONGS, story: STORY`, `createPlayer(STORY.defaultHeroName)`, a real `StateStack`, a fake `Input` whose `pressed('confirm')` is true only while `stack.top instanceof DialogState` and everything else false); push `new TransitionState(stack, { frames: 2, onMid: () => stack.reset(new ExploreState(game, STORY.newGame.map, STORY.newGame.entry)) })`; drive `stack.update(input)`: while the transition is still in `stack.states`, assert no `DialogState` is in `stack.states`; once it is gone, assert the very next update makes `stack.top` a `DialogState`; keep updating (bounded, 2000 ticks) until `stack.top` is the `ExploreState` again; assert `hasFlag(game.player, 'intro_done')`, `hasFlag(game.player, 'shield_received')`, and the inventory contains `aldric_shield`; 100 more updates push no new `DialogState`.
+- [x] **Step 1: Write the failing test** in `test/state.test.ts` ("an auto trigger fires once, after the Transition is gone"): build a `Game` in node (`createGame` with `font: {} as Font`, `new AudioManager(null)`, a lazy `SpriteCache`, `createRng(1)`, `maps: MAPS, dialogs: DIALOGS, songs: SONGS, story: STORY`, `createPlayer(STORY.defaultHeroName)`, a real `StateStack`, a fake `Input` whose `pressed('confirm')` is true only while `stack.top instanceof DialogState` and everything else false); push `new TransitionState(stack, { frames: 2, onMid: () => stack.reset(new ExploreState(game, STORY.newGame.map, STORY.newGame.entry)) })`; drive `stack.update(input)`: while the transition is still in `stack.states`, assert no `DialogState` is in `stack.states`; once it is gone, assert the very next update makes `stack.top` a `DialogState`; keep updating (bounded, 2000 ticks) until `stack.top` is the `ExploreState` again; assert `hasFlag(game.player, 'intro_done')`, `hasFlag(game.player, 'shield_received')`, and the inventory contains `aldric_shield`; 100 more updates push no new `DialogState`.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 Run: `npx vitest run test/state.test.ts`
 Expected: FAIL (DialogState missing).
 
-- [ ] **Step 3: Implement** `DialogState` and the Explore additions.
+- [x] **Step 3: Implement** `DialogState` and the Explore additions.
 
-- [ ] **Step 4: Run tests, typecheck, build**
+- [x] **Step 4: Run tests, typecheck, build**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform): face an NPC and press confirm, they turn to you, text types out letter by letter with a blip, confirm skips to the end of the page, confirm again advances, `▼` blinks when there is more; walk into Maren's house for the first time and the opening scene runs by itself after the fade-in completes, ending with Aldric's Shield in your items (check in Task 11's menu); talking to Maren again gives her normal line; every villager has a line; Tobin's line is different from the others' tone; no console errors.
+- [x] **Step 5: List owner checks** (do not perform): face an NPC and press confirm, they turn to you, text types out letter by letter with a blip, confirm skips to the end of the page, confirm again advances, `▼` blinks when there is more; walk into Maren's house for the first time and the opening scene runs by itself after the fade-in completes, ending with Aldric's Shield in your items (check in Task 11's menu); talking to Maren again gives her normal line; every villager has a line; Tobin's line is different from the others' tone; no console errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/dialog/dialogState.ts src/game/explore.ts test/state.test.ts
 git commit -m "feat: dialog state, talking to NPCs, Maren's opening scene"
@@ -475,21 +476,21 @@ git commit -m "feat: dialog state, talking to NPCs, Maren's opening scene"
   - `MenuState(game)`: window at `(8, 8, 72, 40)` listing `Status`, `Items`, `Equip`; `repeat('up'|'down')` moves (`menuMove`); confirm pushes the chosen sub-state (`menuConfirm`); cancel pops (`menuCancel`). `StatusState(game)`: window `(8, 8, 112, 112)` with `statusLines`; cancel pops. `ItemsState(game)`: window `(88, 8, 160, 100)` listing `itemLines`; confirm on a consumable → `error` SFX and a one-line `DialogState` "You cannot use that now."; confirm on equipment → `DialogState` with a `choice` `['Yes', 'No']` "Equip it?" whose `yes` branch equips (via a small inline script env effect: implement as the state calling `equip` in `onDone` when the player chose yes — track the answer by giving `DialogState` an `opts.onChoice?: (answer: boolean) => void` callback). `EquipState(game)`: window `(88, 8, 160, 100)` listing slot lines then candidates; confirm on a slot with an item unequips; confirm on a candidate equips (`menuConfirm`, or `error` if it fails).
   - `ExploreState`: on `pressed('cancel')` while `heroIdle` and no dialog, push `MenuState` (`menuConfirm`).
 
-- [ ] **Step 1: Write failing tests** in `test/menuLines.test.ts`: `statusLines(createPlayer('Wren'))[0] === 'NAME Wren'`, `[2] === 'HP   15/15'`, `[9] === 'DEF  2'`; after equipping the shield `[9] === 'DEF  6'`; `itemLines` for the starting player → `['Herb x1']`; empty inventory → `['Nothing']`; `equipLines` slots show `none` and candidates list the shield when it is in the inventory and not once it is equipped.
+- [x] **Step 1: Write failing tests** in `test/menuLines.test.ts`: `statusLines(createPlayer('Wren'))[0] === 'NAME Wren'`, `[2] === 'HP   15/15'`, `[9] === 'DEF  2'`; after equipping the shield `[9] === 'DEF  6'`; `itemLines` for the starting player → `['Herb x1']`; empty inventory → `['Nothing']`; `equipLines` slots show `none` and candidates list the shield when it is in the inventory and not once it is equipped.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/menuLines.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** the pure line builders, the four states, the `onChoice` option on `DialogState`, and the Explore hook.
+- [x] **Step 3: Implement** the pure line builders, the four states, the `onChoice` option on `DialogState`, and the Explore hook.
 
-- [ ] **Step 4: Run tests, typecheck, build**
+- [x] **Step 4: Run tests, typecheck, build**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform): press X in town to open the menu with a sound; Status shows the hero's numbers; Items lists the Herb and, after the opening scene, Aldric's Shield; Equip shows three slots; equipping the shield raises DEF from 2 to 6 in Status; trying to use the Herb says you cannot use it now; cancel backs out with a sound at each level; the menu cannot open while the hero is between tiles.
+- [x] **Step 5: List owner checks** (do not perform): press X in town to open the menu with a sound; Status shows the hero's numbers; Items lists the Herb and, after the opening scene, Aldric's Shield; Equip shows three slots; equipping the shield raises DEF from 2 to 6 in Status; trying to use the Herb says you cannot use it now; cancel backs out with a sound at each level; the menu cannot open while the hero is between tiles.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/menu src/game/stats.ts src/game/inventory.ts src/game/explore.ts src/game/dialog/dialogState.ts test/menuLines.test.ts
 git commit -m "feat: menu with status, items, equip"
@@ -512,23 +513,23 @@ git commit -m "feat: menu with status, items, equip"
   - `NameEntryState(game)`: window `(16, 32, 224, 176)`; shows `NAME: ` plus the name padded with `_` to 8 at y = 48; the grid rows at y = 72 + 12 per row with 16 px per cell; cursor `▶`; moves use `repeat`; confirm/cancel per the model with `menuMove`/`menuConfirm`/`error` (on `'full'`); on done: `game.player = createPlayer(finalName)`, then push a `TransitionState` whose `onMid` calls `stack.reset(new ExploreState(game, game.story.newGame.map, game.story.newGame.entry))` (the Explore plays its map's song; Title and NameEntry are cleared; the transition re-pushes itself for the fade-in; Explore's first `update` then runs the opening auto trigger).
   - `main.ts`: `BootState.onStart` → `stack.reset(new TitleState(game))`; no song at boot.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/nameEntry.test.ts`: cursor starts at (0,0) and `confirm()` appends `A`; `move(-1, 0)` from column 0 wraps to the row's last column; moving down from the last row wraps to row 0; on the `BACK END` row, the cells resolve to the two actions; 8 letters then `confirm()` returns `'full'` and the name stays 8 chars; `cancel()` deletes; `END` with empty name → `finalName === 'Wren'`, `done`.
   - `test/songs.test.ts`: `SONGS.title` validates, has 256 rows per track (16 bars × 16), tempo 84, tracks p1, p2, tri and no noise.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/nameEntry.test.ts test/songs.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Compose the title theme, implement the model and both states, wire main.**
+- [x] **Step 3: Compose the title theme, implement the model and both states, wire main.**
 
-- [ ] **Step 4: Run tests, typecheck, build**
+- [x] **Step 4: Run tests, typecheck, build**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform): after PRESS ANY KEY the title shows with its own theme; New Game opens the name grid; type a name, END, fade to black, wake in Maren's house facing her and the opening scene runs with your name in it; the town theme plays inside; walk out the door into Hollowmere.
+- [x] **Step 5: List owner checks** (do not perform): after PRESS ANY KEY the title shows with its own theme; New Game opens the name grid; type a name, END, fade to black, wake in Maren's house facing her and the opening scene runs with your name in it; the town theme plays inside; walk out the door into Hollowmere.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/data/songs/title.ts src/data/songs/index.ts src/game/title.ts src/game/nameEntry.ts src/main.ts test/nameEntry.test.ts test/songs.test.ts
 git commit -m "feat: title screen, name entry, title theme, new-game flow"
@@ -550,13 +551,13 @@ git commit -m "feat: title screen, name entry, title theme, new-game flow"
   - `ExploreState`: on `pressed('debug')` call `game.debugOpen?.()`; render the text `ENC OFF` at `(192, 8)` when `game.debug.noEncounters`.
   - `main.ts`: `if (import.meta.env.DEV) { void import('./game/debug').then((m) => m.installDebug(game)); }`.
 
-- [ ] **Step 1: Implement** the three changes.
+- [x] **Step 1: Implement** the three changes.
 
-- [ ] **Step 2: Verify the production build excludes it**
+- [x] **Step 2: Verify the production build excludes it**
 Run: `npm test && npx tsc --noEmit && npm run build && grep -L "Gold +1000" dist/assets/*.js | wc -l && grep -l "Gold +1000" dist/assets/*.js | wc -l`
 Expected: tests green; the first count ≥ 1 and the second count is `0` (no production chunk contains the debug strings).
 
-- [ ] **Step 3: List the Phase 2 owner play-test (spec §14)** verbatim, unperformed:
+- [x] **Step 3: List the Phase 2 owner play-test (spec §14)** verbatim, unperformed:
   - Start a new game, name the hero, receive the shield.
   - Talk to every villager.
   - Open the menu, equip the shield.
@@ -565,7 +566,7 @@ Expected: tests green; the first count ≥ 1 and the second count is `0` (no pro
   - Confirm `npm run build` output contains no debug code (the grep above; the owner may repeat it).
   - Plus the checks listed in Tasks 9–12.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 ```bash
 git add src/game/debug.ts src/main.ts src/game/explore.ts
 git commit -m "feat: dev-only debug overlay"
@@ -581,8 +582,8 @@ git commit -m "feat: dev-only debug overlay"
 **Interfaces:**
 - Produces: item ids in `src/game/` are `string`; `inventory.ts` and `stats.ts` take an injected `items: Record<string, ItemDef>` (or read it from `Game`) instead of importing `ITEMS`; `MUTE_KEY` becomes a constructor option on `AudioManager` supplied by `main.ts`; the story-free guard test has an empty exclusion list.
 
-- [ ] **Step 1:** Remove each violation listed under "Story-free engine rule" in `docs/superpowers/notes/2026-11-11-phase-2-carry-forward.md`, keeping every existing test green (update signatures in tests as needed).
-- [ ] **Step 2:** Empty the guard test's exclusion list; run `npm test && npx tsc --noEmit && npm run build`.
-- [ ] **Step 3: Commit** `refactor: story-free engine — remove story ids from src/game and src/engine`.
+- [x] **Step 1:** Remove each violation listed under "Story-free engine rule" in `docs/superpowers/notes/2026-11-11-phase-2-carry-forward.md`, keeping every existing test green (update signatures in tests as needed).
+- [x] **Step 2:** Empty the guard test's exclusion list; run `npm test && npx tsc --noEmit && npm run build`.
+- [x] **Step 3: Commit** `refactor: story-free engine — remove story ids from src/game and src/engine`.
 
-- [ ] **Step 4: Stop.** Phase 2 is complete. Report the owner checks and wait for feedback before Phase 3.
+- [x] **Step 4: Stop.** Phase 2 is complete. Report the owner checks and wait for feedback before Phase 3.

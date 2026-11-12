@@ -1,14 +1,25 @@
-# Phase 2 carry-forward (second session stop, 2026-11-11)
+# Phase 2 carry-forward (phase stop for the owner's play-test, 2026-11-12)
 
-Written for the next session that resumes Phase 2. Everything here was agreed with the owner or ruled by the orchestrator during execution; the plan itself is `docs/superpowers/plans/2026-11-11-phase-2-town-that-talks.md`.
+Written for the owner's play-test and for the session that acts on its feedback. Everything here was agreed with the owner or ruled by the orchestrator during execution; the plan itself is `docs/superpowers/plans/2026-11-11-phase-2-town-that-talks.md`.
 
 ## Where execution stands
 
-- Branch `phase-2` (from `master`, which holds merged Phase 1). Head at the time of writing: Task 8 (`62906ac`) plus this handoff commit.
-- **Tasks 1–8 complete and reviewed** (ticked in the plan). **Resume at Task 9** (game context, sprite cache, transitions, Explore with warps and NPCs). Tasks 9 and 10 are integration tasks: Opus reviews them; the final whole-branch review after Task 14 is Opus too.
-- Suite: 28 files / 250 tests green; `npx tsc --noEmit` clean; `npm run build` green (last run at Task 7; Task 8 ran the suite and tsc).
-- The SDD workspace `.superpowers/sdd/2026-11-11-phase-2-town-that-talks/` is git-ignored and was left on disk. Its `progress.md` ledger names this plan and records Tasks 1–8 as complete, with every ruling below; `task-9-brief.md` through `task-14-brief.md` are already generated from the current plan. To resume: invoke `superpowers:subagent-driven-development`, run the skill's `sdd-workspace` script (it prints the same directory), read the ledger, and dispatch Task 9. If the directory is gone, recreate it with `sdd-workspace` and `task-brief` for Tasks 9–14, start a fresh ledger whose first line is `# SDD ledger — plan: docs/superpowers/plans/2026-11-11-phase-2-town-that-talks.md`, record Tasks 1–8 as complete with the commit ranges below, and copy the rulings from this file.
+- Branch `phase-2` (from `master`, which holds merged Phase 1). Head: `b743657`. **Not merged, not pushed.**
+- **All 14 tasks complete and reviewed.** The final whole-branch review (Opus) found one blocker and nine smaller items; one fix wave (`1265cd0`) addressed them, a scoped re-review confirmed it, and one of the nine (the sequencer change) was reverted (`b743657`); see "Final review" below.
+- Suite at head: 33 files / 318 tests green; `npx tsc --noEmit` clean; `npm run build` green; the production bundle contains no debug-overlay strings.
+- **Next step: the owner's play-test** (list at the end of this file), then fixes from the feedback, then merge. Phase 3 does not start until the owner says so.
+- The SDD workspace `.superpowers/sdd/2026-11-11-phase-2-town-that-talks/` (git-ignored) is still on disk with the ledger, briefs, reports and review packages; delete it once the branch is merged.
 - Dev server for the owner: `npm run dev` from the uppercase path `C:/Projects/VSCode/WarriorsQuest` (Vite misbehaves from `c:/`).
+
+## Needs owner input (recorded during session 3; work continued without waiting)
+
+1. **Title theme by ear.** The first version's harmony did not sound as written in half its bars (three voices over a D drone). The orchestrator changed five notes: real dominants in bars 8 and 12 (counter-line C#), the root F2 under the final chord, and two clashes removed (bars 6 and 14). Bar 14 is still a suspended colour over the F pedal, not a plain C chord. Listen and say whether it is right; if you want it different, name the bar.
+2. **Talk reach.** To talk to people behind a table or counter, confirm reaches across one blocking tile. That also works across any single blocking tile (for example across the well to Pip). Keep, or limit it to counters and tables?
+3. **"Equip it?" takes two presses.** The question shows as its own text page, then a separate Yes/No page. A question with Yes/No in one window is needed for the shop and inn in Phase 5 anyway; fix now or then?
+4. **Late music rows after a stall.** If the browser stalls for more than about 100 ms (tab in the background, a long GC), sequencer rows can be scheduled in the past and may click. The first fix (skip late rows) was reverted because a short stall at song start could drop a song's first row, which silences the title's drone for about 11 seconds. The better fix is to re-date late rows to "now" or lengthen the song-start lead; both change how music sounds after a hiccup, so they need your ear. Phase 1 behaviour is in place meanwhile.
+5. **Commit count.** CLAUDE.md says one commit per task; the branch has one per task plus one per review fix (27 commits for 14 tasks, plus two handoff commits). Squash-merge to keep `master` at one commit per phase, or merge as is?
+6. **Commit trailer.** CLAUDE.md and the plan say `Co-Authored-By: Claude Fable 5.1`; this session ran on Fable 5.2 and kept 5.1 because it is your written rule. Change the rule if you want 5.2 from here on.
+7. **Sprites touching at a corner.** While the hero or an NPC slides between tiles, the tile being left is not reserved, so two sprites can overlap at a corner for up to 8 frames. No one ever shares a tile. Worth fixing, or fine?
 
 ## Owner's standing instructions (apply to every phase)
 
@@ -31,6 +42,13 @@ Written for the next session that resumes Phase 2. Everything here was agreed wi
 | 6 Hollowmere dialog | f89c4bf..b68e510 | clean after 2 fix rounds (orchestrator's prose findings) |
 | 7 Map triggers, interiors, NPC placements, hero arrive hook | b68e510..018cbd8 | clean after 1 fix round (floorWood colours) |
 | 8 NPC sprites + wander | 018cbd8..62906ac | clean |
+| 9 Game context, transitions, warps, NPCs on the map | 25d8fcb..fdecc09 | clean after 1 fix round (Opus; `npcs` readonly, in place) |
+| 10 Dialog state, talking, opening scene | fdecc09..8ce2215 | clean after 1 fix round (Opus; confirm-before-tick, snap stepping NPC) |
+| 11 Menu: Status, Items, Equip | 8ce2215..a2d40a6 | clean |
+| 12 Title, name entry, title theme | a2d40a6..086bd62 | clean after 1 fix round (Opus; title harmony) |
+| 13 Debug overlay | 086bd62..67372b2 | clean |
+| 14 Story-free cleanup | 67372b2..d956cea | clean |
+| Final review fix wave | d956cea..b743657 | re-review clean; finding 9 reverted |
 
 (Between Task 4 and Task 5: `aa7b933` first handoff, `2da809e` story-free rule docs.)
 
@@ -53,7 +71,40 @@ Written for the next session that resumes Phase 2. Everything here was agreed wi
 - Task 7: exterior door → interior: (12,4) `elder_house`, (4,9) `inn`, (19,9) `forge`, (4,16) `shop`; hollowmere's four new entries are named after the interior ids at the tile below each door facing down; interior door at column 6 of the bottom wall; `entry.door` above it facing up; `elder_house.entry.start` = (6,4) facing up (Maren at (6,2), table on row 3). The story-free guard test reads sources with `import.meta.glob(..., '?raw')` (no Node typings); its `EXCLUDED` list is empty. Shared interior legend in `src/data/maps/legend.ts`.
 - Task 8: `npcArt`/`adultPalette` live in `src/data/sprites/npcs.ts`; `src/game/npc.ts` imports nothing from `src/data/`. `npcArt` throws on an unknown sprite, applies the palette only to `adult` (fallback 0), and returns identity-stable objects (Task 9's `SpriteCache` keys by `PixelArt` identity). Direction pick order `['up','down','left','right']`.
 
-## Deferred minors (from per-task reviews; triage at the final whole-branch review)
+## Rulings made during execution (session 3, Tasks 9–14 and the final review)
+
+Each line: what was decided, why, and what it costs if wrong.
+
+- Commit trailer stays `Claude Fable 5.1`: CLAUDE.md is the owner's written rule. Cost: trailer text on this session's commits.
+- Task 10: when talking to an NPC that is mid-step, snap it to its tile before turning it, rather than ignoring the press. A press is never swallowed; the NPC jumps forward less than a tile. Cost: one line.
+- Task 12 (creative): five note changes to the title theme (drone F2 at bar 16; counter-line bar 6 → E4 C4, bar 8 → C#5 A4, bar 12 → A4 C#4, bar 14 → G4 C5); the 12-bar D drone and the melody are unchanged. Cost: five notes; the owner's ear decides.
+- Task 12: the melody's five quarter notes stand although the plan asked for half and whole notes. Cost: lengthen five notes.
+- Task 12: a spaces-only name falls back to the default name; a test pins each title track's duty and volume. Cost: none.
+- Task 14 design: `ItemDef` lives in `src/game/items.ts`; `Game.items` is injected from `main.ts`; inventory and stats functions take the item table as their first argument; `StoryConfig` gains `startingItems` and `storagePrefix`; `AudioManager(ctx, { muteKey })` persists mute only when given a key, and `main.ts` passes `'dimming.mute'` so a saved mute setting survives. Cost: signatures in three modules.
+- Task 14 guard: the story-free guard also bans imports of `data/items`, `data/maps`, `data/dialog`, `data/songs`, `data/story` from engine, game and ui code; tiles, sprites, sfx, levels and the palette stay importable (levels are a numeric table with no story names). Cost: one regex.
+- Final review, overturning the Task 5 `hasMore` ruling: `▼` also shows when a later script step is pending (`ScriptRunner.hasPending`, side-effect free). The old ruling meant `▼` never appeared, against spec §8.1. Cost: `▼` would show on a last page followed only by effect nodes; no script does that today.
+- Final review, plan defect: the Equip window widens to its longest line (right edge fixed at x = 248); the Status window is 128 wide. The plan fixed both a 160 px window and a label that cannot fit in it. Cost: two rectangles.
+- Final review: a text blip is dropped while another sound effect is still sounding, so the shield jingle, the error buzz and the menu confirm are heard. Cost: a few silent letters after a jingle.
+- Final review: the nine smaller findings went into the one fix wave with the blocker. Cost: one commit to revert.
+- Final review, reversing my own ruling: the sequencer's "skip late rows" change was reverted to Phase 1 behaviour (see "Needs owner input" 4). Cost: the rare stall click stays until it is fixed properly.
+- Final review: the `hasPending` false positive (above) is parked. Cost: a stray `▼` if a script ever ends in a bare effect.
+
+## Final review (Opus, whole branch) and what was done
+
+- **Blocker, fixed:** in all four interiors the door glyph was at column 5 while the exit warp and the door entry were at column 6, so the hero could not leave any building, including the one the game starts in. The rows now read `'######D#####'`; tests assert that every warp sits on a walkable door tile, every door tile has a warp, and a hero walking down from each interior's door arrives in town.
+- **Fixed:** blips cutting other sound effects; `▼` never showing; the Equip and Status windows overflowing; the menu or debug cursor auto-scrolling when opened with a direction held (`Input.rearm()`); the name-entry cursor jumping on the BACK/END row; `applyLevel` losing a point on re-apply; the stale header comment in the title song.
+- **Reverted:** the sequencer change (above).
+- **Checked and clean:** the state stack across Title → NameEntry → Transition → Explore → Dialog → Menu → Debug (no input leaks, no state acting after removal, no stuck transition); the hero cannot spawn inside an NPC; the town theme does not restart indoors; the story-free rule; originality of text, sprites and the title melody against Dragon Warrior / Dragon Quest.
+- **Triage of the deferred minors below:** all "LEAVE" except the items fixed above (Task 1 `applyLevel`, Task 7 door assertions and 4-warp count, Task 9 ExploreState walk-out test, Task 12 header comment) and the Task 4 sequencer item (open, owner input 4). Already fixed in passing: Task 9's stale NPC snapshot, silent missing song and unused import; Task 10's `ItemId` import; Task 11's cast.
+
+## Deferred minors (from per-task reviews; triaged at the final whole-branch review, see above)
+
+- Task 9: no further open items beyond sprite corner overlap (owner input 7).
+- Task 10: test gaps (talking to an NPC on the facing tile directly, confirm mid-step, give → full inventory through `DialogState`, close-does-not-reopen with an edge-triggered fake input); `shownChars()` is roundabout; the opening script's behaviour on a failed give is undefined (unreachable today).
+- Task 11: Items and Equip lists do not scroll (fine for 8 slots); a new `MenuList` per frame; a misleading test comment.
+- Task 12: no regression test for the Boot key not leaking into Title (safe by construction); the counter-line is in sixths for most but not all attacks; Title and NameEntry render paths are untested (owner look-check).
+- Task 13: the "every row reachable" test only asserts no throw; `warpStart = 6` is duplicated in the test; the debug key is gated on the hero being idle.
+- Task 14: the guard reports one offending file at a time; no test pins the mute key string; no test for `equip` with an unknown id (now `ok:false`, was a throw) or `createPlayer` with no starting items; `ItemDef.id` is `string`, so a typo in a data entry's `id` field is not type-checked.
 
 - Task 1: `applyLevel` computes `floor(max * (hp/maxHp))`; `floor((max*hp)/maxHp)` is exact. `addItem` does not validate `n <= 0` or fractional `n`. No partial-fit-atomicity or no-mutation tests.
 - Task 2: no test for two key codes mapped to one action keeping the repeat count, or for `clear()` resetting counters. `rng.int` does not validate bounds.
@@ -66,15 +117,33 @@ Written for the next session that resumes Phase 2. Everything here was agreed wi
 - Task 7: bed/table tiles have no seam rows, so they patch against the wood floor (owner look-check); the round-trip test never asserts it visited four warps; no assertion that `D` is at (6,8) or that the warp tile coincides with it; border unasserted; `as Dir` cast in `opposite()`; the guard bans only single-quoted literals.
 - Task 8: `sprite in NPC_SPRITES` admits prototype keys (use `Object.hasOwn`); the stepping-offset assertion is conditional and could pass vacuously; no tests that `npcArt` returns distinct objects per palette, that the registry's adult colours stay `t: 10`, or for the adult variants' height; `npcPixelOffset` duplicates `heroPixelOffset`; the bodies use 5–9 palette keys including outline versus spec §13's 3–4 (same standing art-sign-off item as the hero).
 
-## Owner checks accumulated so far (unperformed; list them again at the phase stop)
+## Owner play-test for Phase 2 (none of these has been performed by anyone)
 
-- Tasks 9–13 each list their own checks in the plan; none are performed yet.
+Run `npm run dev` from `C:/Projects/VSCode/WarriorsQuest`. Spec §14 list:
+
+- Start a new game, name the hero, receive the shield.
+- Talk to every villager.
+- Open the menu, equip the shield.
+- Enter and exit every building.
+- Open the debug overlay with the backquote key and set your level; see `ENC OFF` after toggling encounters.
+- Confirm `npm run build` output contains no debug code (`grep -l "Gold +1000" dist/assets/*.js | wc -l` prints 0 in Git Bash).
+
+Per-task checks:
+
+- Title and new game (Task 12): after PRESS ANY KEY the title shows with its own theme; New Game opens the name grid; type a name, END, fade to black, wake in Maren's house facing her and the opening scene runs with your name in it; the town theme plays inside; walk out the door into Hollowmere. Listen to the title theme: slow, stately, minor resolving upward, no clicks, loops cleanly. The cursor on the name grid's BACK / END row moves sensibly.
+- Doors and NPCs (Task 9): walk out and into each of the four doors, fade to black, arrive inside facing up, walk back out through the door and arrive outside it; the door sound plays on each warp; Pip and two villagers wander near their homes and never walk through you or onto a door; Bram, Tobin, Maren, Hesta, Garrik, Odo stand still; the town theme does not restart when entering a building; no console errors.
+- Talking (Task 10): face an NPC and press confirm, they turn to you, text types out letter by letter with a blip, confirm skips to the end of the page, confirm again advances, `▼` blinks when there is more; the opening scene runs by itself after the fade-in completes, ending with Aldric's Shield in your items, and the shield jingle is audible; talking to Maren again gives her normal line; every villager has a line; Tobin's line is different from the others' tone; you can talk to Maren, Hesta, Garrik and Odo across their table or counter; no console errors.
+- Menu (Task 11): press X in town to open the menu with a sound; Status shows the hero's numbers and an 8-letter name fits inside the window; Items lists the Herb and, after the opening scene, Aldric's Shield; Equip shows three slots and "SHIELD: Aldric's Shield" fits inside its window; equipping the shield raises DEF from 2 to 6 in Status; trying to use the Herb plays the error sound and says you cannot use it now; cancel backs out with a sound at each level; the menu cannot open while the hero is between tiles; opening the menu while holding a direction does not make the cursor run.
+- Debug overlay (Task 13): every row of the list is reachable and visible; each warp lands on that map.
+
+Art checks carried from earlier tasks:
+
 - Task 7 art: the four interior tiles (wood floor, counter, bed, table) read at 1× in the browser.
 - Task 8 art: the six NPC bodies (elder, adult in three tunic colours, smith, child, guard, squire) read at 1× and are told apart from each other and from the hero; the smith and guard widths and the squire's bottle are the likeliest to need tweaks.
 
-## Story-free engine rule: existing violations to clean up in Task 14
+## Story-free engine rule: violations cleaned up in Task 14 (done, `d956cea`)
 
-Rule (CLAUDE.md): engine and systems code (`src/engine/`, `src/game/`, `src/ui/`) must not reference story-specific names; story content lives in `src/data/`; the starting map, entry, and opening scene come from `src/data/story.ts`. Tasks 5–8 follow it (`src/game/map.ts`'s `SongId` union is gone; the guard test in `test/interiors.test.ts` passes with an empty exclusion list). Remaining violations, all outside the guard's string list, for Task 14:
+All items below were removed in Task 14, and the guard test now also bans story-table imports. Kept for the record. Rule (CLAUDE.md): engine and systems code (`src/engine/`, `src/game/`, `src/ui/`) must not reference story-specific names; story content lives in `src/data/`; the starting map, entry, and opening scene come from `src/data/story.ts`. Tasks 5–8 follow it (`src/game/map.ts`'s `SongId` union is gone; the guard test in `test/interiors.test.ts` passes with an empty exclusion list). Remaining violations, all outside the guard's string list, for Task 14:
 
 - `src/game/player.ts` imports `ItemId` from `src/data/items` and types `InventorySlot.item` and `equipment` with it; `createPlayer` seeds `'herb'`. Cleanup: `string`, with validation at the inventory boundary; the starting inventory comes from `STORY` or `createPlayer`'s caller.
 - `src/game/inventory.ts` imports `ITEMS` and `ItemId`; `addItem`/`removeItem`/`equip` take `ItemId` and index `ITEMS`. Cleanup: take `string`; look items up through an injected item table (or keep `ITEMS` as a presentation-neutral registry if the owner rules item *data* generic; the ids themselves are story names, so the union type must go).
