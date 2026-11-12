@@ -10,6 +10,12 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md` (§4.4, §4.6, §5.2–5.3, §6.1, §7, §8, §10.1–10.4, §12.3–12.5, §13, §14 Phase 2). Carry-forward notes: `docs/superpowers/notes/2026-11-11-phase-1-review-notes.md`.
 
+## Execution status (updated 2026-11-11, session stop)
+
+- Branch `phase-2` from `master` (Phase 1 merged). **Tasks 1–4 complete** and reviewed (ticked below). **Next: Task 5.** Execution method: subagent-driven; Sonnet implementers, Sonnet reviewers, Opus for audio (Task 4 done), integration (Tasks 9, 10) and the final whole-branch review. Gated: stop after Task 13 for the owner's play-test.
+- Handoff notes for the next session: `docs/superpowers/notes/2026-11-11-phase-2-carry-forward.md` (rulings, deferred minors, what the SDD ledger held). The SDD workspace under `.superpowers/sdd/` is git-ignored; a fresh session recreates the briefs with the skill's `task-brief` script and treats Tasks 1–4 as done.
+- Agreed this session and already folded into the tasks below: the owner's stack/transition discipline (Global Constraints and Tasks 9, 10, 12, 13); the Task 1 test replacement; `menuConfirm` duty 0.5; the Task 4 synth redesign (see Task 4's "Delivered" note).
+
 ## Global Constraints
 
 - No runtime dependencies. All art, text, and music are TypeScript data; everything original (nothing from Dragon Warrior or any published game).
@@ -92,21 +98,21 @@ test/*.test.ts                 one per pure module
   - `attackOf(p): number` = `str + (weapon atk ?? 0)`; `defenseOf(p): number` = `floor(agi / 2) + (armor def ?? 0) + (shield def ?? 0)`.
   - `INVENTORY_SLOTS = 8`; `addItem(p, id, n = 1): { player: PlayerState; ok: boolean }` (fills existing stacks up to `ITEMS[id].stack`, then new slots; `ok: false` and unchanged player if it cannot all fit); `removeItem(p, id, n = 1): { player; ok }`; `equip(p, id): { player; ok }` (item must be in inventory and be weapon/armor/shield; it leaves the inventory; a previously equipped item in that slot returns to the inventory, `ok: false` unchanged if that would not fit); `unequip(p, slot): { player; ok }`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/player.test.ts`: `LEVELS.length === 10`; `LEVELS[2]` is `{ level: 3, xp: 23, str: 7, agi: 6, maxHp: 24, maxMp: 5, learns: 'heal' }`; `levelForXp(0) === 1`, `levelForXp(22) === 2`, `levelForXp(23) === 3`, `levelForXp(2000) === 10`, `levelForXp(99999) === 10`; `createPlayer('Wren')` → `{ level: 1, hp: 15, maxHp: 15, mp: 0, gold: 40, str: 4, agi: 4 }`, inventory one herb, `flags: []`; `setFlag` twice leaves one flag and does not mutate the input; `applyLevel(p, 5)` → `str 12, agi 10, maxHp 35, maxMp 20, xp 110`, and a player at 10/15 hp becomes 23/35; `attackOf(createPlayer('x')) === 4`; after equipping `aldric_shield`, `defenseOf === 6`; `ITEMS.bronze_sword.price === 180`, `ITEMS.herb.stack === 6`.
   - `test/inventory.test.ts`: adding 7 herbs yields slots `[6, 1]`; filling 8 slots then adding a club → `ok: false` and the player unchanged (Review Focus 3); `removeItem` across stacks; `equip` moves the shield from inventory to `equipment.shield`; equipping a second shield swaps them (old one back in inventory); equip with a full inventory and an occupied slot → `ok: false`; `unequip` returns the item; equipping a consumable → `ok: false`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/player.test.ts test/inventory.test.ts`
 Expected: FAIL (modules missing).
 
-- [ ] **Step 3: Implement the five files** per Interfaces. All functions pure (spread, never mutate).
+- [x] **Step 3: Implement the five files** per Interfaces. All functions pure (spread, never mutate).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run test/player.test.ts test/inventory.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/data/levels.ts src/data/items.ts src/game/player.ts src/game/stats.ts src/game/inventory.ts test/player.test.ts test/inventory.test.ts
 git commit -m "feat: player state, level table, items, inventory"
@@ -126,21 +132,21 @@ git commit -m "feat: player state, level table, items, inventory"
   - `Input.repeat(a: Action): boolean` — true on the tick the action is first pressed, then, while held, true again after `REPEAT_DELAY = 16` ticks and every `REPEAT_INTERVAL = 5` ticks after that. Both exported constants.
   - `interface Rng { next(): number; int(min: number, max: number): number }` (`next` in [0,1); `int` inclusive both ends); `createRng(seed: number): Rng` (mulberry32).
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/input.test.ts` additions: hold `KeyS` and call `update()` 30 times recording `repeat('down')` → true at ticks 1, 17, 22, 27 only; releasing and re-pressing fires immediately again; `keyDown('Backquote'); update()` → `pressed('debug')`.
   - `test/rng.test.ts`: two rngs with seed 42 produce the same first 5 `next()` values; 1000 `int(1, 6)` draws are all within 1..6 and hit every value; `next()` always `< 1` and `>= 0` over 1000 draws.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/input.test.ts test/rng.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement.** `Input` keeps `heldTicks: Map<Action, number>` updated in `update()`.
+- [x] **Step 3: Implement.** `Input` keeps `heldTicks: Map<Action, number>` updated in `update()`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run test/input.test.ts test/rng.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/engine/rng.ts src/engine/input.ts src/engine/constants.ts test/rng.test.ts test/input.test.ts
 git commit -m "feat: key repeat for menus and seeded rng"
@@ -162,21 +168,21 @@ git commit -m "feat: key repeat for menus and seeded rng"
   - `wrapText(text: string, cols: number): string[]` — greedy word wrap on spaces; a word longer than `cols` is hard-split; empty text → `['']`. `substitute(text: string, vars: Record<string, string>): string` replaces `{key}`.
   - `class MenuList { constructor(items: readonly string[]); readonly items; cursor: number; up(): void; down(): void; get selected(): string }` wrapping at both ends.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/wrap.test.ts`: `wrapText('You have your father\'s eyes, Wren.', 28)` → `["You have your father's eyes,", "Wren."]`; a 40-char word at cols 28 → two lines of 28 and 12; `wrapText('', 28)` → `['']`; a line of exactly 28 chars stays one line; `substitute('Hi {name}!', { name: 'Wren' })` → `'Hi Wren!'`.
   - `test/menuList.test.ts`: 3 items, `down` ×3 wraps to 0, `up` from 0 → 2, `selected` matches.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/wrap.test.ts test/menuList.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** the four files and the `scale` parameter.
+- [x] **Step 3: Implement** the four files and the `scale` parameter.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run` and `npx tsc --noEmit`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/ui src/engine/font.ts test/wrap.test.ts test/menuList.test.ts
 git commit -m "feat: window drawing, text wrap, menu list, scaled text"
@@ -187,8 +193,10 @@ git commit -m "feat: window drawing, text wrap, menu list, scaled text"
 ### Task 4: Sound effects path
 
 **Files:**
-- Create: `src/data/sfx.ts`, `src/engine/audio/sfx.ts`, `test/sfx.test.ts`
-- Modify: `src/engine/audio/audio.ts`, `test/audio.test.ts`
+- Create: `src/data/sfx.ts`, `src/engine/audio/sfx.ts`, `test/sfx.test.ts`, `test/apu.test.ts` (added in review)
+- Modify: `src/engine/audio/audio.ts`, `test/audio.test.ts`, `src/engine/audio/apu.ts` (scope widened in review)
+
+**Delivered (differs from the Phase 1 description of `Apu`; `ApuLike` unchanged):** the review found that any `cancelScheduledValues` on an in-flight ramp snaps the gain back immediately, so interrupting one SFX with another clicked. `Apu` is now **per-note voices**: every `noteOn` creates oscillator → env gain → kill gain → destination, started at `s = max(time, rampEnd[ch])`, with a 3 ms attack; a new note on the same channel releases the previous voice at `s` (3 ms crossfade); `noteOff` anchors the env at its level no earlier than the attack's end, then ramps to 0 and stops the source; `noiseHit` is the same shape with its filter and decay; `stopAll(time)` ramps every live voice's kill gain 1→0 over 3 ms and stops it. No automation is ever cancelled anywhere, so every anchor equals the curve value. `test/apu.test.ts` drives the real `Apu` through a fake `AudioContext` that models the automation curve, throws on cancel, and asserts continuity at every `setValueAtTime`. Consequences for later phases: frequency is fixed per voice (vibrato/slides in spec §12.1 will need per-voice automation), and the sequencer should clamp scheduled times to `ctx.currentTime` before emitting (deferred).
 
 **Interfaces:**
 - Consumes: `ApuLike`, `Apu`, `noteToMidi`, `midiToFreq`.
@@ -203,21 +211,21 @@ git commit -m "feat: window drawing, text wrap, menu list, scaled text"
   - `class SfxPlayer { constructor(apu: ApuLike); play(steps: SfxStep[], startTime: number): void }` — calls `apu.stopAll(startTime)`, then schedules steps sequentially: pitched → `noteOn(ch, freq, t, { duty, vol })` and `noteOff(ch, t + frames/60)`; noise → `noiseHit(preset, t, vol)`; rest → advances time only. `t` advances by `frames/60` per step.
   - `AudioManager`: `SONG_LEVEL = 0.5` (replaces the `1` that `playSong` restores `songGain` to); on unlock also creates `sfxGain` (gain 1 → master) and a second `Apu` into it, plus a `SfxPlayer`; `playSfx(id: SfxId): void` (no-op before unlock; else `play(SFX[id], ctx.currentTime + 0.005)`).
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/sfx.test.ts` with a `FakeApu` recording calls: `play(SFX.blip, 10)` → `stopAll@10`, `noteOn p1 ≈1046.5 @10 duty 0.25 vol 6`, `noteOff p1 @10.0333`; `play(SFX.door, 10)` → `noiseHit k @10 vol 10`, `noteOn tri ≈130.81 @10.0167`, `noteOff tri @10.1`; `play(SFX.error, 10)` → second `G#3` noteOn at `10 + 6/60`; every `SFX` entry validates (`noteToMidi` on each note does not throw).
   - `test/audio.test.ts`: `playSfx('blip')` before unlock does not throw; after a stubbed unlock, `vi.spyOn(SfxPlayer.prototype, 'play')` is called once with `SFX.blip`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/sfx.test.ts test/audio.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run` and `npx tsc --noEmit`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/data/sfx.ts src/engine/audio/sfx.ts src/engine/audio/audio.ts test/sfx.test.ts test/audio.test.ts
 git commit -m "feat: sound effects path with second synth and song ducking"
