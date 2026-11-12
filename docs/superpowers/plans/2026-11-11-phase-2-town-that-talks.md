@@ -10,11 +10,11 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md` (§4.4, §4.6, §5.2–5.3, §6.1, §7, §8, §10.1–10.4, §12.3–12.5, §13, §14 Phase 2). Carry-forward notes: `docs/superpowers/notes/2026-11-11-phase-1-review-notes.md`.
 
-## Execution status (updated 2026-11-11, session stop)
+## Execution status (updated 2026-11-11, second session stop)
 
-- Branch `phase-2` from `master` (Phase 1 merged). **Tasks 1–4 complete** and reviewed (ticked below). **Next: Task 5.** Execution method: subagent-driven; Sonnet implementers, Sonnet reviewers, Opus for audio (Task 4 done), integration (Tasks 9, 10) and the final whole-branch review. Gated: stop after Task 13 for the owner's play-test.
-- Handoff notes for the next session: `docs/superpowers/notes/2026-11-11-phase-2-carry-forward.md` (rulings, deferred minors, what the SDD ledger held). The SDD workspace under `.superpowers/sdd/` is git-ignored; a fresh session recreates the briefs with the skill's `task-brief` script and treats Tasks 1–4 as done.
-- Agreed this session and already folded into the tasks below: the owner's stack/transition discipline (Global Constraints and Tasks 9, 10, 12, 13); the Task 1 test replacement; `menuConfirm` duty 0.5; the Task 4 synth redesign (see Task 4's "Delivered" note); the owner's **story-free engine rule** (CLAUDE.md; Global Constraints; Tasks 5, 7, 9, 10, 12, 13 updated; new Task 14 cleans up Tasks 1–4 and Phase 1 code at the end of the phase).
+- Branch `phase-2` from `master` (Phase 1 merged). **Tasks 1–8 complete** and reviewed (ticked below). **Next: Task 9.** Execution method: subagent-driven; Sonnet implementers, Sonnet reviewers, Opus for audio (Task 4 done), integration (Tasks 9, 10) and the final whole-branch review; the orchestrator (Fable) reviews creative calls (dialog text, art) itself. Gated: stop after Task 14 for the owner's play-test.
+- Handoff notes for the next session: `docs/superpowers/notes/2026-11-11-phase-2-carry-forward.md` (rulings, deferred minors, what the SDD ledger held). The SDD workspace under `.superpowers/sdd/` is git-ignored; if it is still on disk the next session reuses its ledger and briefs, otherwise it recreates the briefs with the skill's `task-brief` script and treats Tasks 1–8 as done.
+- Agreed and already folded into the tasks below: the owner's stack/transition discipline (Global Constraints and Tasks 9, 10, 12, 13); the Task 1 test replacement; `menuConfirm` duty 0.5; the Task 4 synth redesign (see Task 4's "Delivered" note); the owner's **story-free engine rule** (CLAUDE.md; Global Constraints; Tasks 5, 7, 9, 10, 12, 13 updated; Task 14 cleans up Tasks 1–4 and Phase 1 code at the end of the phase). Rulings made while executing Tasks 5–8 that later tasks must honour are in the carry-forward notes under "Rulings made during execution (session 2)"; the one that changes a task's text is **Task 10's talk reach** (talk across one non-walkable tile so counters work).
 
 ## Global Constraints
 
@@ -247,21 +247,21 @@ git commit -m "feat: sound effects path with second synth and song ducking"
   - `type ScriptStep = { kind: 'text'; text: string } | { kind: 'choice'; options: [string, string] }`; `class ScriptRunner { constructor(script: DialogScript, env: ScriptEnv); next(answer?: boolean): ScriptStep | null }` — runs effects silently until a text or choice; `{name}` substituted; a failed `give` yields the text `"You cannot carry more."` in place of the effect; after a `choice` step the caller passes `answer` to the next `next()`; `null` when finished. Nested scripts run in place.
   - `class DialogModel { constructor(runner: ScriptRunner, cols = 28, rows = 4); get lines(): string[] (revealed text of the current page); get revealed(): boolean; get hasMore(): boolean; get isChoice(): boolean; choiceCursor: 0 | 1; get done(): boolean; tick(): boolean (reveals one more character; true if that character was not a space); confirm(): void; moveChoice(delta: -1 | 1): void }` — a text step is wrapped to `cols` and split into pages of `rows` lines; `confirm()` on an unrevealed page reveals it fully and does nothing else; on a revealed page it advances (next page, next step, or submits the choice as `answer = cursor === 0`); `done` after the runner returns `null`. A choice step is its own page showing the two options; `revealed` is true immediately for it.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/dialogScript.test.ts` with a fake env (flags in a Set, give returns a configurable boolean, records calls): a 2-line script yields two text steps then null; `{ if: 'x', then: ['A'], else: ['B'] }` yields `B` when unset and `A` when set; `{ if: { not: 'x' } … }` inverts; `{ set: 'met' }` sets the flag before the following text; `{ give: 'aldric_shield' }` calls `give` and, when it returns false, yields the text `"You cannot carry more."`; a `choice` step followed by `next(true)` yields the `yes` branch and `next(false)` the `no` branch; `"Hello, {name}."` substitutes the env name.
   - `test/dialogModel.test.ts`: with text `"You have your father's eyes, Wren."`, after 5 `tick()`s `lines[0] === 'You h'`; `tick()` returns false on the space; `confirm()` before revealed reveals all and `revealed === true` but `done === false` (Review Focus 2); the second `confirm()` on a 1-step script sets `done`; a 150-char text at 28×4 produces two pages (`hasMore` true after the first page is revealed, false on the second); a 40-char word is split and never yields a line longer than 28 (Review Focus 1); a choice step has `isChoice`, `moveChoice(1)` sets cursor 1, `confirm()` submits `answer false` and the `no` text follows; a text with an 8-char name substituted still wraps within 28.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/dialogScript.test.ts test/dialogModel.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** both modules.
+- [x] **Step 3: Implement** both modules.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run test/dialogScript.test.ts test/dialogModel.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/dialog/script.ts src/game/dialog/model.ts test/dialogScript.test.ts test/dialogModel.test.ts
 git commit -m "feat: dialog script interpreter and typewriter model"
@@ -278,13 +278,13 @@ git commit -m "feat: dialog script interpreter and typewriter model"
 - Consumes: `DialogScript`, `ScriptRunner`.
 - Produces: `DIALOGS: Record<DialogId, DialogScript>` with `type DialogId = 'maren_intro'|'maren'|'hesta'|'garrik'|'odo'|'pip'|'bram'|'tobin'|'villager_a'|'villager_b'`. Flags used: `shield_received` (set by `maren_intro`), `warden_defeated` (checked by `tobin`, `maren`, `hesta` for Phase 6 lines; unset now).
 
-- [ ] **Step 1: Write failing tests** in `test/dialogContent.test.ts`: every `DialogId` key exists; running each script through `ScriptRunner` with a fake env (no flags, `give` → true) yields at least one text step and terminates; every text step wraps to ≤ 8 lines at 28 cols (two pages max); `maren_intro` calls `give('aldric_shield')` and `set('shield_received')`; `tobin` yields a different first text when `warden_defeated` is set; no text contains the words "Dragon", "Erdrick", "Tantegel", "Alefgard", or "Slime".
+- [x] **Step 1: Write failing tests** in `test/dialogContent.test.ts`: every `DialogId` key exists; running each script through `ScriptRunner` with a fake env (no flags, `give` → true) yields at least one text step and terminates; every text step wraps to ≤ 8 lines at 28 cols (two pages max); `maren_intro` calls `give('aldric_shield')` and `set('shield_received')`; `tobin` yields a different first text when `warden_defeated` is set; no text contains the words "Dragon", "Erdrick", "Tantegel", "Alefgard", or "Slime".
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/dialogContent.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Write the scripts** following spec §5.1, §5.3 and §8.3. Beats to hit, one idea per line, second person, no name tags:
+- [x] **Step 3: Write the scripts** following spec §5.1, §5.3 and §8.3. Beats to hit, one idea per line, second person, no name tags:
   - `maren_intro` (runs once, in Maren's house, new game): it is the hero's coming-of-age morning; Maren gives Aldric's shield (`{ give: 'aldric_shield' }`, `{ sfx: 'menuConfirm' }`, `{ set: 'shield_received' }`); she says the squire carried it out of the Barrow twenty years ago and never spoke of it; she does not ask the hero to go.
   - `maren`: quiet, a little afraid; mentions the Dimming; if `warden_defeated`: she asks what the hero found down there.
   - `hesta`: loved Aldric; "you look more like him every day"; a bed costs 6 gold (no inn logic yet).
@@ -295,11 +295,11 @@ Expected: FAIL.
   - `tobin`: default: won't meet your eyes, mumbles, "Leave it." If `warden_defeated`: he finally speaks: the Warden wasn't wearing Aldric's armor.
   - `villager_a`, `villager_b`: one line each about thin crops / the cold river.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run test/dialogContent.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/data/dialog/hollowmere.ts test/dialogContent.test.ts
 git commit -m "feat: Hollowmere dialog scripts"
@@ -324,25 +324,25 @@ git commit -m "feat: Hollowmere dialog scripts"
   - `MAPS: Record<MapId, GameMap>` in `src/data/maps/index.ts`.
   - Interiors 12×9 each: `#` border, `w` floor, a `D` door centered in the bottom wall row with a warp to `hollowmere` at the tile *below* that building's exterior door (facing `down`); `entry.door` is the tile above the interior door facing `up`. Hollowmere's four exterior door tiles each get a warp to the interior's `door` entry. Furnishings: elder house (table, bed; Maren `elder` behind the table, not wandering; `entry.start` = the tile in front of Maren facing `up`; triggers include `{ kind: 'auto', flag: 'intro_done', dialog: 'maren_intro' }`), inn (counter with Hesta `adult` palette 1 behind it, three beds), forge (counter with Garrik `smith`, a table), shop (counter with Odo `adult` palette 2). Hollowmere NPCs: Pip `child` near the well (wander), Bram `guard` just inside the gate (facing down, no wander), Tobin `squire` behind the inn (no wander), villager_a and villager_b `adult` (wander) on grass. No NPC on a door, entry, or warp tile.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/hero.test.ts`: existing cases pass with `canEnter = (x, y) => isWalkable(map, x, y)`; `onArrive` is called exactly once with `(1, 1)` on the tick the step completes; returning `true` leaves `stepFrame === 0` with no new step even though `right` is held; returning `false` chains; `facingTile` for `(1,1,'up')` → `(1,0)`; `opposite('left') === 'right'`; `heroIdle`.
   - `test/tiles.test.ts`: `TILES.length === 14`; `floorWood` walkable; `counter`, `bed`, `table` not.
   - `test/interiors.test.ts`: `MAPS` has all five ids and each `map.id` matches its key; every interior is 12×9 and has exactly one `D`; every warp's target map and entry exist; every warp round-trips: from each hollowmere door warp, the interior's `door` entry tile is walkable and its own door warp leads back to a walkable hollowmere tile adjacent to the originating door; flood fill from each interior's `door` entry reaches every walkable tile; no NPC in any map stands on a door tile, an entry tile, or a warp tile, and no two NPCs share a tile (Review Focus 4); every NPC `dialog` is a key of `DIALOGS` and every NPC `sprite` is a key of `NPC_SPRITES` once Task 8 lands (write the sprite check against a local list of the six archetype names for now); `MAPS[STORY.newGame.map].entry[STORY.newGame.entry]` exists; `MAPS[STORY.opening.map].triggers` contains an auto trigger with `STORY.opening.flag` and `STORY.opening.dialog`; `grep`-style guard: no file under `src/game/` or `src/engine/` contains the strings `'hollowmere'`, `'elder_house'`, `'maren`, `'aldric`, `'intro_done'` (read the files in the test with `fs`; this pins the story-free rule for the new code; list the Task 1–4 files that still violate it as exclusions with a comment pointing at the carry-forward notes).
   - `test/map.test.ts`: `warpAt(HOLLOWMERE, 12, 4)` is the elder-house warp; `warpAt(HOLLOWMERE, 0, 0)` undefined.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/hero.test.ts test/tiles.test.ts test/interiors.test.ts test/map.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Draw the four interior tiles** (pixel-art skill loaded; original; 3–4 colours): wood floor (ochre planks, brown seams), counter (brown top, dark front), bed (white sheet, red blanket, brown frame), table (brown top with ochre highlight).
+- [x] **Step 3: Draw the four interior tiles** (pixel-art skill loaded; original; 3–4 colours): wood floor (ochre planks, brown seams), counter (brown top, dark front), bed (white sheet, red blanket, brown frame), table (brown top with ochre highlight).
 
-- [ ] **Step 4: Implement** the map/hero changes, the four interior maps, hollowmere's NPCs and warps, and the registry.
+- [x] **Step 4: Implement** the map/hero changes, the four interior maps, hollowmere's NPCs and warps, and the registry.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 Run: `npx vitest run` and `npx tsc --noEmit`
 Expected: PASS; clean (note: `src/game/explore.ts` must still compile; adapt its `updateHero` call to `canEnter`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/map.ts src/game/hero.ts src/data/tiles.ts src/data/maps test/hero.test.ts test/map.test.ts test/tiles.test.ts test/interiors.test.ts src/game/explore.ts
 git commit -m "feat: map triggers, interiors, NPC placements, hero arrive hook"
@@ -362,23 +362,23 @@ git commit -m "feat: map triggers, interiors, NPC placements, hero arrive hook"
   - `NPC_SPRITES: Record<NpcSpriteId, Record<Dir, [PixelArt, PixelArt]>>` — six original 16×16 bodies: `elder` (long robe, grey hair, staff), `adult` (tunic; colour key `t` for the tunic so palettes swap it), `smith` (apron, broad), `child` (short, big head), `guard` (helmet-less cap, spear), `squire` (slumped shoulders, bottle). `left` mirrored from `right`. `adultPalette(index: 0|1|2): Record<string, number>` returns the `adult` colour map with the tunic colour swapped (0 ochre 10, 1 teal 20, 2 purple 23); `npcArt(sprite, palette, dir, frame): PixelArt`.
   - `interface NpcState { def: NpcPlacement; x; y; facing: Dir; stepFrame: number; walkFrame: 0|1; wait: number }`; `createNpc(def): NpcState` (`wait` 60); `updateNpc(n: NpcState, rng: Rng, canEnter: (x, y) => boolean): NpcState` — pure: if `stepFrame > 0` decrement and return; else if `wait > 0` decrement; else if `def.wander`: pick a random `Dir` (`rng.int(0,3)`), set `facing`, and if the target is within 2 tiles of `def.x/def.y` (Chebyshev) and `canEnter(target)`, step (`stepFrame = STEP_FRAMES`, toggle `walkFrame`); then `wait = rng.int(45, 150)`. Non-wandering NPCs never move. `npcPixelOffset(n)` like the hero's.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/npc.test.ts` with `createRng(1)`: a non-wander NPC never changes position over 600 updates; a wander NPC on an open 7×7 grid stays within 2 tiles of home over 2000 updates; a wander NPC with `canEnter` always false never moves but still changes facing; `canEnter` is called with the target tile (so the caller can exclude doors, entries, the hero, and other NPCs — Review Focus 4); `adultPalette(1).t === 20`.
   - `test/art.test.ts`: every `NPC_SPRITES` frame (6 bodies × 4 dirs × 2) and each `adultPalette` variant compiles against `PALETTE` at 16×16.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/npc.test.ts test/art.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Draw the six bodies** (pixel-art skill loaded; original; silhouettes distinguishable from each other and from the hero at 1×).
+- [x] **Step 3: Draw the six bodies** (pixel-art skill loaded; original; silhouettes distinguishable from each other and from the hero at 1×).
 
-- [ ] **Step 4: Implement `src/game/npc.ts`.**
+- [x] **Step 4: Implement `src/game/npc.ts`.**
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 Run: `npx vitest run test/npc.test.ts test/art.test.ts`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/data/sprites/npcs.ts src/game/npc.ts test/npc.test.ts test/art.test.ts
 git commit -m "feat: NPC sprites and wander logic"
