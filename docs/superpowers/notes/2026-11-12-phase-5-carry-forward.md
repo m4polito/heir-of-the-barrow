@@ -54,6 +54,10 @@ The old table matched Dragon Warrior's row for row (stats and XP thresholds). Th
 - Warden fight length: accepted for now. **The Phase 6 plan must flag it as a tuning target**: about 19 rounds in simulation against the spec's aim of 10 to 13. Design doc §9.8 now says so.
 - Level table: replaced (Task 0).
 
+## Play-test result (owner, 2026-11-12)
+
+Everything on the list checked out except one thing: saving made no sound of its own. Fixed after the play-test: a successful save now plays a new `save` effect (two soft taps and a held note a fifth higher) in place of the confirm blip that the answer's blip was swallowing. **Owner listen check, not performed by anyone:** save at Maren's and hear a sound that is clearly not the confirm blip, the buy sound or the heal sound; a failed save (storage blocked) stays silent apart from the answer blip. Question 1 below is answered by this.
+
 ## Questions for the owner
 
 1. **Maren's save sound.** The confirm blip on "It is written." starts in the same instant as the blip from answering Yes and replaces it, so a successful save and a failed one sound the same; only the text differs. A distinct save sound would be new audio. Want one?

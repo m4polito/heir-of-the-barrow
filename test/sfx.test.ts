@@ -102,6 +102,18 @@ describe('SfxPlayer', () => {
   });
 });
 
+describe('save effect', () => {
+  it('exists, differs from every other effect, and lasts long enough to be heard', () => {
+    expect(SFX.save).toBeDefined();
+    for (const [id, steps] of Object.entries(SFX)) {
+      if (id !== 'save') expect(JSON.stringify(steps), id).not.toBe(JSON.stringify(SFX.save));
+    }
+    const frames = SFX.save.reduce((n, s) => n + s.frames, 0);
+    expect(frames).toBeGreaterThanOrEqual(20);
+    expect(frames).toBeLessThanOrEqual(30);
+  });
+});
+
 describe('buy effect', () => {
   it('exists and differs from every other effect', () => {
     expect(SFX.buy).toBeDefined();

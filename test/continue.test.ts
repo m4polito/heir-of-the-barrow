@@ -126,7 +126,9 @@ describe('saving at Maren', () => {
     expect(fromSave(saved)).toEqual(t.game.player);
     t.idle();
     expect(t.shown()).toContain('It is written.');
-    expect(t.sounds.filter((s) => s === 'menuConfirm')).toHaveLength(2);
+    // The save sound starts after the answer's confirm blip in the same update, so it is the one heard.
+    expect(t.sounds.filter((s) => s === 'save')).toHaveLength(1);
+    expect(t.sounds.lastIndexOf('save')).toBeGreaterThan(t.sounds.lastIndexOf('menuConfirm'));
   });
 
   it('No writes nothing and carries on to the next line', () => {

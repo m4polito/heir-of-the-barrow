@@ -173,6 +173,7 @@ describe('Hollowmere dialog content', () => {
       const r = run('maren', flags, true, true, true);
       expect(r.calls.filter((c) => c === 'save')).toHaveLength(1);
       expect(texts(r)).toContain('It is written.');
+      expect(r.calls.filter((c) => c === 'sfx:save')).toHaveLength(1);
     });
     it('Yes with a failing save says the page will not take the ink', () => {
       const r = run('maren', flags, true, true, false);

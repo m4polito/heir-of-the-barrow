@@ -45,7 +45,7 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
     {
       choice: ['Yes', 'No'],
       ask: 'Shall I remember your journey?',
-      yes: [{ save: true, ok: [{ sfx: 'menuConfirm' }, 'It is written.'], fail: ['The page will not take the ink. Nothing was written.'] }],
+      yes: [{ save: true, ok: [{ sfx: 'save' }, 'It is written.'], fail: ['The page will not take the ink. Nothing was written.'] }],
       no: [],
     },
     {
