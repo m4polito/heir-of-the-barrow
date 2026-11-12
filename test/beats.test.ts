@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BeatPlayer, type Beat } from '../src/game/battle/beats';
 
-const beat = (text: string): Beat => ({ text, heroHp: 1, monsterHp: 1 });
+const beat = (text: string): Beat => ({ text, heroHp: 1, heroMp: 0, monsterHp: 1 });
 
 describe('BeatPlayer', () => {
   it('types, holds and advances on schedule', () => {
@@ -88,5 +88,24 @@ describe('BeatPlayer', () => {
     const p = new BeatPlayer();
     p.load([], false);
     expect(p.done).toBe(true);
+  });
+
+  it('next is the beat after the current one', () => {
+    const p = new BeatPlayer();
+    const a = beat('a');
+    const b = beat('b');
+    p.load([a, b], false);
+    p.tick(false);
+    expect(p.next).toBe(b);
+    for (let i = 0; i < 80 && !p.done; i++) p.tick(true);
+    expect(p.done).toBe(true);
+    expect(p.next).toBeNull();
+  });
+
+  it('next is null on the last beat', () => {
+    const p = new BeatPlayer();
+    p.load([beat('a'), beat('b')], false);
+    while (p.current?.text !== 'b') p.tick(true);
+    expect(p.next).toBeNull();
   });
 });

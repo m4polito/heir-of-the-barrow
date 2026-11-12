@@ -85,6 +85,27 @@ describe('Hollowmere dialog content', () => {
     expect(run('hesta', flags).calls.filter((c) => c === 'heal')).toHaveLength(1);
   });
 
+  it.each([
+    ['maren', 'Maren'], ['hesta', 'Hesta'], ['garrik', 'Garrik'], ['odo', 'Odo'],
+    ['pip', 'Pip'], ['bram', 'Bram'], ['tobin', 'Tobin'],
+  ] as const)('%s says their own name in the first line', (id, name) => {
+    for (const flags of [[], ['warden_defeated']]) {
+      const first = run(id, flags).steps.find((s) => s.kind === 'text');
+      expect(first && first.kind === 'text' ? first.text : '').toContain(name);
+    }
+  });
+
+  it("maren_intro's first line names Maren and the hero", () => {
+    const first = run('maren_intro').steps.find((s) => s.kind === 'text');
+    const text = first && first.kind === 'text' ? first.text : '';
+    expect(text).toContain('Maren');
+    expect(text).toContain('Wren');
+  });
+
+  it('carries no name tags in any string', () => {
+    for (const id of IDS) for (const s of strings(DIALOGS[id])) expect(s).not.toMatch(/^[A-Z][a-z]+: /);
+  });
+
   it('contains no banned words in any branch', () => {
     const banned = /dragon|erdrick|tantegel|alefgard|slime|erdwin/i;
     for (const id of IDS) for (const s of strings(DIALOGS[id])) expect(s).not.toMatch(banned);

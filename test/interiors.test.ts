@@ -139,6 +139,9 @@ describe('story config', () => {
     });
     expect(Object.keys(DIALOGS)).toContain(STORY.opening.dialog);
   });
+  it('home entry exists', () => {
+    expect(BY_ID[STORY.home.map]!.entry[STORY.home.entry]).toBeDefined();
+  });
   it('respawn entry and dialog exist', () => {
     expect(BY_ID[STORY.respawn.map]!.entry[STORY.respawn.entry]).toBeDefined();
     expect(Object.keys(DIALOGS)).toContain(STORY.respawn.dialog);
@@ -155,13 +158,13 @@ const SOURCES = import.meta.glob<string>(['../src/game/**/*.ts', '../src/engine/
 describe('story-free engine', () => {
   const files = Object.entries(SOURCES);
   it('src/game, src/engine and src/ui mention no story names', () => {
-    const banned = ["'hollowmere'", "'elder_house'", "'maren", "'aldric", "'mireling", "'marsh'", "'intro_done'", 'dimming'];
+    const banned = ["'hollowmere'", "'elder_house'", "'maren", "'aldric", "'mireling", "'marsh'", "'intro_done'", 'dimming', "'ember'", "'homeward'", "'herb'"];
     expect(files.length).toBeGreaterThan(10);
     for (const [file, text] of files)
       for (const b of banned) expect(text.includes(b), `${file} contains ${b}`).toBe(false);
   });
   it('imports no story data tables, not even as types', () => {
-    const forbidden = /(?:from|import)\s*\(?\s*['"][^'"]*data\/(items|maps|dialog|songs|story|monsters)\b/;
+    const forbidden = /(?:from|import)\s*\(?\s*['"][^'"]*data\/(items|maps|dialog|songs|story|monsters|spells)\b/;
     for (const [file, text] of files) expect(forbidden.test(text), `${file} imports story data`).toBe(false);
   });
 });

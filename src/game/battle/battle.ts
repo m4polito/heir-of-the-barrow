@@ -1,13 +1,18 @@
 import type { Rng } from '../../engine/rng';
+import { rollEffect } from '../effects';
+import { MonsterBrain } from './ai';
 import type { Beat } from './beats';
+import type { BattleKit } from './kit';
 import type { MonsterDef } from './monster';
 import { heroStrike, monsterFirst, monsterStrike, runSucceeds } from './rules';
 
-export type BattleCommand = 'fight' | 'run';
+export type BattleCommand = 'fight' | 'run' | { spell: string } | { item: string };
 export type BattleOutcome = 'won' | 'lost' | 'fled';
 
 export interface HeroStats {
   hp: number;
+  maxHp: number;
+  mp: number;
   atk: number;
   def: number;
   agi: number;
@@ -15,6 +20,9 @@ export interface HeroStats {
 
 export class Battle {
   private hp: number;
+  private mp: number;
+  private readonly brain: MonsterBrain;
+  private readonly used: string[] = [];
   private mHp: number;
   private result: BattleOutcome | null = null;
   private prize: { xp: number; gold: number } | null = null;
@@ -23,13 +31,50 @@ export class Battle {
     private readonly rng: Rng,
     private readonly hero: HeroStats,
     readonly monster: MonsterDef,
+    readonly kit: BattleKit = { spells: [], items: [] },
   ) {
     this.hp = hero.hp;
+    this.mp = hero.mp;
+    this.brain = new MonsterBrain(monster.actions);
     this.mHp = monster.hp;
   }
 
   get heroHp(): number {
     return this.hp;
+  }
+
+  get heroMp(): number {
+    return this.mp;
+  }
+
+  get itemsUsed(): readonly string[] {
+    return this.used;
+  }
+
+  /** How many of an item remain for this battle. */
+  itemCount(id: string): number {
+    const held = this.kit.items.find((i) => i.id === id)?.count ?? 0;
+    return held - this.used.filter((u) => u === id).length;
+  }
+
+  /** Why a command cannot be used right now, or null when it can (or is not a known spell or item). */
+  refusal(cmd: BattleCommand): string | null {
+    if (typeof cmd === 'string') return null;
+    if ('spell' in cmd) {
+      const sp = this.kit.spells.find((x) => x.id === cmd.spell);
+      if (!sp) return null;
+      if (sp.mp > this.mp) return 'Not enough MP.';
+      if (sp.effect.kind === 'heal' && this.hp >= this.hero.maxHp) return 'You are not hurt.';
+      return null;
+    }
+    const it = this.kit.items.find((x) => x.id === cmd.item);
+    if (it && it.effect.kind === 'heal' && this.hp >= this.hero.maxHp) return 'You are not hurt.';
+    return null;
+  }
+
+  /** One message beat with the current hp and mp; changes nothing. */
+  note(text: string): Beat[] {
+    return [this.beat(text, { sfx: 'error' })];
   }
 
   get monsterHp(): number {
@@ -51,6 +96,15 @@ export class Battle {
   act(cmd: BattleCommand): Beat[] {
     if (this.result) throw new Error('battle is over');
     const beats: Beat[] = [];
+    if (typeof cmd === 'object') {
+      const sp = 'spell' in cmd ? this.kit.spells.find((x) => x.id === cmd.spell) : undefined;
+      const it = 'item' in cmd ? this.kit.items.find((x) => x.id === cmd.item) : undefined;
+      if (!sp && !it) throw new Error('cannot act: not available');
+      if (it && this.itemCount(it.id) < 1) throw new Error('cannot act: none left');
+      const why = this.refusal(cmd);
+      if (why) throw new Error(`cannot act: ${why}`);
+      if ((sp ?? it)!.effect.kind === 'warp') throw new Error('cannot act: not for battle');
+    }
     if (cmd === 'run') {
       const { agi } = this.hero;
       if (runSucceeds(this.rng, agi, this.monster.agi, this.monster.runFactor)) {
@@ -64,19 +118,66 @@ export class Battle {
     }
     if (monsterFirst(this.rng, this.hero.agi, this.monster.agi)) {
       this.monsterTurn(beats);
-      if (!this.result) this.heroTurn(beats);
+      if (!this.result) this.heroTurn(beats, cmd);
     } else {
-      this.heroTurn(beats);
+      this.heroTurn(beats, cmd);
       if (!this.result) this.monsterTurn(beats);
     }
     return beats;
   }
 
   private beat(text: string, extra: Partial<Beat> = {}): Beat {
-    return { text, ...extra, heroHp: this.hp, monsterHp: this.mHp };
+    return { text, ...extra, heroHp: this.hp, heroMp: this.mp, monsterHp: this.mHp };
   }
 
-  private heroTurn(beats: Beat[]): void {
+  private heroTurn(beats: Beat[], cmd: BattleCommand): void {
+    if (typeof cmd === 'object') {
+      if ('spell' in cmd) this.castSpell(beats, cmd.spell);
+      else this.useItem(beats, cmd.item);
+      return;
+    }
+    this.fight(beats);
+  }
+
+  private castSpell(beats: Beat[], id: string): void {
+    const sp = this.kit.spells.find((x) => x.id === id)!;
+    this.mp -= sp.mp;
+    beats.push(this.beat(`You cast ${sp.name}.`, { sfx: 'spell' }));
+    if (sp.effect.kind === 'heal') this.heroHeal(beats, rollEffect(this.rng, sp.effect));
+    else this.hitMonster(beats, rollEffect(this.rng, sp.effect));
+  }
+
+  private useItem(beats: Beat[], id: string): void {
+    const it = this.kit.items.find((x) => x.id === id)!;
+    this.used.push(id);
+    beats.push(this.beat(`You use the ${it.name}.`));
+    this.heroHeal(beats, rollEffect(this.rng, it.effect));
+  }
+
+  private heroHeal(beats: Beat[], roll: number): void {
+    const n = Math.min(roll, this.hero.maxHp - this.hp);
+    this.hp += n;
+    beats.push(this.beat(`You recover ${n} HP.`, { sfx: 'heal' }));
+  }
+
+  /** Spell damage lands without a miss, dodge or crit. */
+  private hitMonster(beats: Beat[], damage: number): void {
+    this.mHp = Math.max(0, this.mHp - damage);
+    beats.push(this.beat(`The ${this.monster.name} takes ${damage} damage.`, { sfx: 'monsterHit', fx: 'flash' }));
+    this.checkDefeat(beats);
+  }
+
+  private checkDefeat(beats: Beat[]): void {
+    if (this.mHp > 0) return;
+    const m = this.monster.name;
+    const { xp, gold } = this.monster;
+    this.prize = { xp, gold: this.rng.int(gold[0], gold[1]) };
+    this.result = 'won';
+    beats.push(this.beat(`The ${m} is defeated.`, { song: 'victory' }));
+    beats.push(this.beat(`You gain ${xp} experience and ${this.prize.gold} gold.`));
+  }
+
+  private fight(beats: Beat[]): void {
     const m = this.monster.name;
     beats.push(this.beat('You attack!'));
     const s = heroStrike(this.rng, this.hero.atk, this.monster);
@@ -99,16 +200,30 @@ export class Battle {
       beats.push(this.beat(`The ${m} shrugs it off.`, { sfx: 'miss' }));
       return;
     }
-    if (this.mHp === 0) {
-      const { xp, gold } = this.monster;
-      this.prize = { xp, gold: this.rng.int(gold[0], gold[1]) };
-      this.result = 'won';
-      beats.push(this.beat(`The ${m} is defeated.`, { song: 'victory' }));
-      beats.push(this.beat(`You gain ${xp} experience and ${this.prize.gold} gold.`));
-    }
+    this.checkDefeat(beats);
   }
 
   private monsterTurn(beats: Beat[]): void {
+    const m = this.monster.name;
+    const act = this.brain.choose(this.rng, { hp: this.mHp, maxHp: this.monster.hp });
+    if (act.do === 'blast') {
+      beats.push(this.beat(`The ${m} uses ${act.name}!`));
+      const n = this.rng.int(act.min, act.max);
+      this.hp = Math.max(0, this.hp - n);
+      beats.push(this.beat(`You take ${n} damage.`, { sfx: 'heroHit', fx: 'shake' }));
+      if (this.hp === 0) {
+        this.result = 'lost';
+        beats.push(this.beat('You have fallen.', { song: 'fallen' }));
+      }
+      return;
+    }
+    if (act.do === 'mend') {
+      beats.push(this.beat(`The ${m} uses ${act.name}!`));
+      const n = Math.min(this.rng.int(act.min, act.max), this.monster.hp - this.mHp);
+      this.mHp += n;
+      beats.push(this.beat(`The ${m} recovers ${n} HP.`, { sfx: 'heal' }));
+      return;
+    }
     beats.push(this.beat(`The ${this.monster.name} attacks!`));
     const s = monsterStrike(this.rng, this.monster.atk, this.hero.def);
     if (s.kind === 'miss') {

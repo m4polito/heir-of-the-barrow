@@ -9,6 +9,7 @@ import type { DialogScript } from './dialog/script';
 import type { GameMap } from './map';
 import type { ItemDef } from './items';
 import type { MonsterTable } from './battle/monster';
+import type { SpellTable } from './effects';
 import type { PlayerState } from './player';
 
 export interface StoryConfig {
@@ -19,6 +20,8 @@ export interface StoryConfig {
   opening: { map: string; flag: string; dialog: string };
   /** Where the hero wakes after a lost battle, and what is said. */
   respawn: { map: string; entry: string; dialog: string };
+  /** Where a warp spell carries the hero. */
+  home: { map: string; entry: string };
   startingItems: { item: string; count: number }[];
   /** Prefix for browser storage keys (for example `<prefix>.mute`). */
   storagePrefix: string;
@@ -36,6 +39,7 @@ export interface Game {
   readonly songs: Record<string, Song>;
   readonly items: Record<string, ItemDef>;
   readonly monsters: MonsterTable;
+  readonly spells: SpellTable;
   readonly story: StoryConfig;
   player: PlayerState;
   debug: { noEncounters: boolean };

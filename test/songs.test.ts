@@ -156,6 +156,48 @@ describe('SONGS.victory', () => {
   });
 });
 
+describe('SONGS.levelup', () => {
+  const song = SONGS.levelup;
+  const intervals = (rows: (string | null)[]) => {
+    const m = rows.filter((c): c is string => c !== null && c !== 'off').map(noteToMidi);
+    return m.slice(1).map((n, i) => n - m[i]!);
+  };
+
+  it('is a valid one-shot 10-row jingle at tempo 150', () => {
+    expect(() => validateSong(song)).not.toThrow();
+    expect(song.id).toBe('levelup');
+    expect(song.tempo).toBe(150);
+    expect(song.loop).toBe(false);
+    expect(song.loopFrom).toBeUndefined();
+    for (const t of song.tracks) expect(t.rows.length).toBe(10);
+  });
+
+  it('pins channels, duty and volume, with no noise', () => {
+    expect(pinned(song)).toEqual([
+      ['p1', 0.5, 11],
+      ['p2', 0.25, 8],
+      ['tri', undefined, 14],
+    ]);
+  });
+
+  it('ends every track with off at or before row 9', () => {
+    for (const t of song.tracks) {
+      const last = lastNonNull(t.rows);
+      expect(t.rows[last]).toBe('off');
+      expect(last).toBeLessThanOrEqual(9);
+    }
+  });
+
+  it('never steps through the victory figure (5, 4, 3 semitones) on p1 or p2', () => {
+    for (const t of song.tracks.slice(0, 2)) {
+      const a = intervals(t.rows);
+      for (let k = 0; k + 3 <= a.length; k++) {
+        expect(a.slice(k, k + 3), `${t.channel} window ${k}`).not.toEqual([5, 4, 3]);
+      }
+    }
+  });
+});
+
 describe('SONGS.fallen', () => {
   const song = SONGS.fallen;
 

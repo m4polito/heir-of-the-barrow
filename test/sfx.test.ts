@@ -74,9 +74,22 @@ describe('SfxPlayer', () => {
     }
     const total = (id: keyof typeof SFX) => SFX[id].reduce((n, s) => n + s.frames, 0);
     expect(total('encounter')).toBe(32);
+    expect(total('spell')).toBe(12);
+    expect(total('heal')).toBe(14);
     for (const id of ['heroHit', 'monsterHit', 'miss', 'critical', 'runOk', 'runFail'] as const) {
       expect(total(id), id).toBeLessThanOrEqual(16);
     }
+  });
+
+  it('heal is not a contiguous slice of runOk', () => {
+    const notes = (id: 'heal' | 'runOk') => SFX[id].map((x) => x.note ?? '-');
+    const h = notes('heal');
+    const r = notes('runOk');
+    let found = false;
+    for (let k = 0; k + h.length <= r.length; k++) {
+      if (h.every((n, i) => n === r[k + i])) found = true;
+    }
+    expect(found).toBe(false);
   });
 
   it('validates every entry', () => {

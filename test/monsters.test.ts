@@ -7,6 +7,7 @@ import { compilePixelArt } from '../src/engine/pixels';
 import { createRng } from '../src/engine/rng';
 import { monsterArt } from '../src/data/sprites/monsters';
 import { BACKDROPS, backdropArt } from '../src/data/sprites/backdrops';
+import { validateActions } from '../src/game/battle/ai';
 import { Battle } from '../src/game/battle/battle';
 import { addItem, equip } from '../src/game/inventory';
 import { createPlayer } from '../src/game/player';
@@ -14,8 +15,8 @@ import { attackOf, defenseOf } from '../src/game/stats';
 import { wrapText } from '../src/ui/wrap';
 
 const ROWS = [
-  ['mireling', 'Mireling', 0, 6, 5, 3, 3, 2, [2, 4], 1 / 32, 'A Mireling slumps out of the reeds.'],
-  ['bog_mireling', 'Bog Mireling', 1, 14, 11, 8, 6, 7, [6, 10], 1 / 16, 'A Bog Mireling drags itself from the mud.'],
+  ['mireling', 'Mireling', 0, 4, 5, 1, 3, 2, [2, 4], 1 / 32, 'A Mireling slumps out of the reeds.'],
+  ['bog_mireling', 'Bog Mireling', 1, 14, 11, 6, 6, 7, [6, 10], 1 / 16, 'A Bog Mireling drags itself from the mud.'],
   ['barrow_mireling', 'Barrow Mireling', 2, 24, 20, 14, 10, 18, [12, 18], 1 / 16, 'A Barrow Mireling unfolds from the dark.'],
 ] as const;
 
@@ -27,6 +28,11 @@ describe('monster table', () => {
       expect(MONSTERS[id]!.id).toBe(id);
     });
   }
+  it('every monster has no actions or valid ones', () => {
+    for (const m of Object.values(MONSTERS) as MonsterDef[]) {
+      if (m.actions) expect(() => validateActions(m.actions!)).not.toThrow();
+    }
+  });
   it('has exactly three monsters', () => {
     expect(Object.keys(MONSTERS)).toHaveLength(3);
   });
@@ -94,7 +100,7 @@ describe('early-game pacing', () => {
     p = addItem(ITEMS, p, 'aldric_shield').player;
     p = equip(ITEMS, p, 'wooden_club').player;
     p = equip(ITEMS, p, 'aldric_shield').player;
-    const hero = { hp: p.hp, atk: attackOf(ITEMS, p), def: defenseOf(ITEMS, p), agi: p.agi };
+    const hero = { hp: p.hp, maxHp: p.maxHp, mp: p.mp, atk: attackOf(ITEMS, p), def: defenseOf(ITEMS, p), agi: p.agi };
     expect(hero.atk).toBe(6);
     expect(hero.def).toBe(6);
     const rng = createRng(11);

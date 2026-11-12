@@ -8,6 +8,8 @@ export interface Beat {
   song?: string;
   /** Hero HP to display from this beat on. */
   heroHp: number;
+  /** Hero MP to display from this beat on. */
+  heroMp: number;
   /** Monster HP to display from this beat on. */
   monsterHp: number;
 }
@@ -42,6 +44,12 @@ export class BeatPlayer {
 
   get current(): Beat | null {
     return this.index >= 0 ? (this.beats[this.index] ?? null) : this.lastBeat;
+  }
+
+  /** The beat after the current one, or null. */
+  get next(): Beat | null {
+    if (this.finished) return null;
+    return this.beats[this.index + 1] ?? null;
   }
 
   get lines(): string[] {

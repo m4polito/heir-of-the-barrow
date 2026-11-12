@@ -15,7 +15,8 @@ export type DialogId =
 
 export const DIALOGS: Record<DialogId, DialogScript> = {
   maren_intro: [
-    'You are awake early, {name}. Today you are grown.',
+    'You are awake early, {name}. Old Maren was up before you, as ever.',
+    'Today you are grown.',
     'There is one thing I have kept for this morning.',
     'A squire carried it out of the Barrow twenty years ago.',
     'He set it in my hands and never spoke of what he saw.',
@@ -38,12 +39,12 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
     {
       if: 'warden_defeated',
       then: [
-        'You went down there.',
+        "You went down there. And you came back to Maren's door.",
         'What did you find, {name}?',
         'No. Tell me later. I am not ready.',
       ],
       else: [
-        'The Dimming is worse at night.',
+        "Sit by old Maren's fire a moment. The Dimming is worse at night.",
         'We stopped saying the word years ago. The cold stayed anyway.',
         'Rest here when you need to. I will keep the lamp lit.',
       ],
@@ -55,14 +56,14 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
     {
       if: 'warden_defeated',
       then: [
-        'You came back. Sit. Eat something.',
+        'You came back. Sit. I told myself: Hesta, that one will want feeding.',
         'Your father never did come through that door again.',
         'No coin for the bed today. Lie down a while.',
         { heal: true },
         'You rest. Your wounds close and your head clears.',
       ],
       else: [
-        'You look more like him every day.',
+        'As sure as my name is Hesta, you look more like him every day.',
         'Aldric drank his last cup in this room. He laughed the whole time.',
         'The bed costs you nothing today. Lie down a while.',
         { heal: true },
@@ -72,24 +73,25 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
   ],
 
   garrik: [
-    'Aldric was a fool. He left a wife and a child for a hole in the ground.',
+    'Aldric was a fool. I am Garrik the smith, and I say so to anyone.',
+    'He left a wife and a child for a hole in the ground.',
     'I will not make that mistake. I make blades and sleep sound.',
     'You may need what a fool needs. Look over the racks.',
   ],
 
   odo: [
-    'Herbs and torches. That is all I carry, and all anyone buys.',
+    "Odo's Goods, and Odo himself. Herbs and torches, that is all I carry.",
     'Prices climb with the Dimming. I did not set them. The cold did.',
   ],
 
   pip: [
-    'My mum says Aldric is a bedtime story.',
+    "I'm Pip! My mum says Aldric is a bedtime story.",
     'Like the ones Gran tells before sleep.',
     'Have you ever seen a real sword?',
   ],
 
   bram: [
-    'I walked your father to this gate.',
+    'Thirty years they have shouted "Bram, open up!" at this gate. I walked your father to it.',
     'North-east, past the dead willow.',
     'Stay off the marsh after dusk. I will not walk you.',
   ],
@@ -98,14 +100,14 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
     {
       if: 'warden_defeated',
       then: [
-        'You came back from there.',
+        'You came back from there. Only Tobin ever did that before.',
         'I will say it now, since you did.',
         'The Warden did not wear your father\'s armor.',
         'I have carried that for twenty years. Go and think on it.',
       ],
       else: [
-        '...',
-        'He keeps his eyes on his cup and mumbles.',
+        'Let Tobin drink. Tobin has nothing to say to you.',
+        'He keeps his eyes on his cup.',
         'Leave it.',
       ],
     },

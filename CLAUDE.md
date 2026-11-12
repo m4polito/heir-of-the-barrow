@@ -7,7 +7,7 @@ The game's title is *Heir of the Barrow*; *The Dimming* is its subtitle (Act 1).
 ## Source of truth
 
 - Design: `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md`
-- Current plan: `docs/superpowers/plans/2026-11-12-phase-3-out-the-gate.md`
+- Current plan: `docs/superpowers/plans/2026-11-12-phase-4-growing-stronger.md`
 
 When they disagree, the design doc wins. Do not restate design details here; read them there.
 

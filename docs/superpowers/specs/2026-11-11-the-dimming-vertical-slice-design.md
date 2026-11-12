@@ -278,10 +278,10 @@ actions: [
 ```
 
 ### 9.8 Boss: Barrow Warden
-- HP 70, ATK 22, DEF 14, AGI 12 (starting values; tune in play-test).
-- Actions: attack (6), **Rot Breath** 8–14 fixed damage ignoring defense (3), **Mend** heals 15–25 when below half HP (2, cooldown 2 turns).
+- HP 70, ATK 20, DEF 14, AGI 12 (starting values; tune in play-test).
+- Actions: attack (6), **Rot Breath** 7–12 fixed damage ignoring defense (3), **Mend** heals 15–25 when below half HP (2, cooldown 2 turns).
 - Cannot be run from. Victory plays the fanfare, awards ~300 XP and 0 gold, sets `warden_defeated`, drops the journal page into inventory.
-- Intended win condition: level 6–7 with the Bronze Sword and Leather Armor, two or three Herbs, Heal spell. Beatable at 5 with luck; not at 4. **The intent governs the numbers**: with the §9.5 formulas and §10 tables, a level 6 hero (ATK 26, DEF 13) does 5–9 per hit and takes about 6 per round, so the fight runs roughly 10–13 rounds. A unit test simulates the fight at levels 4, 5, 6 and 7 with the intended gear and asserts the win rates are near 0%, under 50%, over 70%, and over 90% respectively; if tuning moves the tables, the test moves with them.
+- Intended win condition: level 6–7 with the Bronze Sword and Leather Armor, two or three Herbs, Heal spell. Beatable at 5 with luck; not at 4. **The intent governs the numbers**: with the §9.5 formulas and §10 tables, a level 6 hero (ATK 26, DEF 13) does 5–9 per hit and takes about 5 per round, so the fight runs roughly 10–13 rounds. A unit test simulates the fight at levels 4, 5, 6 and 7 with the intended gear and asserts the win rates are near 0%, under 50%, over 70%, and over 90% respectively; if tuning moves the tables, the test moves with them.
 
 ### 9.9 Death
 "You have fallen." Fade to black. Respawn in Maren's house facing her at full HP/MP, gold halved (floor), XP and items kept. Maren speaks a death-specific line. No game over screen.
@@ -340,10 +340,12 @@ Inventory: 8 slots; consumables stack up to 6 per slot; unequipped equipment occ
 ### 10.5 Monster stats
 | Monster | HP | ATK | DEF | AGI | XP | Gold | Dodge | Zone |
 |---|---|---|---|---|---|---|---|---|
-| Mireling | 6 | 5 | 3 | 3 | 2 | 2–4 | 1/32 | road, grass |
-| Bog Mireling | 14 | 11 | 8 | 6 | 7 | 6–10 | 1/16 | marsh, hills |
+| Mireling | 4 | 5 | 1 | 3 | 2 | 2–4 | 1/32 | road, grass |
+| Bog Mireling | 14 | 11 | 6 | 6 | 7 | 6–10 | 1/16 | marsh, hills |
 | Barrow Mireling | 24 | 20 | 14 | 10 | 18 | 12–18 | 1/16 | Barrow |
-| Barrow Warden | 70 | 22 | 14 | 12 | 300 | 0 | 1/32 | boss |
+| Barrow Warden | 70 | 20 | 14 | 12 | 300 | 0 | 1/32 | boss |
+
+Tuned 2026-11-12 after the Phase 3 play-test; pinned by `test/balance.test.ts`.
 
 ---
 

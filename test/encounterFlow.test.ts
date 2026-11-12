@@ -20,6 +20,7 @@ import { DIALOGS } from '../src/data/dialog/hollowmere';
 import { SONGS } from '../src/data/songs';
 import { STORY } from '../src/data/story';
 import { ITEMS } from '../src/data/items';
+import { SPELLS } from '../src/data/spells';
 import { PALETTE } from '../src/data/palette';
 
 function fieldMap(id: string, warp: boolean): GameMap {
@@ -70,6 +71,7 @@ function setup(mapId: 'field' | 'field2', player: Partial<PlayerState> = {},
     dialogs: DIALOGS,
     songs: SONGS,
     items: ITEMS,
+    spells: SPELLS,
     monsters,
     story: STORY,
     player: { ...basePlayer, ...player },
@@ -186,6 +188,8 @@ describe('random encounters', () => {
     const battle = stack.states.find((s) => s instanceof BattleState) as BattleState;
     mash(() => battle.phase === 'command', 600);
     tick('down');
+    tick('down');
+    tick('down');
     mash(() => stack.top === explore);
     expect(game.player.gold).toBe(gold);
     expect(game.player.xp).toBe(xp);
@@ -200,9 +204,31 @@ describe('death and respawn', () => {
     [1, 0],
   ] as const) {
     it(`wakes at the respawn point with ${after} gold from ${before}`, () => {
-      const { stack, game, explore, tick, ticks, mash } = setup('field2', { gold: before, hp: 1 });
+      // a brute that never moves first, so the Herb is used before the killing blow
+      const monsters = { ...MONSTER_TABLE, brute: { ...MONSTER_TABLE.brute!, agi: 0 } };
+      const { stack, game, explore, tick, ticks, mash, hasBattle } = setup(
+        'field2',
+        {
+          gold: before,
+          hp: 1,
+          inventory: [
+            { item: 'herb', count: 1 },
+            { item: 'torch', count: 1 },
+          ],
+        },
+        monsters,
+      );
       const was = game.player;
       explore.startBattle('brute', 'grass');
+      mash(hasBattle, 600);
+      const battle = stack.states.find((s) => s instanceof BattleState) as BattleState;
+      mash(() => battle.phase === 'command', 600);
+      tick('down');
+      tick('down');
+      tick('confirm'); // Item
+      tick('confirm'); // Herb
+      tick('up');
+      tick('up'); // back to Fight, so the mashing below always progresses
       mash(() => stack.states.length === 1 && stack.top instanceof ExploreState && stack.top !== explore);
       const woke = stack.top as ExploreState;
       const entry = MAPS[STORY.respawn.map as keyof typeof MAPS].entry[STORY.respawn.entry]!;
@@ -212,7 +238,7 @@ describe('death and respawn', () => {
       expect(game.player.hp).toBe(was.maxHp);
       expect(game.player.mp).toBe(was.maxMp);
       expect(game.player.xp).toBe(was.xp);
-      expect(game.player.inventory).toEqual(was.inventory);
+      expect(game.player.inventory).toEqual([{ item: 'torch', count: 1 }]);
       expect(game.player.flags).toEqual(was.flags);
 
       tick();

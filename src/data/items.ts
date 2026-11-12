@@ -20,7 +20,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   cloth_tunic: { id: 'cloth_tunic', name: 'Cloth Tunic', kind: 'armor', def: 2, price: 20, stack: 1 },
   leather_armor: { id: 'leather_armor', name: 'Leather Armor', kind: 'armor', def: 4, price: 70, stack: 1 },
   plank_shield: { id: 'plank_shield', name: 'Plank Shield', kind: 'shield', def: 2, price: 25, stack: 1 },
-  herb: { id: 'herb', name: 'Herb', kind: 'consumable', price: 10, stack: 6 },
+  herb: { id: 'herb', name: 'Herb', kind: 'consumable', price: 10, stack: 6, use: { where: 'both', effect: { kind: 'heal', min: 20, max: 30 } } },
   torch: { id: 'torch', name: 'Torch', kind: 'consumable', price: 8, stack: 6 },
   journal_page: { id: 'journal_page', name: 'Journal Page', kind: 'key', price: 0, stack: 1 },
 };

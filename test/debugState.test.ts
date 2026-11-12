@@ -1,6 +1,8 @@
 import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
-import { describe, expect, it } from 'vitest';
+import { SPELLS } from '../src/data/spells';
+import { describe, expect, it, vi } from 'vitest';
+import { itemLines } from '../src/game/inventory';
 import { StateStack } from '../src/engine/state';
 import type { Input } from '../src/engine/input';
 import type { Font } from '../src/engine/font';
@@ -32,6 +34,7 @@ function setup() {
     dialogs: DIALOGS,
     songs: SONGS,
     items: ITEMS,
+    spells: SPELLS,
     monsters: MONSTERS,
     story: STORY,
     player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
@@ -110,12 +113,13 @@ describe('DebugState', () => {
     expect(stack.top).toBeUndefined();
   });
 
-  it('lists one Fight row per monster, between the warp rows and Close', () => {
+  it('lists one Fight row per monster, between the warp rows and the Give rows', () => {
     const { dbg } = setup();
     const labels = (dbg as unknown as { labels(): string[] }).labels();
     const lastWarp = labels.map((l) => l.startsWith('Warp: ')).lastIndexOf(true);
+    const firstGive = labels.findIndex((l) => l.startsWith('Give: '));
     const close = labels.indexOf('Close');
-    expect(labels.slice(lastWarp + 1, close)).toEqual(Object.keys(MONSTERS).map((id) => `Fight: ${id}`));
+    expect(labels.slice(lastWarp + 1, firstGive)).toEqual(Object.keys(MONSTERS).map((id) => `Fight: ${id}`));
     for (const id of ['mireling', 'bog_mireling', 'barrow_mireling']) expect(labels).toContain(`Fight: ${id}`);
     expect(close).toBe(labels.length - 1);
   });
@@ -132,18 +136,49 @@ describe('DebugState', () => {
     expect(game.monsters.barrow_mireling).toBeDefined();
   });
 
+  it('lists one Give row per item, between the Fight rows and Close', () => {
+    const { dbg } = setup();
+    const labels = (dbg as unknown as { labels(): string[] }).labels();
+    const lastFight = labels.map((l) => l.startsWith('Fight: ')).lastIndexOf(true);
+    const close = labels.indexOf('Close');
+    expect(labels.slice(lastFight + 1, close)).toEqual(Object.keys(ITEMS).map((id) => `Give: ${id}`));
+    expect(labels).toContain('Give: herb');
+  });
+
+  it('a Give row adds one item each time and keeps the overlay open', () => {
+    const { stack, game, dbg } = setup();
+    const labels = (dbg as unknown as { labels(): string[] }).labels();
+    const row = labels.indexOf('Give: herb');
+    pick(dbg, row);
+    dbg.update(keys('confirm'));
+    expect(itemLines(game.items, game.player)).toEqual(['Herb x3']);
+    expect(stack.top).toBe(dbg);
+  });
+
+  it('a Give row that does not fit plays error and changes nothing', () => {
+    const { game, dbg } = setup();
+    const ids = Object.keys(game.items).filter((id) => game.items[id]!.kind !== 'consumable');
+    game.player = { ...game.player, inventory: Array.from({ length: 8 }, (_, i) => ({ item: ids[i % ids.length]!, count: 1 })) };
+    const before = game.player.inventory;
+    const sfx = vi.spyOn(game.audio, 'playSfx');
+    const labels = (dbg as unknown as { labels(): string[] }).labels();
+    pick(dbg, labels.indexOf('Give: herb'));
+    expect(sfx).toHaveBeenCalledWith('error');
+    expect(game.player.inventory).toEqual(before);
+  });
+
   it('Close and cancel pop back to explore', () => {
     const a = setup();
     a.dbg.update(keys('cancel'));
     expect(a.stack.top).toBeInstanceOf(ExploreState);
     const b = setup();
-    pick(b.dbg, 6 + Object.keys(b.game.maps).length + Object.keys(b.game.monsters).length);
+    pick(b.dbg, 6 + Object.keys(b.game.maps).length + Object.keys(b.game.monsters).length + Object.keys(b.game.items).length);
     expect(b.stack.top).toBeInstanceOf(ExploreState);
   });
 
   it('every row, including the last, is reachable', () => {
     const { dbg } = setup();
-    const n = 7 + Object.keys(MAPS).length + Object.keys(MONSTERS).length;
+    const n = 7 + Object.keys(MAPS).length + Object.keys(MONSTERS).length + Object.keys(ITEMS).length;
     for (let i = 0; i < n - 1; i++) dbg.update(keys('down'));
     // (list is private; reaching Close above proves the last row is addressable)
     expect(() => dbg.update(keys('confirm'))).not.toThrow();
