@@ -237,23 +237,23 @@ const ROOF = art({ k: 0, d: 12, r: 13 }, [
   'dddddddddddddddd',
 ]);
 
-// Wood floor: ochre 10 planks, brown 9 seams.
-const FLOOR_WOOD = art({ o: 10, b: 9 }, [
-  'oooooooooooooooo',
-  'oooooooooooooooo',
-  'oooooooooooooooo',
+// Wood floor: ochre 10 planks, brown 9 seams and staggered joints, sand 11 highlights.
+const FLOOR_WOOD = art({ o: 10, b: 9, h: 11 }, [
+  'ooohoooboooooooo',
+  'oooooooboooohooo',
+  'oooooooboooooooo',
   'bbbbbbbbbbbbbbbb',
-  'oooooooooooooooo',
-  'oooooooooooooooo',
-  'oooooooooooooooo',
+  'oohoooooooooooob',
+  'ooooooooohooooob',
+  'ooooooooooooooob',
   'bbbbbbbbbbbbbbbb',
-  'oooooooooooooooo',
-  'oooooooooooooooo',
-  'oooooooooooooooo',
+  'oooooooooboooooo',
+  'ooohooooobooooho',
+  'oooooooooboooooo',
   'bbbbbbbbbbbbbbbb',
-  'oooooooooooooooo',
-  'oooooooooooooooo',
-  'oooooooooooooooo',
+  'oboooooooooooooo',
+  'obooohoooooooooo',
+  'oboooooooooooooo',
   'bbbbbbbbbbbbbbbb',
 ]);
 
