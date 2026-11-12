@@ -157,3 +157,26 @@ All items below were removed in Task 14, and the guard test now also bans story-
 - Hero uses six palette colours (well 6, sign 5) against spec §13's three or four; owner said the look was good, so leave unless asked.
 - Idle hero does not animate; owner accepted.
 - DPR change without a window resize is not detected.
+
+## Owner play-test result and answers (2026-11-12)
+
+The owner played Phase 2 and accepted it ("gameplay is good and true to the classic"). Answers to "Needs owner input":
+
+1. Title theme sounds right. Closed.
+2. Talk reach across one blocking tile stays. Closed.
+3. Two-press "Equip it?": deferred to Phase 5 (fix it with the shop and inn windows).
+4. Late music rows after a stall: deferred; no date set.
+5. Merge `phase-2` as is with `--no-ff`. Done.
+6. Commit trailer names the model actually running the session; CLAUDE.md updated.
+7. Sprite corner overlap: not fixing.
+
+Two changes the owner asked for before the merge, both built and reviewed (Sonnet review, no Critical or Important findings):
+
+- **Title** (`698dc07`): the game is *Heir of the Barrow*, subtitle *The Dimming* (Act 1). Ruling: at scale 2 the title is 288 px wide on a 256 px screen, so it wraps ("HEIR OF THE" / "BARROW") with the subtitle beneath — cost if wrong: one layout function in `src/game/title.ts`. `storagePrefix` stays `dimming`.
+- **Escape from dialog** (`69d74cd`): cancel ends a dialog at once; the rest of the script runs silently, effects apply, choices resolve as No, the only sound is `menuCancel`.
+
+Deferred minors from that review: no test for cancel and confirm on the same tick; `onChoice` runs inside the drain before the dialog is removed (no current caller pushes a state from it); the subtitle offset uses `GLYPH_W` where glyph height is meant; a failed `give` shows no "cannot carry more" text when the dialog is escaped.
+
+Owner checks for these two changes (not performed by anyone): the title screen layout by eye; cancel during the opening scene still leaves the shield in the inventory and does not open the menu; cancel on "Equip it?" leaves the item unequipped.
+
+**Next:** write the Phase 3 plan in a fresh session and stop for the owner's review. Phase 3 execution has not been authorised.

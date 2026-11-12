@@ -1,6 +1,6 @@
-# The Dimming — Vertical Slice Design
+# Heir of the Barrow: The Dimming — Vertical Slice Design
 
-**Project:** Warrior's Quest (repo name) / *The Dimming* (game title)
+**Project:** Warrior's Quest (repo name) / *Heir of the Barrow* (game title), subtitle *The Dimming* (Act 1)
 **Date:** 2026-11-11
 **Status:** Approved 2026-11-11 with owner changes (password deferred, debug mode added, starting gold 40). Build runs on Fable orchestration with Sonnet 5.5 implementation subagents, gated per phase.
 
@@ -192,7 +192,7 @@ A **stack** of states. The top state receives input and updates; states below ma
 | State | Enters from | Notes |
 |---|---|---|
 | `Boot` | start | creates canvas, waits for first key to unlock audio |
-| `Title` | Boot | New Game / Continue; title theme |
+| `Title` | Boot | New Game / Continue; title theme; shows the title at scale 2 (wrapped to the screen width) with the subtitle at scale 1 beneath |
 | `NameEntry` | Title | 8-char grid entry |
 | `Explore` | many | the walking state; owns map, hero, NPC wander |
 | `Dialog` | Explore, Shop, Inn, Battle | pushed over whatever is talking |
@@ -215,6 +215,7 @@ Map changes happen inside `Explore` via `Transition`, not as separate states.
 - Classic-style window: black fill, white double-line border, 8×8 bitmap font, white text.
 - Dialog window spans the bottom of the screen, 4 lines of up to 28 characters.
 - Text prints **one character per frame** (builder may tune to 1 char per 1–2 frames) with a short "blip" on each non-space character. Confirm skips to end of page; confirm again advances. A blinking ▼ marks "more".
+- **Cancel ends the dialog immediately** (owner's decision, 2026-11-12). The rest of the script still runs silently: remaining text is skipped, effects (give, set, gold, heal) still apply, and every choice resolves as No. The only sound is the menu-cancel blip.
 - No speaker name tags; the speaker is whoever you're facing. Lines are written to the hero in second person: *"You have your father's eyes, Wren."*
 
 ### 8.2 Script format
@@ -467,7 +468,7 @@ Build: Barrow floors 1 and 2, darkness mask and Torch, chests, stairs, Warden tr
 
 Flagged so the owner can veto any while reading:
 
-1. Game title *The Dimming*; repo stays Warrior's Quest.
+1. ~~Game title *The Dimming*~~ Superseded by the owner on 2026-11-12: the title is *Heir of the Barrow* and *The Dimming* is the subtitle (Act 1). Repo stays Warrior's Quest.
 2. No framework; plain canvas and Web Audio.
 3. Music synthesized in-browser from note data rather than audio files.
 4. Art as pixel strings in code rather than image files.
