@@ -48,6 +48,9 @@ describe('monster art', () => {
     expect(a!.colors).not.toEqual(c!.colors);
     expect(b!.colors).not.toEqual(c!.colors);
   });
+  it("the bog palette's shade is not the murk water colour", () => {
+    expect(monsterArt('mireling', MONSTERS.bog_mireling!.palette).colors.s).not.toBe(BACKDROPS.murk!.colors.w);
+  });
   it('is identity-stable, falls back to palette 0, throws on unknown sprite', () => {
     expect(monsterArt('mireling', 1)).toBe(monsterArt('mireling', 1));
     expect(monsterArt('mireling', 9)).toBe(monsterArt('mireling', 0));

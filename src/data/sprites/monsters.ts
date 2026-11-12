@@ -32,7 +32,7 @@ const MIRELING_ROWS = [
 
 const MIRELING_PALETTES: Record<string, number>[] = [
   { b: 3, s: 2, h: 1, e: 0, g: 1 }, // pale
-  { b: 20, s: 19, h: 22, e: 0, g: 1 }, // bog
+  { b: 20, s: 21, h: 22, e: 0, g: 1 }, // bog: dark green shade, so its puddle shows on the deep teal murk
   { b: 17, s: 23, h: 18, e: 0, g: 1 }, // barrow
 ];
 

@@ -2,6 +2,21 @@
 
 Written for the owner's play-test and for the session that acts on its feedback. The plan is `docs/superpowers/plans/2026-11-12-phase-3-out-the-gate.md`; the owner approved it and all eleven of its decisions on 2026-11-12.
 
+## Owner's play-test result (2026-11-12) and what Phase 4 inherits
+
+The owner played the build: everything worked; the one complaint is that monsters are too strong (dying easily; the marsh is hopeless at level 1). Answers to the five questions below:
+
+1. Keep the confirm wait after a win or death.
+2. Monsters are too strong. Done on this branch: Hesta gives a free full rest when spoken to (a dialog `heal` effect), until Phase 5's inn replaces it at 6 gold. **Required in the Phase 4 plan:** a balance pass with a simulation test covering the early curve:
+   - an unarmed level 1 hero loses no more than about 3 HP per road Mireling on average;
+   - a level 3 hero with Heal survives marsh fights more often than not;
+   - the spec §9.8 Warden targets stay as they are.
+3. Keep the current battle and marsh melodies.
+4. The commit trailer names the model that wrote the commit; `CLAUDE.md` now says so. Phase 4 implementer briefs must tell each implementer to use its own model's name.
+5. The Bog Mireling's shade is now dark green (palette 21) instead of deep teal (19), so it differs from the murk water. Owner look check, not performed: it reads against the murk strip. If not, palette 4 (blue) is the stronger alternative.
+
+Also done before the merge: the parked sequencer test now ends its rows with `'off'` and asserts the `loopFrom` message; removing the rule was shown to fail it. The rest of this file is the record as it stood at the phase stop.
+
 ## Where execution stands
 
 - Branch `phase-3` from `master` (`fb5daed`). **Not merged, not pushed.**

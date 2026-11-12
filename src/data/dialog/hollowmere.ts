@@ -50,18 +50,23 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
     },
   ],
 
+  // Until the inn opens in Phase 5 (6 gold a night), Hesta's bed is a free full rest.
   hesta: [
     {
       if: 'warden_defeated',
       then: [
         'You came back. Sit. Eat something.',
         'Your father never did come through that door again.',
-        'A bed is still 6 gold, and I will not hear otherwise.',
+        'No coin for the bed today. Lie down a while.',
+        { heal: true },
+        'You rest. Your wounds close and your head clears.',
       ],
       else: [
         'You look more like him every day.',
         'Aldric drank his last cup in this room. He laughed the whole time.',
-        'A bed is 6 gold, if you need one.',
+        'The bed costs you nothing today. Lie down a while.',
+        { heal: true },
+        'You rest. Your wounds close and your head clears.',
       ],
     },
   ],

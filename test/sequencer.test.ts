@@ -120,7 +120,8 @@ describe('sequencer', () => {
   });
 
   it('validateSong rejects loop: false with loopFrom', () => {
-    expect(() => validateSong({ id: 's', tempo: 120, loop: false, loopFrom: 0, tracks: [{ channel: 'p1', rows: ['C4', 'D4'] }] })).toThrow();
+    expect(() => validateSong({ id: 's', tempo: 120, loop: false, loopFrom: 0, tracks: [{ channel: 'p1', rows: ['C4', 'D4', 'off'] }] }))
+      .toThrow('song s: loopFrom is meaningless when loop is false');
   });
 
   it('validateSong requires non-looping tonal tracks to end with off', () => {
