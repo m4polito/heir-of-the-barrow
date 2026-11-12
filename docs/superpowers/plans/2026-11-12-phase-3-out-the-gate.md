@@ -10,6 +10,11 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md` (§5.4, §5.6, §6.1–6.3, §7, §9.1–9.6, §9.9–9.10, §10.5, §12.2–12.4, §13, §14 Phase 3, §15). Carry-forward notes: `docs/superpowers/notes/2026-11-11-phase-2-carry-forward.md` (standing instructions, rulings, deferred items).
 
+## Execution status (updated 2026-11-12, phase stop)
+
+- **All 10 tasks complete and reviewed; the whole-branch review and its one fix wave are done (head `33c6f73` plus this docs commit). Stopped for the owner's play-test; not merged.** Rulings, questions for the owner, deferred minors and the play-test list are in `docs/superpowers/notes/2026-11-12-phase-3-carry-forward.md`.
+- Where the delivered code differs from the task text below: battle backdrops put the ground at row 8 of the strip (Task 3); `Beat` is declared in `beats.ts` (Tasks 2, 4); the battle and marsh melodies had one creative fix round (Task 5); Task 9's "won" test was replaced in Task 10 by one that walks into the battle, plus a "fled" test; after the final review, confirm is held until a one-shot song has finished, battle text is wrapped once before it types, Run plays no confirm blip, the monster flashes on the killing blow, `startBattle` validates the backdrop, and `validateSong` requires non-looping pitched tracks to end with `off`.
+
 ## Execution
 
 - Branch `phase-3` from `master`. Subagent-driven, as in Phase 2: Sonnet 5.5 implements and reviews ordinary tasks; Opus reviews audio (Tasks 4, 5), integration (Tasks 8, 9) and the whole branch; the orchestrator (Fable) reviews creative work itself (monster and tile art, the map layout, the four songs' written harmony, the death dialog).
@@ -104,7 +109,7 @@ test/helpers/seqRng.ts         scripted Rng for exact-value tests
   - In `player.ts`: `GOLD_MAX = 65535`; `XP_MAX = 65535`; `applyDeath(p): PlayerState` (gold `floor(gold / 2)`, hp and mp to max, nothing else changes); `settleBattle(p, heroHp: number, reward: { xp: number; gold: number } | null): PlayerState` (hp clamped to `0..maxHp`; reward added with the two caps).
   - `seqRng(values: number[]): Rng` in `test/helpers/seqRng.ts` — `next()` returns the values in order and throws `'seqRng exhausted'` past the end; `int(min, max) = min + floor(next() * (max − min + 1))`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/battleRules.test.ts`:
     - `damageRoll(seqRng([0]), 4, 3) === 1`; `damageRoll(seqRng([0]), 26, 14) === 5` and with `[0.99]` → `9`; base of exactly 1: `damageRoll(seqRng([0.99]), 5, 8) === 1`; base ≤ 0: `damageRoll(seqRng([0.4]), 4, 8) === 0`, with `[0.6]` → `1`, and `damageRoll(seqRng([0.6]), 1, 40) === 1`.
     - `heroStrike(seqRng([0.01]), 6, { def: 3, dodge: 1 / 32 })` → `{ kind: 'miss', damage: 0 }`; `seqRng([0.5, 0.01])` with `dodge: 1 / 16` → dodge, damage 0; `seqRng([0.5, 0.5, 0.01, 0.99])` atk 6 → `{ kind: 'crit', damage: 6 }`; `seqRng([0.5, 0.5, 0.5, 0])` atk 6 def 3 → `{ kind: 'hit', damage: 2 }`; boss: `heroStrike(seqRng([0.5, 0.5, 0]), 26, { def: 14, dodge: 1 / 32, boss: true })` → `{ kind: 'hit', damage: 5 }` (three draws only).
@@ -114,17 +119,17 @@ test/helpers/seqRng.ts         scripted Rng for exact-value tests
     - With `createRng(7)`, 10000 `heroStrike(rng, 6, { def: 3, dodge: 1 / 32 })`: miss fraction in `[0.05, 0.075]`, crit fraction in `[0.02, 0.037]`, no damage below 0.
   - `test/player.test.ts` additions: `applyDeath` with gold 41 → 20, 1 → 0, 0 → 0; a player at hp 0 / mp 0 with `maxHp 15`, `maxMp 5` → 15 and 5; `xp`, `inventory`, `equipment`, `flags`, `level` unchanged and the input not mutated (Review Focus 3). `settleBattle(p, 9, { xp: 2, gold: 4 })` adds both and sets hp 9; `settleBattle(p, -3, null)` → hp 0, gold and xp unchanged; gold 65530 + 18 → 65535; xp 65534 + 18 → 65535.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/battleRules.test.ts test/player.test.ts`
 Expected: FAIL (modules and exports missing).
 
-- [ ] **Step 3: Implement** `monster.ts`, `rules.ts`, the helper, and the two `player.ts` functions per Interfaces. All pure.
+- [x] **Step 3: Implement** `monster.ts`, `rules.ts`, the helper, and the two `player.ts` functions per Interfaces. All pure.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run test/battleRules.test.ts test/player.test.ts && npx tsc --noEmit`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/battle/monster.ts src/game/battle/rules.ts src/game/player.ts test/helpers/seqRng.ts test/battleRules.test.ts test/player.test.ts
 git commit -m "feat: combat formulas, death penalty, battle settlement"
@@ -163,7 +168,7 @@ git commit -m "feat: combat formulas, death penalty, battle settlement"
     - With `waitOnLast`, the last beat never times out: `waiting` is true once it is revealed and only `confirm` finishes it.
     - `current` stays on the last beat after `done` until the next `load`. `lines` is the revealed text wrapped to `cols`. `load([])` is `done` at once.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/battle.test.ts` with fixture `M = { id: 'm', name: 'Mireling', intro: 'A Mireling slumps out of the reeds.', sprite: 's', palette: 0, hp: 6, atk: 5, def: 3, agi: 3, xp: 2, gold: [2, 4], dodge: 1 / 32, runFactor: 1 }` and `HERO = { hp: 15, atk: 4, def: 6, agi: 4 }`:
     - `intro()` → `[{ text: M.intro, heroHp: 15, monsterHp: 6 }]`.
     - Hero first, both hit: `seqRng([0, 0.99, 0.5, 0.5, 0.5, 0, 0.5, 0])`, `act('fight')` texts are `['You attack!', 'The Mireling takes 1 damage.', 'The Mireling attacks!', 'You take 1 damage.']`; beat 1 is `{ sfx: 'monsterHit', fx: 'flash', heroHp: 15, monsterHp: 5 }` (plus text); beat 3 is `{ sfx: 'heroHit', fx: 'shake', heroHp: 14, monsterHp: 5 }`; `outcome` is null.
@@ -177,17 +182,17 @@ git commit -m "feat: combat formulas, death penalty, battle settlement"
     - With `createRng(3)`, 500 battles choosing `fight` every round each end as `won` or `lost` within 200 rounds.
   - `test/beats.test.ts` with two beats `'Hi'` and `'Yo'`, `waitOnLast: false`, ticking with `false`: `tick` returns non-null on ticks 1 and 28 only; `lines` is `['']` after tick 1, `['H']` after 2, `['Hi']` and `revealed` after 3; `done` becomes true on tick 55. `confirm` while typing a 20-character first beat: `revealed` is true, `current` is still the first beat, and the return was `null`; the next `tick(true)` returns the second beat (Review Focus 2). `waitOnLast: true`: after the last beat is revealed, 100 `tick(false)` leave `done` false and `waiting` true; one `tick(true)` sets `done`. A 40-character text gives two `lines`, none longer than 28. `load([], false)` → `done` true.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/battle.test.ts test/beats.test.ts`
 Expected: FAIL (modules missing).
 
-- [ ] **Step 3: Implement** `battle.ts` and `beats.ts` per Interfaces.
+- [x] **Step 3: Implement** `battle.ts` and `beats.ts` per Interfaces.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run test/battle.test.ts test/beats.test.ts && npx tsc --noEmit`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/battle/battle.ts src/game/battle/beats.ts test/battle.test.ts test/beats.test.ts
 git commit -m "feat: battle round resolver and message beat player"
@@ -218,28 +223,28 @@ git commit -m "feat: battle round resolver and message beat player"
   - `Game` gains `readonly monsters: MonsterTable`; `main.ts` passes `MONSTERS`.
   - Story-free guard in `test/interiors.test.ts`: the forbidden-import group becomes `(items|maps|dialog|songs|story|monsters)`; the banned strings gain `"'mireling"` and `"'marsh'"`.
 
-- [ ] **Step 1: Write failing tests** in `test/monsters.test.ts` (and the `art.test.ts` additions):
+- [x] **Step 1: Write failing tests** in `test/monsters.test.ts` (and the `art.test.ts` additions):
   - Each row above matches `MONSTERS` exactly (`toMatchObject` on every listed field); `MONSTERS[id].id === id`.
   - `monsterArt` for each monster compiles against `PALETTE` at 24×24; the three palettes give three different `colors` maps over the same `rows`; two calls with the same arguments return the same object; `monsterArt('nope', 0)` throws.
   - Both backdrops compile at 16×24; `backdropArt('nope')` throws.
   - Text: every `intro`, and `` `The ${name} takes 99 damage.` ``, wraps to at most 2 lines at 28 columns; no `intro` matches `/draws near|thou|thee|slime|dragon/i`.
   - **Early-game pacing (spec §15):** build a level 1 hero from `createPlayer('Wren', [])` with `wooden_club` and `aldric_shield` added and equipped (real `ITEMS`); stats from `attackOf`/`defenseOf` (6 and 6). With `createRng(11)`, 2000 battles against `MONSTERS.mireling` choosing `fight` every round: mean rounds ≤ 4, mean HP lost < 3 (20% of 15), win rate ≥ 0.99.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/monsters.test.ts test/art.test.ts test/interiors.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Draw the Mireling and the two backdrops** (pixel-art skill loaded; original; the Mireling must read as a slumped figure at 1× and be told apart from every NPC body).
+- [x] **Step 3: Draw the Mireling and the two backdrops** (pixel-art skill loaded; original; the Mireling must read as a slumped figure at 1× and be told apart from every NPC body).
 
-- [ ] **Step 4: Implement** the data, the `Game` field and the wiring; add `monsters: MONSTERS` wherever a test builds a `Game`.
+- [x] **Step 4: Implement** the data, the `Game` field and the wiring; add `monsters: MONSTERS` wherever a test builds a `Game`.
 
-- [ ] **Step 5: Run everything**
+- [x] **Step 5: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 6: List owner checks** (do not perform): none visible yet; the sprite and backdrops are first seen in Task 8.
+- [x] **Step 6: List owner checks** (do not perform): none visible yet; the sprite and backdrops are first seen in Task 8.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 ```bash
 git add src/data/monsters.ts src/data/sprites/monsters.ts src/data/sprites/backdrops.ts src/game/game.ts src/main.ts test
 git commit -m "feat: Mireling tiers, monster sprite, battle backdrops"
@@ -264,21 +269,21 @@ git commit -m "feat: Mireling tiers, monster sprite, battle backdrops"
     - `runFail`: `p1` duty 0.125 vol 9: `E4` 3f, `C4` 3f, `G#3` 6f.
   - `Song` gains `loop?: boolean` (default looping). When `loop === false` the sequencer, after emitting the last row, clears its song **without** calling `apu.stopAll`, so the last notes ring until their own `off` rows; `playing` is then false. `validateSong` throws if `loop === false` and `loopFrom` is set.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/sfx.test.ts`: every id in `SFX` (iterate `Object.keys`) has at least one step and every `note` parses; `encounter` totals 32 frames and every other new effect totals ≤ 16; with the existing `FakeApu`, `play(SFX.heroHit, 10)` → `noiseHit s @10 vol 12`, `noteOn tri ≈110.0 @10.0167`, `noteOn tri ≈82.41 @10.0833`, `noteOff tri @10.1667`.
   - `test/sequencer.test.ts`: a 4-row song with `loop: false` scheduled far past its end emits each row exactly once, `playing` becomes false, and `stopAll` was called once (by `play`) and not again; the same song without `loop` emits row 0 a second time; `validateSong({ …, loop: false, loopFrom: 0 })` throws.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/sfx.test.ts test/sequencer.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/data/sfx.ts src/engine/audio/sequencer.ts src/game/battle/battle.ts test/sfx.test.ts test/sequencer.test.ts
 git commit -m "feat: battle sound effects and non-looping songs"
@@ -303,21 +308,21 @@ git commit -m "feat: battle sound effects and non-looping songs"
   | `victory` | tempo 150, 24 rows (2.4 s), `loop: false`, C major. `p1` duty 0.5 vol 11; `p2` duty 0.25 vol 8; `tri` vol 14; no noise. | A 2-second fanfare: a rising figure landing on a held C major chord; every pitched track has `off` at or before row 20. |
   | `fallen` | tempo 72, 12 rows (2.5 s), `loop: false`, A minor. `p1` duty 0.5 vol 10; `p2` duty 0.25 vol 6; `tri` vol 13; no noise. | A short descending phrase: `p1` steps down from A4 to E4, `p2` a third below, `tri` a low A2 under the last note; every pitched track ends with `off`. |
 
-- [ ] **Step 1: Write failing tests** in `test/songs.test.ts`, one `describe` per song: `validateSong` passes; row count, tempo, `loopFrom`/`loop` as pinned; the channel list and each track's duty and volume as pinned; for `victory` and `fallen`, each pitched track's last non-null row is `'off'` (and for `victory` its index is ≤ 20); for `battle`, `BATTLE_MOTIF.length` is 4 to 6 and the `p1` track's first sounded notes from row 32 on (skipping `null` and `'off'`) equal `BATTLE_MOTIF`; `marsh`'s `tri` track has a note on rows 0, 4, 8 and 12 of every bar.
+- [x] **Step 1: Write failing tests** in `test/songs.test.ts`, one `describe` per song: `validateSong` passes; row count, tempo, `loopFrom`/`loop` as pinned; the channel list and each track's duty and volume as pinned; for `victory` and `fallen`, each pitched track's last non-null row is `'off'` (and for `victory` its index is ≤ 20); for `battle`, `BATTLE_MOTIF.length` is 4 to 6 and the `p1` track's first sounded notes from row 32 on (skipping `null` and `'off'`) equal `BATTLE_MOTIF`; `marsh`'s `tri` track has a note on rows 0, 4, 8 and 12 of every bar.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/songs.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Compose the four songs** and register them.
+- [x] **Step 3: Compose the four songs** and register them.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform): the songs are first heard in Tasks 8 and 9; listed there.
+- [x] **Step 5: List owner checks** (do not perform): the songs are first heard in Tasks 8 and 9; listed there.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/data/songs test/songs.test.ts
 git commit -m "feat: marsh, battle, victory and fallen music"
@@ -339,24 +344,24 @@ git commit -m "feat: marsh, battle, victory and fallen music"
   - `rollEncounter(rng, table: EncounterTable, tile: Pick<TileDef, 'name' | 'encounterRate'>): EncounterHit | null` — returns `null` with **no draw** when the tile has no zone, the zone has no monsters, the total weight is ≤ 0, or `tile.encounterRate ≤ 0`. Otherwise: `rng.next() < table.baseRate * tile.encounterRate`, else `null`; then `r = rng.next() * totalWeight` and the first entry whose running weight exceeds `r`.
   - `encounterStep(rng, table, tile, grace: number): { grace: number; hit: EncounterHit | null }` — `grace > 0` → `{ grace: grace − 1, hit: null }` with no draw; else `{ grace: 0, hit: rollEncounter(…) }`.
 
-- [ ] **Step 1: Write failing tests** in `test/encounter.test.ts` with `T = { baseRate: 1 / 16, zones: { grass: { backdrop: 'grass', monsters: [{ monster: 'a', weight: 3 }, { monster: 'b', weight: 1 }] }, marsh: { backdrop: 'murk', monsters: [{ monster: 'c', weight: 1 }] }, empty: { backdrop: 'grass', monsters: [] } } }`:
+- [x] **Step 1: Write failing tests** in `test/encounter.test.ts` with `T = { baseRate: 1 / 16, zones: { grass: { backdrop: 'grass', monsters: [{ monster: 'a', weight: 3 }, { monster: 'b', weight: 1 }] }, marsh: { backdrop: 'murk', monsters: [{ monster: 'c', weight: 1 }] }, empty: { backdrop: 'grass', monsters: [] } } }`:
   - `rollEncounter(seqRng([0.01, 0]), T, { name: 'grass', encounterRate: 1 })` → `{ monster: 'a', backdrop: 'grass' }`; `seqRng([0.01, 0.8])` → monster `'b'`; `seqRng([0.07])` → `null` (0.07 ≥ 1/16).
   - Rate multiplier: `seqRng([0.07, 0])` on `{ name: 'marsh', encounterRate: 1.5 }` → monster `'c'`.
   - No draw (`seqRng([])` must not throw): a tile named `'floor'`; the `'empty'` zone; `encounterRate: 0`; a zone whose weights are all 0 (Review Focus 5).
   - `encounterStep(seqRng([]), T, grass, 3)` → `{ grace: 2, hit: null }`; with grace 0 and `seqRng([0.01, 0])` → a hit and `grace: 0` (Review Focus 1).
   - With `createRng(5)`, 16000 rolls: grass hits in `[850, 1150]`; a `road`-named zone at rate 0.5 in `[400, 600]`; marsh at 1.5 in `[1350, 1650]`; over the grass hits, `'a'` is between 70% and 80%.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/encounter.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run test/encounter.test.ts && npx tsc --noEmit`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/encounter.ts src/game/map.ts test/encounter.test.ts
 git commit -m "feat: encounter tables and the per-step encounter roll"
@@ -393,7 +398,7 @@ git commit -m "feat: encounter tables and the per-step encounter roll"
   - `MAPS.marsh`.
   - `HOLLOWMERE`: warps on **(11, 19)** and **(12, 19)** (the gap in the south wall) to `marsh` entry `town`; `entry.gate = { x: 11, y: 18, facing: 'up' }`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/tiles.test.ts`: `TILES.length === 19`; the walkable and `encounterRate` columns above.
   - `test/marsh.test.ts`:
     - Size 48×40; `MAPS.marsh.id === 'marsh'`; `SONGS[MARSH.music]` exists; `border` is the water id.
@@ -408,21 +413,21 @@ git commit -m "feat: encounter tables and the per-step encounter roll"
     - Hollowmere: `warpAt(HOLLOWMERE, 11, 19)` and `(12, 19)` lead to `marsh` / `town`; `entry.gate` is `(11, 18, 'up')`, walkable, and no NPC stands on it.
   - `test/interiors.test.ts`: keep every existing assertion true for the four **door** warps; where a test counts or walks "every warp" on Hollowmere, restrict it to warps on door tiles and assert separately that Hollowmere has six warps.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/tiles.test.ts test/marsh.test.ts test/interiors.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Draw the five tiles** (pixel-art skill loaded; original; `marsh` and `hill` must be told apart from `water`, `grass` and `tree` at 1×).
+- [x] **Step 3: Draw the five tiles** (pixel-art skill loaded; original; `marsh` and `hill` must be told apart from `water`, `grass` and `tree` at 1×).
 
-- [ ] **Step 4: Lay out the Marsh** and add the registry entry and the Hollowmere gate.
+- [x] **Step 4: Lay out the Marsh** and add the registry entry and the Hollowmere gate.
 
-- [ ] **Step 5: Run everything**
+- [x] **Step 5: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 6: List owner checks** (do not perform): walk down through Hollowmere's gate past Bram; fade; arrive on the overworld just below a small town icon with the marsh theme playing; the map scrolls with the hero centred; water, not black, shows past the map's edge; marsh, hill, town, barrow mound and dead willow each read clearly; follow the road north-east past the dead willow to the barrow mound (it cannot be entered yet); walk back onto the town icon and arrive inside the gate facing up with the town theme. (Fights begin in Task 9.)
+- [x] **Step 6: List owner checks** (do not perform): walk down through Hollowmere's gate past Bram; fade; arrive on the overworld just below a small town icon with the marsh theme playing; the map scrolls with the hero centred; water, not black, shows past the map's edge; marsh, hill, town, barrow mound and dead willow each read clearly; follow the road north-east past the dead willow to the barrow mound (it cannot be entered yet); walk back onto the town icon and arrive inside the gate facing up with the town theme. (Fights begin in Task 9.)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 ```bash
 git add src/data/tiles.ts src/data/maps test/tiles.test.ts test/marsh.test.ts test/interiors.test.ts
 git commit -m "feat: the Marsh overworld, its tiles, and the town gate"
@@ -448,7 +453,7 @@ git commit -m "feat: the Marsh overworld, its tiles, and the town gate"
     - Entering `ending` pushes `new TransitionState(stack, { frames: outcome === 'lost' ? 30 : 12, onMid })` once, where `onMid` does, in order: `stack.remove(this)`; `game.player = settleBattle(game.player, battle.heroHp, battle.reward)`; `opts.onEnd(outcome)`.
     - `render`: black over the whole screen; while shaking, the whole picture is offset 2 px left or right on alternate frames. Backdrop art tiled 16 times at y = 96. Monster centred horizontally with its bottom edge at y = 104 (so a 24-pixel sprite is at `(116, 80)`); hidden when the displayed monster HP is 0 and on alternate 2-frame intervals while flashing. Stats window `(8, 8, 80, 48)` with `battleStatLines` at `(16, 16 + 10 * i)`. In phase `command`, a window `(8, 132, 72, 36)` with `drawMenu` at `(16, 140)`. Message window `(8, 176, 240, 56)` with the beat's lines at `(16, 184 + 10 * i)` and a blinking `▼` at `(232, 220)` while `waiting`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/transition.test.ts`: `transitionAlpha(15, 30, 10) === 0.5`, `(30, 30, 10) === 1`, `(35, 30, 10) === 0.5`, `(40, 30, 10) === 0`; the existing five two-argument cases still hold; a `TransitionState({ frames: 30, inFrames: 10 })` calls `onMid` once, on update 30, and is gone from the stack after update 40.
   - `test/battleState.test.ts` (real stack, a fake state underneath, a fake `Input` whose pressed actions the test sets per tick, `vi.spyOn(game.audio, 'playSong')` and `playSfx`):
     - `battleStatLines('Wren', 15, 0)` → `['Wren', 'HP  15', 'MP   0']`.
@@ -459,19 +464,19 @@ git commit -m "feat: the Marsh overworld, its tiles, and the town gate"
     - **Fled:** hero agi 99 against monster agi 1; press down then confirm in `command` → `onEnd('fled')`; gold and xp unchanged; `playSfx('runOk')` was called.
     - A hit on the hero calls `playSfx('heroHit')`; a hit on the monster calls `playSfx('monsterHit')`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/transition.test.ts test/battleState.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** the transition change and `BattleState`.
+- [x] **Step 3: Implement** the transition change and `BattleState`.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform): none reachable until Task 9 wires encounters; the battle screen's checks are listed there.
+- [x] **Step 5: List owner checks** (do not perform): none reachable until Task 9 wires encounters; the battle screen's checks are listed there.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/battle/battleState.ts src/game/transition.ts test/battleState.test.ts test/transition.test.ts
 git commit -m "feat: battle screen with Fight and Run"
@@ -498,7 +503,7 @@ git commit -m "feat: battle screen with Fight and Run"
     - `onEnd('won' | 'fled')`: reset grace and replay the map's song. `onEnd('lost')`: `game.player = applyDeath(game.player)`, then `stack.reset(new ExploreState(game, story.respawn.map, story.respawn.entry, { dialog: story.respawn.dialog }))`.
     - `render`: where a visible tile lies outside the map and `map.border` is set, draw `TILES[map.border]` (animated like any tile).
 
-- [ ] **Step 1: Write failing tests** in `test/encounterFlow.test.ts`. Build a `Game` on the real `MAPS`, `DIALOGS`, `SONGS`, `STORY`, `ITEMS` plus two test maps added to `maps`: `field` (8×3, all grass, `music: 'marsh'`, `entry.start = (0, 1, 'right')`, `encounters: { baseRate: 1, zones: { grass: { backdrop: 'grass', monsters: [{ monster: 'weak', weight: 1 }] } } }`, a warp on (4, 1) to `field2` / `start`) and `field2` (the same without the warp); and `monsters: { weak: { hp: 1, atk: 0, agi: 1, gold: [3, 3], xp: 2, … }, brute: { hp: 99, atk: 100, agi: 99, … } }`. The player has `intro_done` set. The fake `Input` holds or presses what each case says. A step takes 8 updates.
+- [x] **Step 1: Write failing tests** in `test/encounterFlow.test.ts`. Build a `Game` on the real `MAPS`, `DIALOGS`, `SONGS`, `STORY`, `ITEMS` plus two test maps added to `maps`: `field` (8×3, all grass, `music: 'marsh'`, `entry.start = (0, 1, 'right')`, `encounters: { baseRate: 1, zones: { grass: { backdrop: 'grass', monsters: [{ monster: 'weak', weight: 1 }] } } }`, a warp on (4, 1) to `field2` / `start`) and `field2` (the same without the warp); and `monsters: { weak: { hp: 1, atk: 0, agi: 1, gold: [3, 3], xp: 2, … }, brute: { hp: 99, atk: 100, agi: 99, … } }`. The player has `intro_done` set. The fake `Input` holds or presses what each case says. A step takes 8 updates.
   - **Grace then battle:** on `field2`, hold right. After 3 completed steps no `TransitionState` or `BattleState` has been pushed; on the 4th a `TransitionState` is on top, `stopSong` and `playSfx('encounter')` were called once each; 30 updates later a `BattleState` is in the stack; the hero has not moved further.
   - **Encounters off:** with `game.debug.noEncounters = true`, 7 steps on `field2` push nothing.
   - **Warp wins (Review Focus 1):** on `field`, hold right; the 4th step lands on the warp; after the transition the map id is `field2` and no `BattleState` was ever in the stack; the next 3 steps on `field2` start no battle (grace was reset on entry).
@@ -507,17 +512,17 @@ git commit -m "feat: battle screen with Fight and Run"
   - `startBattle('nope', 'grass')` throws `Unknown monster: nope`. `new ExploreState(game, 'field', 'start', { dialog: 'nope' })` throws.
   - `test/dialogContent.test.ts`: `maren_fallen` is in the id list and passes the existing per-script checks (terminates, ≤ 8 wrapped lines per text, banned words). `test/interiors.test.ts`: `MAPS[STORY.respawn.map].entry[STORY.respawn.entry]` exists and `DIALOGS[STORY.respawn.dialog]` exists.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/encounterFlow.test.ts test/dialogContent.test.ts test/interiors.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Write `maren_fallen`**, add `respawn` to the story config, and implement the Explore changes.
+- [x] **Step 3: Write `maren_fallen`**, add `respawn` to the story config, and implement the Explore changes.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform):
+- [x] **Step 5: List owner checks** (do not perform):
   - Walk the road outside town: after a few steps the music cuts, a sharp sting plays, the screen fades to black and the battle screen fades in as the battle theme starts. No fight ever starts on the first three steps out of the gate or right after a fight.
   - Battle screen: a pale Mireling stands on a grass strip; your name, HP and MP are top-left; the message types out, then Fight / Run appears. Messages move on by themselves; confirm hurries them.
   - Fight: the Mireling blinks and a hit sound plays when you strike it; the screen shakes and a thud plays when it strikes you; your HP drops as the message appears; a miss has its own soft sound.
@@ -528,7 +533,7 @@ Expected: all green.
   - Listen: the marsh theme (walking pace, lonely, loops cleanly), the battle theme (fast, tense, the intro is not repeated on the loop), no clicks at any music change.
   - With the debug overlay's encounters OFF, no fights happen.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/explore.ts src/game/game.ts src/data/story.ts src/data/dialog/hollowmere.ts test/encounterFlow.test.ts test/dialogContent.test.ts test/interiors.test.ts
 git commit -m "feat: random encounters, battle outcomes, death and respawn"
@@ -546,26 +551,26 @@ git commit -m "feat: random encounters, battle outcomes, death and respawn"
 - Consumes: `ExploreState.startBattle`, `game.monsters`.
 - Produces: `DebugState` lists one `Fight: <id>` row per key of `game.monsters`, after the warp rows and before `Close`. Activating one pops the overlay and, if the new top state is an `ExploreState`, calls `startBattle(id, 'grass')`.
 
-- [ ] **Step 1: Write the failing test** in `test/debugState.test.ts`: the labels contain `Fight: mireling`, `Fight: bog_mireling`, `Fight: barrow_mireling` between the last `Warp:` row and `Close`; activating `Fight: barrow_mireling` over an `ExploreState` removes the `DebugState` and leaves a `TransitionState` on top; 30 updates later a `BattleState` whose `battle.monster.id` is `'barrow_mireling'` is in the stack.
+- [x] **Step 1: Write the failing test** in `test/debugState.test.ts`: the labels contain `Fight: mireling`, `Fight: bog_mireling`, `Fight: barrow_mireling` between the last `Warp:` row and `Close`; activating `Fight: barrow_mireling` over an `ExploreState` removes the `DebugState` and leaves a `TransitionState` on top; 30 updates later a `BattleState` whose `battle.monster.id` is `'barrow_mireling'` is in the stack.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 Run: `npx vitest run test/debugState.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** the rows.
+- [x] **Step 3: Implement** the rows.
 
-- [ ] **Step 4: Verify the suite and that production excludes debug code**
+- [x] **Step 4: Verify the suite and that production excludes debug code**
 Run: `npm test && npx tsc --noEmit && npm run build && grep -l "Fight: " dist/assets/*.js | wc -l`
 Expected: all green; the count is `0`.
 
-- [ ] **Step 5: Write the carry-forward note**: where execution stands (branch, head, suite counts); every ruling made while executing, each with its cost if wrong; deferred minors from the reviews; questions for the owner; and the owner play-test list below, marked as not performed by anyone.
+- [x] **Step 5: Write the carry-forward note**: where execution stands (branch, head, suite counts); every ruling made while executing, each with its cost if wrong; deferred minors from the reviews; questions for the owner; and the owner play-test list below, marked as not performed by anyone.
 
   **Owner play-test for Phase 3** (spec §14): leave town; get into fights; win some; run from some; die once and wake up at Maren's with half your gold. Then the look-and-listen checks listed in Tasks 7 and 9, plus: open the debug overlay and use `Fight: barrow_mireling` to see the third colour; confirm the Mireling's three colours read as one creature in three places; say whether unarmed level 1 fights feel too slow before shops exist (the debug overlay's Level +1 and Full heal are there for this play-test).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/debug.ts test/debugState.test.ts docs/superpowers
 git commit -m "feat: debug fight rows; docs: Phase 3 complete, owner play-test list"
 ```
 
-- [ ] **Step 7: Stop.** Phase 3 is complete. Report the owner checks and wait for feedback before Phase 4.
+- [x] **Step 7: Stop.** Phase 3 is complete. Report the owner checks and wait for feedback before Phase 4.
