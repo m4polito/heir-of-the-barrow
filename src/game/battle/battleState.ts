@@ -76,6 +76,11 @@ export class BattleState implements State {
     return this._phase;
   }
 
+  /** The hero's stat window lines as rendered. */
+  get stats(): string[] {
+    return battleStatLines(this.game.player.name, this.shownHeroHp, this.shownHeroMp);
+  }
+
   /** The message window's text as currently revealed. */
   get text(): string[] {
     return this.beats.lines;
@@ -185,7 +190,8 @@ export class BattleState implements State {
       this.closeSub();
       if (why) this.say(why);
       else {
-        audio.playSfx('menuConfirm');
+        // A spell's first beat carries its own sound; a blip here would be cut off by it.
+        if (sub.kind === 'item') audio.playSfx('menuConfirm');
         this.perform(cmd);
       }
     }
@@ -236,7 +242,7 @@ export class BattleState implements State {
   }
 
   render(ctx: CanvasRenderingContext2D, frame: number): void {
-    const { font, sprites, player } = this.game;
+    const { font, sprites } = this.game;
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, 256, 240);
     const dx = this.shake > 0 ? (frame % 2 === 0 ? -2 : 2) : 0;
@@ -254,7 +260,7 @@ export class BattleState implements State {
     }
 
     drawWindow(ctx, 8, 8, 80, 48);
-    battleStatLines(player.name, this.shownHeroHp, this.shownHeroMp).forEach((line, i) =>
+    this.stats.forEach((line, i) =>
       font.drawText(ctx, line, 16, 16 + 10 * i),
     );
 

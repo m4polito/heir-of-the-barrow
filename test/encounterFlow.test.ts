@@ -227,6 +227,8 @@ describe('death and respawn', () => {
       tick('down');
       tick('confirm'); // Item
       tick('confirm'); // Herb
+      tick('up');
+      tick('up'); // back to Fight, so the mashing below always progresses
       mash(() => stack.states.length === 1 && stack.top instanceof ExploreState && stack.top !== explore);
       const woke = stack.top as ExploreState;
       const entry = MAPS[STORY.respawn.map as keyof typeof MAPS].entry[STORY.respawn.entry]!;

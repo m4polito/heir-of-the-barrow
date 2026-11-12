@@ -127,6 +127,16 @@ function fightToEnd(t: Setup): void {
   }
 }
 
+/** Spy on `act` and note the hero's hp, to prove a note used no turn. */
+function watchTurn(t: Setup) {
+  const act = vi.spyOn(t.state.battle, 'act');
+  const hp = t.state.battle.heroHp;
+  return () => {
+    expect(act).not.toHaveBeenCalled();
+    expect(t.state.battle.heroHp).toBe(hp);
+  };
+}
+
 const HERO3 = { level: 3, xp: 23, str: 7, agi: 6, maxHp: 24, maxMp: 5, hp: 5, mp: 5 };
 
 /** Confirm every third tick, otherwise no input. */
@@ -261,9 +271,11 @@ describe('BattleState', () => {
 
     it('Spell with no spells says so and uses no turn', () => {
       const t = setup();
+      const noTurn = watchTurn(t);
       toCommand(t);
       t.choose(1);
       expect(settle(t)).toBe('You know no spells.');
+      noTurn();
       expect(t.playSfx).toHaveBeenCalledWith('error');
       expect(t.state.phase).toBe('command');
       expect(t.state.battle.monsterHp).toBe(20);
@@ -280,6 +292,8 @@ describe('BattleState', () => {
       for (let i = 0; i < 400 && !played('heal'); i++) t.tick();
       expect(t.playSfx).toHaveBeenCalledWith('spell');
       expect(t.playSfx).toHaveBeenCalledWith('heal');
+      expect(t.ends).toHaveLength(0);
+      expect(t.state.stats[2]).toBe('MP   1');
       fightToEnd(t);
       expect(t.ends[0]?.outcome).toBe('won');
       expect(t.game.player.mp).toBe(1);
@@ -287,6 +301,7 @@ describe('BattleState', () => {
 
     it('a refused spell uses no turn and no MP', () => {
       const full = setup({ atk: 0 }, { ...HERO3, hp: 24 });
+      const fullNoTurn = watchTurn(full);
       toCommand(full);
       full.choose(1);
       full.tick('confirm');
@@ -294,14 +309,33 @@ describe('BattleState', () => {
       expect(full.state.phase).toBe('command');
       expect(full.state.battle.heroMp).toBe(5);
       expect(full.state.battle.monsterHp).toBe(20);
+      fullNoTurn();
 
       const dry = setup({ atk: 0 }, { ...HERO3, mp: 3 });
+      const dryNoTurn = watchTurn(dry);
       toCommand(dry);
       dry.choose(1);
       dry.tick('confirm');
       expect(settle(dry)).toBe('Not enough MP.');
       expect(dry.state.phase).toBe('command');
       expect(dry.state.battle.heroMp).toBe(3);
+      dryNoTurn();
+    });
+
+    it('accepting a spell plays no confirm blip, accepting an item does', () => {
+      const spell = setup({ atk: 0 }, HERO3);
+      toCommand(spell);
+      spell.choose(1);
+      const before = spell.playSfx.mock.calls.length;
+      spell.tick('confirm');
+      expect(spell.playSfx.mock.calls.slice(before).map((c) => c[0])).not.toContain('menuConfirm');
+
+      const item = setup({ atk: 0 }, { hp: 3, inventory: [{ item: 'herb', count: 1 }] });
+      toCommand(item);
+      item.choose(2);
+      const b2 = item.playSfx.mock.calls.length;
+      item.tick('confirm');
+      expect(item.playSfx.mock.calls.slice(b2).map((c) => c[0])).toContain('menuConfirm');
     });
 
     it('cancel leaves the spell list without acting', () => {
@@ -333,16 +367,18 @@ describe('BattleState', () => {
       toCommand(t);
       t.choose(2);
       t.tick('confirm');
-      for (let i = 0; i < 3000 && t.ends.length === 0; i++) pump(t.tick, i);
+      fightToEnd(t); // the cursor goes back to Fight after the Herb
       expect(t.ends[0]?.outcome).toBe('lost');
       expect(t.ends[0]?.inventory.some((s) => s.item === 'herb')).toBe(false);
     });
 
     it('Item with nothing usable says so', () => {
       const t = setup({ atk: 0 }, { inventory: [{ item: 'torch', count: 1 }] });
+      const noTurn = watchTurn(t);
       toCommand(t);
       t.choose(2);
       expect(settle(t)).toBe('You carry nothing to use.');
+      noTurn();
       expect(t.state.phase).toBe('command');
     });
 
@@ -350,9 +386,11 @@ describe('BattleState', () => {
       const t = setup({ hp: 1, atk: 0, agi: 0, xp: 2 }, { xp: 5, hp: 9 });
       let victory = -1;
       let jingle = -1;
+      let ended = -1;
       for (let i = 0; i < 3000 && t.ends.length === 0; i++) {
         t.tick('confirm');
         t.seen();
+        if (t.ends.length > 0) ended = i;
         if (victory < 0 && t.playSong.mock.calls.some((c) => c[0] === SONGS.victory)) victory = i;
         if (jingle < 0 && t.playSong.mock.calls.some((c) => c[0] === SONGS.levelup)) jingle = i;
       }
@@ -361,10 +399,13 @@ describe('BattleState', () => {
       expect(t.playSong.mock.calls.filter((c) => c[0] === SONGS.levelup)).toHaveLength(1);
       expect(victory).toBeGreaterThanOrEqual(0);
       expect(jingle - victory).toBeGreaterThanOrEqual(144);
+      expect(ended - jingle).toBeGreaterThanOrEqual(60); // the jingle's hold: 10 rows at tempo 150
       const order = ['You reach level 2.', 'Strength +1.', 'Max HP +7.'].map((x) => t.texts.indexOf(x));
       expect(order.every((i) => i >= 0)).toBe(true);
       expect([...order].sort((a, b) => a - b)).toEqual(order);
-      expect(t.game.player).toMatchObject({ level: 2, hp: 16, xp: 7 });
+      // whatever the draws, the level-up adds 7 to the hp the battle ended with
+      expect(t.game.player).toMatchObject({ level: 2, xp: 7 });
+      expect(t.game.player.hp).toBe(t.state.battle.heroHp + 7);
     });
 
     it('learning a spell is announced', () => {
