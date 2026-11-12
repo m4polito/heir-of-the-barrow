@@ -50,6 +50,11 @@ export class ScriptRunner {
     this.stack = [{ nodes: script, index: 0 }];
   }
 
+  /** True when a choice awaits an answer or any frame has nodes left. Executes nothing. */
+  get hasPending(): boolean {
+    return this.pendingChoice !== null || this.stack.some((f) => f.index < f.nodes.length);
+  }
+
   next(answer?: boolean): ScriptStep | null {
     if (this.pendingChoice) {
       const choice = this.pendingChoice;

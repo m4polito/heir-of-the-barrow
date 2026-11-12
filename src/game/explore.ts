@@ -145,10 +145,12 @@ export class ExploreState implements State {
     }
     if (input.pressed('cancel') && heroIdle(this._hero)) {
       this.game.audio.playSfx('menuConfirm');
+      input.rearm();
       this.game.stack.push(new MenuState(this.game));
       return;
     }
     if (input.pressed('debug') && heroIdle(this._hero) && this.game.debugOpen) {
+      input.rearm();
       this.game.debugOpen();
       return;
     }

@@ -6,8 +6,8 @@ type Page = { kind: 'text'; lines: string[] } | { kind: 'choice'; options: [stri
 /**
  * Typewriter and pagination model for one dialog. A text step is wrapped to
  * `cols` and split into pages of `rows` lines; a choice step is a single page.
- * `hasMore` only looks at pages of the current text step, never at the runner,
- * so script effects never run early.
+ * `hasMore` (the blinking marker) also peeks at the runner, but only through
+ * the side-effect-free `hasPending`, so script effects never run early.
  */
 export class DialogModel {
   choiceCursor: 0 | 1 = 0;
@@ -58,8 +58,15 @@ export class DialogModel {
     return !p || p.kind === 'choice' || this.shown >= this.pageLength;
   }
 
-  get hasMore(): boolean {
+  /** More pages within the current step; the only thing confirm() advances through. */
+  private get hasMorePages(): boolean {
     return this.pageIndex < this.pages.length - 1;
+  }
+
+  /** True when confirming leads to another page or step (marker shown). */
+  get hasMore(): boolean {
+    if (this.hasMorePages) return true;
+    return this.page?.kind === 'text' && this.runner.hasPending;
   }
 
   get isChoice(): boolean {
@@ -91,7 +98,7 @@ export class DialogModel {
     }
     const p = this.page;
     if (p?.kind === 'choice') this.load(this.runner.next(this.choiceCursor === 0));
-    else if (this.hasMore) {
+    else if (this.hasMorePages) {
       this.pageIndex++;
       this.shown = 0;
     } else this.load(this.runner.next());

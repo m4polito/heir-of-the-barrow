@@ -103,4 +103,24 @@ describe('sequencer', () => {
     expect(seq.playing).toBe(false);
     expect(apu.calls.at(-1)).toMatchObject({ kind: 'stop', time: 2 });
   });
+
+  it('skips rows that are already behind the audio clock after a stall', () => {
+    const apu = new FakeApu();
+    const seq = new Sequencer(apu);
+    // 8 rows of 0.0625 s: C4 on even rows, D4 on odd rows
+    const rows = Array.from({ length: 8 }, (_, i) => (i % 2 === 0 ? 'C4' : 'D4'));
+    seq.play({ id: 's', tempo: 240, tracks: [{ channel: 'p1', rows }] }, 10);
+    seq.schedule(10.05, 10); // on time: row 0 only
+    apu.calls.length = 0;
+    // timer stalled; clock is now 10.2 (rows 1-3 are late, row 4 at 10.25 is next on time)
+    seq.schedule(10.33, 10.2);
+    const emitted = apu.calls.filter((c) => c.kind !== 'stop');
+    expect(emitted.every((c) => c.time >= 10.2)).toBe(true);
+    const ons = emitted.filter((c) => c.kind === 'on');
+    expect(ons).toHaveLength(2);
+    expect(ons[0]!.time).toBeCloseTo(10.25, 5);
+    expect(ons[0]!.freq).toBeCloseTo(C4, 2);
+    expect(ons[1]!.time).toBeCloseTo(10.3125, 5);
+    expect(ons[1]!.freq).toBeCloseTo(D4, 2);
+  });
 });

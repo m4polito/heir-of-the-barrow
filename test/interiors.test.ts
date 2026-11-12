@@ -56,10 +56,28 @@ describe('interiors', () => {
     expect(reached.size).toBe(walkable);
     for (const e of Object.values(map.entry)) expect(reached.has(key(e.x, e.y))).toBe(true);
   });
+  it('every warp sits on a walkable door tile and every door tile has a warp', () => {
+    for (const [id, map] of ALL) {
+      const doors = new Set<string>();
+      map.tiles.forEach((t, i) => {
+        if (t === TILE_IDS.door) doors.add(key(i % map.width, Math.floor(i / map.width)));
+      });
+      const warps = new Set<string>();
+      for (const t of map.triggers) {
+        if (t.kind !== 'warp') continue;
+        warps.add(key(t.x, t.y));
+        expect(isWalkable(map, t.x, t.y), `${id} warp ${t.x},${t.y} walkable`).toBe(true);
+        expect(doors.has(key(t.x, t.y)), `${id} warp ${t.x},${t.y} on door`).toBe(true);
+      }
+      for (const d of doors) expect(warps.has(d), `${id} door ${d} has warp`).toBe(true);
+    }
+  });
   it('doors round-trip through hollowmere', () => {
     const outside = MAPS.hollowmere;
+    let visited = 0;
     for (const t of outside.triggers) {
       if (t.kind !== 'warp') continue;
+      visited++;
       const inside = BY_ID[t.to]!;
       const door = inside.entry[t.entry]!;
       expect(isWalkable(inside, door.x, door.y)).toBe(true);
@@ -70,6 +88,7 @@ describe('interiors', () => {
       expect(isWalkable(outside, landing.x, landing.y)).toBe(true);
       expect(landing).toMatchObject({ x: t.x, y: t.y + 1, facing: 'down' });
     }
+    expect(visited).toBe(4);
   });
 });
 

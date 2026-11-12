@@ -112,4 +112,37 @@ describe('AudioManager', () => {
     expect(play).toHaveBeenCalledTimes(1);
     expect(play.mock.calls[0]![0]).toBe(SFX.blip);
   });
+
+  describe('blip priority', () => {
+    function setup() {
+      const play = vi.spyOn(SfxPlayer.prototype, 'play').mockImplementation(() => {});
+      const audio = new AudioManager(null);
+      audio.unlock();
+      const clock = (audio as unknown as { ctx: { currentTime: number } }).ctx;
+      return { play, audio, clock };
+    }
+    const dur = (id: keyof typeof SFX) => SFX[id].reduce((n, s) => n + s.frames, 0) / 60;
+
+    it('drops a blip while another effect is sounding', () => {
+      const { play, audio } = setup();
+      audio.playSfx('menuConfirm');
+      audio.playSfx('blip');
+      expect(play).toHaveBeenCalledTimes(1);
+      expect(play.mock.calls[0]![0]).toBe(SFX.menuConfirm);
+    });
+    it('plays a blip once the effect has finished', () => {
+      const { play, audio, clock } = setup();
+      audio.playSfx('menuConfirm');
+      clock.currentTime = dur('menuConfirm') + 0.01;
+      audio.playSfx('blip');
+      expect(play).toHaveBeenCalledTimes(2);
+      expect(play.mock.calls[1]![0]).toBe(SFX.blip);
+    });
+    it('blips do not block each other', () => {
+      const { play, audio } = setup();
+      audio.playSfx('blip');
+      audio.playSfx('blip');
+      expect(play).toHaveBeenCalledTimes(2);
+    });
+  });
 });

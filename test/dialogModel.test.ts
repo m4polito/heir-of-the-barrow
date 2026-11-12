@@ -66,10 +66,34 @@ describe('DialogModel', () => {
     expect(m.done).toBe(true);
   });
 
-  it('hasMore is false on the last page even when more steps follow', () => {
+  it('hasMore is true on a step that has later steps, false on the last one', () => {
     const m = model(['one', 'two']);
     m.confirm();
+    expect(m.revealed).toBe(true);
+    expect(m.hasMore).toBe(true);
+    m.confirm();
+    m.confirm();
+    expect(m.lines).toEqual(['two']);
     expect(m.hasMore).toBe(false);
+  });
+
+  it('reading hasMore runs no script effects', () => {
+    const log: string[] = [];
+    const env: ScriptEnv = {
+      name: 'Wren',
+      has: () => false,
+      set: (f) => log.push(`set:${f}`),
+      give: (i) => (log.push(`give:${i}`), true),
+      gold: () => {},
+      heal: () => {},
+      sfx: () => {},
+    };
+    const m = new DialogModel(new ScriptRunner(['one', { set: 'f' }, { give: 'x' }, 'two'], env));
+    m.confirm();
+    for (let i = 0; i < 5; i++) expect(m.hasMore).toBe(true);
+    expect(log).toEqual([]);
+    m.confirm();
+    expect(log).toEqual(['set:f', 'give:x']);
   });
 
   it('splits a 40-char word to at most 28 columns', () => {

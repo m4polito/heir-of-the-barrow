@@ -8,6 +8,13 @@ import type { Game } from '../game';
 
 const SLOTS: EquipSlot[] = ['weapon', 'armor', 'shield'];
 
+/** Window sized to its longest line (8 px glyphs, 8 px cursor, padding), right-aligned at x=248. */
+export function equipWindowRect(lines: readonly string[]): { x: number; w: number } {
+  const longest = lines.reduce((n, l) => Math.max(n, l.length), 0);
+  const w = Math.max(160, longest * 8 + 24);
+  return { x: 248 - w, w };
+}
+
 export class EquipState implements State {
   private list = new MenuList([]);
   private candidates: string[] = [];
@@ -56,8 +63,9 @@ export class EquipState implements State {
 
   render(ctx: CanvasRenderingContext2D): void {
     this.sync();
-    drawWindow(ctx, 88, 8, 160, 100);
+    const { x, w } = equipWindowRect(this.list.items);
+    drawWindow(ctx, x, 8, w, 100);
     const lineH = this.list.items.length > 9 ? 8 : 10;
-    drawMenu(ctx, this.game.font, this.list.items, this.list.cursor, 94, 16, lineH);
+    drawMenu(ctx, this.game.font, this.list.items, this.list.cursor, x + 6, 16, lineH);
   }
 }

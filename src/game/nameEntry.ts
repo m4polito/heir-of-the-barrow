@@ -37,8 +37,12 @@ export class NameEntryModel {
   move(dx: number, dy: number): void {
     const rows = NAME_GRID.length;
     if (dy !== 0) {
+      const from = this.cy;
       this.cy = (this.cy + dy + rows) % rows;
-      this.cx = Math.min(this.cx, this.rowWidth(this.cy) - 1);
+      // Map by drawn position: BACK is column 0, END is column 6 of the 13-column rows.
+      if (this.cy === ACTION_ROW && from !== ACTION_ROW) this.cx = this.cx >= 4 ? 1 : 0;
+      else if (from === ACTION_ROW && this.cy !== ACTION_ROW) this.cx = this.cx ? 6 : 0;
+      else this.cx = Math.min(this.cx, this.rowWidth(this.cy) - 1);
     }
     if (dx !== 0) {
       const w = this.rowWidth(this.cy);

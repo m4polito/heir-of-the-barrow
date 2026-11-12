@@ -15,7 +15,7 @@ export class StatusState implements State {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    drawWindow(ctx, 8, 8, 112, 112);
+    drawWindow(ctx, 8, 8, 128, 112);
     statusLines(this.game.items, this.game.player).forEach((line, i) => this.game.font.drawText(ctx, line, 16, 16 + i * 10));
   }
 }

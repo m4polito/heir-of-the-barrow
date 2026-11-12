@@ -29,6 +29,8 @@ export class AudioManager {
   private pending: Song | null = null;
   private currentSongId: string | null = null;
   private mutedPref: boolean;
+  /** Audio-clock time until which a non-blip effect is still sounding. */
+  private sfxBusyUntil = 0;
 
   private readonly muteKey: string | undefined;
 
@@ -70,7 +72,7 @@ export class AudioManager {
     this.master = master;
     this.songGain = songGain;
     this.sequencer = sequencer;
-    setInterval(() => sequencer.schedule(ctx.currentTime + 0.1), 25);
+    setInterval(() => sequencer.schedule(ctx.currentTime + 0.1, ctx.currentTime), 25);
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') void ctx.resume().catch(() => {});
@@ -123,7 +125,12 @@ export class AudioManager {
 
   playSfx(id: SfxId): void {
     if (!this.ctx || !this.sfx) return;
-    this.sfx.play(SFX[id], this.ctx.currentTime + 0.005);
+    const t = this.ctx.currentTime + 0.005;
+    // A text blip must not cut off a longer effect that is still sounding.
+    if (id === 'blip' && t < this.sfxBusyUntil) return;
+    const steps = SFX[id];
+    this.sfx.play(steps, t);
+    this.sfxBusyUntil = id === 'blip' ? 0 : t + steps.reduce((n, s) => n + s.frames, 0) / 60;
   }
 
   stopSong(): void {

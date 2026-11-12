@@ -41,6 +41,17 @@ describe('player', () => {
     expect(q).toMatchObject({ level: 5, str: 12, agi: 10, maxHp: 35, maxMp: 20, xp: 110, hp: 23 });
     expect(p.level).toBe(1);
   });
+  it('re-applying the same level never changes hp or mp', () => {
+    for (let lv = 1; lv <= LEVELS.length; lv++) {
+      const base = applyLevel(createPlayer('x', STORY.startingItems), lv);
+      for (let hp = 1; hp <= base.maxHp; hp++)
+        for (const mp of [0, Math.floor(base.maxMp / 2), base.maxMp]) {
+          const p = { ...base, hp, mp };
+          const q = applyLevel(p, lv);
+          expect([q.hp, q.mp], `lv ${lv} hp ${hp} mp ${mp}`).toEqual([hp, mp]);
+        }
+    }
+  });
   it('applyLevel gives full mp from 0/0 and clamps level', () => {
     expect(applyLevel(createPlayer('x', STORY.startingItems), 3).mp).toBe(5);
     expect(applyLevel(createPlayer('x', STORY.startingItems), 99).level).toBe(10);

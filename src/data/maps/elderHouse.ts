@@ -11,7 +11,7 @@ const ROWS = [
   '#wwwwwwwwww#',
   '#wwwwwwwwww#',
   '#wwwwwwwwww#',
-  '#####D######',
+  '######D#####',
 ];
 
 export const ELDER_HOUSE: GameMap = {

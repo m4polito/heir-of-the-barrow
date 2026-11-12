@@ -7,7 +7,7 @@ import { DialogState } from '../src/game/dialog/dialogState';
 import { ExploreState } from '../src/game/explore';
 import { createGame } from '../src/game/game';
 import { npcPixelOffset } from '../src/game/npc';
-import { createPlayer, hasFlag } from '../src/game/player';
+import { createPlayer, hasFlag, setFlag } from '../src/game/player';
 import type { GameMap } from '../src/game/map';
 import type { Font } from '../src/engine/font';
 import { AudioManager } from '../src/engine/audio/audio';
@@ -249,5 +249,32 @@ describe('dialog fix round 1', () => {
     expect(npc.stepFrame).toBe(0);
     expect(npc.facing).toBe('left');
     expect(npcPixelOffset(npc)).toEqual({ dx: 0, dy: 0 });
+  });
+});
+
+describe('leaving interiors', () => {
+  it.each(['elder_house', 'inn', 'forge', 'shop'])('walking down from the %s door returns to the town', (id) => {
+    const { stack, game } = makeGame();
+    game.player = setFlag(game.player, STORY.opening.flag);
+    const explore = new ExploreState(game, id, 'door');
+    stack.push(explore);
+    const input = {
+      held: (a: string) => a === 'down',
+      pressed: () => false,
+      repeat: () => false,
+      rearm: () => {},
+    } as unknown as Input;
+    let guard = 0;
+    while (!stack.states.some((s) => s instanceof TransitionState)) {
+      stack.update(input);
+      expect(++guard).toBeLessThan(200);
+    }
+    while (stack.states.some((s) => s instanceof TransitionState)) {
+      stack.update(input);
+      expect(++guard).toBeLessThan(400);
+    }
+    expect(explore.mapId).toBe('hollowmere');
+    const landing = MAPS.hollowmere.entry[id]!;
+    expect(explore.hero).toMatchObject({ x: landing.x, y: landing.y });
   });
 });

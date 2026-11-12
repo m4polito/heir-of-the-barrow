@@ -43,6 +43,7 @@ const keys = (...down: string[]) =>
     held: () => false,
     pressed: (a: string) => down.includes(a),
     repeat: (a: string) => down.includes(a),
+    rearm: () => {},
   }) as unknown as Input;
 
 function pick(dbg: DebugState, row: number): void {

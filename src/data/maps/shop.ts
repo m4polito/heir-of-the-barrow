@@ -10,7 +10,7 @@ const ROWS = [
   '#wwwwwwwwww#',
   '#wwwwwwwwww#',
   '#wwwwwwwwww#',
-  '#####D######',
+  '######D#####',
 ];
 
 export const SHOP: GameMap = {

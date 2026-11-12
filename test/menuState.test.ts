@@ -13,7 +13,7 @@ import { addItem } from '../src/game/inventory';
 import { DialogState } from '../src/game/dialog/dialogState';
 import { MenuState } from '../src/game/menu/menuState';
 import { ItemsState } from '../src/game/menu/itemsState';
-import { EquipState } from '../src/game/menu/equipState';
+import { EquipState, equipWindowRect } from '../src/game/menu/equipState';
 import { MAPS } from '../src/data/maps';
 import { DIALOGS } from '../src/data/dialog/hollowmere';
 import { SONGS } from '../src/data/songs';
@@ -46,6 +46,7 @@ const keys = (...down: string[]) =>
     held: () => false,
     pressed: (a: string) => down.includes(a),
     repeat: (a: string) => down.includes(a),
+    rearm: () => {},
   }) as unknown as Input;
 
 describe('menu from explore', () => {
@@ -137,5 +138,20 @@ describe('items and equip', () => {
     eq2.update(keys('confirm'));
     expect(game.player.equipment.shield).toBeUndefined();
     expect(game.player.inventory.some((s) => s.item === 'aldric_shield')).toBe(true);
+  });
+});
+
+describe('equip window rect', () => {
+  it('keeps the default size for short lines', () => {
+    expect(equipWindowRect(['Club', 'Cloth'])).toEqual({ x: 88, w: 160 });
+  });
+  it('grows leftwards for a 23-character line', () => {
+    expect(equipWindowRect(['x'.repeat(23)])).toEqual({ x: 40, w: 208 });
+  });
+  it('keeps every line inside the border', () => {
+    for (let n = 1; n <= 28; n++) {
+      const { x, w } = equipWindowRect(['a'.repeat(n)]);
+      expect(x + 6 + 8 + n * 8).toBeLessThanOrEqual(x + w - 8);
+    }
   });
 });

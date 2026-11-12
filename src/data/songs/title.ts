@@ -1,11 +1,10 @@
 import type { Song, Track } from '../../engine/audio/sequencer';
 
-// "Title": slow and stately, 4/4, 16 bars of 16 rows. D minor for twelve bars,
-// then the relative major (F) for the last four. One chord per bar:
-//   phrase 1  Dm | Bb | Gm | A
-//   phrase 2  Dm | C  | Bb | A
-//   phrase 3  Gm | Dm | Bb | A
-//   phrase 4  F  | C  | Bb | F
+// "Title": slow and stately, 4/4, 16 bars of 16 rows. A D pedal runs under the
+// first twelve bars (D minor), with dominant colour (A) in bars 4, 8 and 12.
+// From bar 13 the pedal moves to F (the relative major): C3 in bar 15, and F2
+// again under the final chord. The melody and counter-line move over the pedal
+// rather than following a chord per bar.
 
 type Row = string | null;
 type Ev = [note: string, rows: number];

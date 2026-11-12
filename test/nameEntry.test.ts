@@ -149,7 +149,8 @@ describe('new-game flow', () => {
     stack.update(keys('confirm')); // A
     stack.update(keys('right'));
     stack.update(keys('confirm')); // B
-    stack.update(keys('up')); // last row; column 1 is END
+    stack.update(keys('up')); // last row; column 1 maps to BACK
+    stack.update(keys('right')); // END
     stack.update(keys('confirm'));
     expect(stack.top).toBeInstanceOf(TransitionState);
     runTransition(stack);
@@ -171,5 +172,34 @@ describe('new-game flow', () => {
     stack.update(keys('confirm'));
     runTransition(stack);
     expect(game.player.name).toBe(STORY.defaultHeroName);
+  });
+});
+
+describe('NameEntryModel BACK/END row mapping', () => {
+  const at = (cx: number, cy: number) => {
+    const m = new NameEntryModel('Wren');
+    m.cx = cx;
+    m.cy = cy;
+    return m;
+  };
+  it('entering from the left half lands on BACK, the right half on END', () => {
+    for (const [col, want] of [[0, 0], [3, 0], [4, 1], [6, 1], [12, 1]] as const) {
+      const m = at(col, 4);
+      m.move(0, 1);
+      expect([m.cy, m.cx], `col ${col}`).toEqual([5, want]);
+      const up = at(col, 0);
+      up.move(0, -1);
+      expect(up.cx, `up col ${col}`).toBe(want);
+    }
+  });
+  it('leaving BACK goes to column 0, END to column 6, up or down', () => {
+    for (const dy of [-1, 1] as const) {
+      const back = at(0, 5);
+      back.move(0, dy);
+      expect(back.cx).toBe(0);
+      const end = at(1, 5);
+      end.move(0, dy);
+      expect(end.cx).toBe(6);
+    }
   });
 });
