@@ -16,6 +16,22 @@ export interface ApuLike {
 type Pitched = Exclude<Channel, 'noise'>;
 
 const RAMP_SEC = 0.003;
+
+interface Segment { start: number; end: number; from: number; to: number }
+
+/** Value of a linear ramp segment at `time` (holds `from` before, `to` after). */
+export function lerpSegment(seg: Segment, time: number): number {
+  if (time <= seg.start) return seg.from;
+  if (time >= seg.end) return seg.to;
+  return seg.from + ((seg.to - seg.from) * (time - seg.start)) / (seg.end - seg.start);
+}
+
+/** Value of a noise hit's exponential decay (peak -> 0.0001) at `time`, after its attack. */
+export function noiseGainAt(peak: number, attackEnd: number, decayEnd: number, time: number): number {
+  if (time >= decayEnd) return 0;
+  if (time <= attackEnd) return peak;
+  return peak * Math.pow(0.0001 / peak, (time - attackEnd) / (decayEnd - attackEnd));
+}
 /** Peak gain per channel at vol 15. Kept low: NES-style square waves are perceptually loud. */
 const MAX_GAIN = 0.12;
 const DUTIES: Duty[] = [0.125, 0.25, 0.5];
@@ -35,7 +51,15 @@ export class Apu implements ApuLike {
   private readonly duty: Record<'p1' | 'p2', Duty> = { p1: 0.5, p2: 0.5 };
   private readonly waves = new Map<Duty, PeriodicWave>();
   private readonly noiseBuffer: AudioBuffer;
-  private readonly liveNoise = new Set<AudioBufferSourceNode>();
+  private readonly liveNoise = new Map<
+    AudioBufferSourceNode,
+    { gain: GainNode; peak: number; attackEnd: number; decayEnd: number }
+  >();
+  private readonly seg: Record<Pitched, Segment> = {
+    p1: { start: 0, end: 0, from: 0, to: 0 },
+    p2: { start: 0, end: 0, from: 0, to: 0 },
+    tri: { start: 0, end: 0, from: 0, to: 0 },
+  };
 
   constructor(
     private readonly ctx: AudioContext,
@@ -102,7 +126,7 @@ export class Apu implements ApuLike {
     g.linearRampToValueAtTime((vol / 15) * MAX_GAIN, time + RAMP_SEC);
     g.exponentialRampToValueAtTime(0.0001, time + p.decay);
     g.setValueAtTime(0, time + p.decay + 0.001);
-    this.liveNoise.add(src);
+    this.liveNoise.set(src, { gain, peak: (vol / 15) * MAX_GAIN, attackEnd: time + RAMP_SEC, decayEnd: time + p.decay });
     src.onended = () => { this.liveNoise.delete(src); };
     src.start(time);
     src.stop(time + p.decay + 0.01);
@@ -110,9 +134,16 @@ export class Apu implements ApuLike {
 
   /** Only place cancelScheduledValues is allowed: silences notes queued after `time`. */
   stopAll(time: number): void {
-    for (const src of this.liveNoise) {
+    for (const [src, hit] of this.liveNoise) {
+      const v = time < hit.attackEnd
+        ? hit.peak * Math.max(0, time - (hit.attackEnd - RAMP_SEC)) / RAMP_SEC
+        : noiseGainAt(hit.peak, hit.attackEnd, hit.decayEnd, time);
+      const g = hit.gain.gain;
+      g.cancelScheduledValues(time);
+      g.setValueAtTime(v, time);
+      g.linearRampToValueAtTime(0, time + RAMP_SEC);
       try {
-        src.stop(time);
+        src.stop(time + RAMP_SEC + 0.001);
       } catch {
         // already stopped
       }
@@ -122,11 +153,17 @@ export class Apu implements ApuLike {
       const g = this.gain[ch].gain;
       g.cancelScheduledValues(time);
       this.osc[ch].frequency.cancelScheduledValues(time);
-      g.setValueAtTime(this.lastGain[ch], time);
+      const v = this.gainAt(ch, time);
+      g.setValueAtTime(v, time);
       g.linearRampToValueAtTime(0, time + RAMP_SEC);
+      this.seg[ch] = { start: time, end: time + RAMP_SEC, from: v, to: 0 };
       this.lastGain[ch] = 0;
       this.rampEnd[ch] = time + RAMP_SEC;
     }
+  }
+
+  private gainAt(ch: Pitched, time: number): number {
+    return lerpSegment(this.seg[ch], time);
   }
 
   /** Schedules a gain ramp starting no earlier than the previous ramp's end; returns its start time. */
@@ -135,6 +172,7 @@ export class Apu implements ApuLike {
     const s = Math.max(time, this.rampEnd[ch]);
     g.setValueAtTime(this.lastGain[ch], s);
     g.linearRampToValueAtTime(target, s + RAMP_SEC);
+    this.seg[ch] = { start: s, end: s + RAMP_SEC, from: this.lastGain[ch], to: target };
     this.lastGain[ch] = target;
     this.rampEnd[ch] = s + RAMP_SEC;
     return s;
