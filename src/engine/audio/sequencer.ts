@@ -27,6 +27,11 @@ export function rowDurationSec(tempo: number): number {
   return 60 / tempo / ROWS_PER_BEAT;
 }
 
+/** Frames (at 60 per second) a song lasts when played once. */
+export function songFrames(song: Song): number {
+  return Math.ceil(song.tracks[0]!.rows.length * rowDurationSec(song.tempo) * 60);
+}
+
 export function validateSong(song: Song): void {
   if (!(song.tempo > 0)) throw new Error(`song ${song.id}: tempo must be positive`);
   if (song.tracks.length === 0) throw new Error(`song ${song.id}: no tracks`);

@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { DIALOGS, type DialogId } from '../src/data/dialog/hollowmere';
 import { ScriptRunner, type DialogNode, type DialogScript, type ScriptEnv, type ScriptStep } from '../src/game/dialog/script';
+import { SONGS } from '../src/data/songs';
 import { wrapText } from '../src/ui/wrap';
 
 const IDS: DialogId[] = [
   'maren_intro', 'maren_fallen', 'maren', 'hesta', 'garrik', 'odo', 'pip', 'bram', 'tobin', 'villager_a', 'villager_b',
 ];
 
-function run(id: DialogId, flags: string[] = []) {
+function run(id: DialogId, flags: string[] = [], answer = true, canPay = true) {
   const set = new Set(flags);
   const calls: string[] = [];
   const env: ScriptEnv = {
@@ -18,7 +19,7 @@ function run(id: DialogId, flags: string[] = []) {
     gold: () => {},
     heal: () => { calls.push('heal'); },
     sfx: (s) => { calls.push(`sfx:${s}`); },
-    pay: () => true,
+    pay: (n) => { calls.push(`pay:${n}`); return canPay; },
     save: () => true,
     rest: (song) => { calls.push(`rest:${song}`); },
     shop: (id) => { calls.push(`shop:${id}`); },
@@ -27,7 +28,7 @@ function run(id: DialogId, flags: string[] = []) {
   const steps: ScriptStep[] = [];
   let ended = false;
   for (let i = 0; i < 100; i++) {
-    const step = runner.next(true);
+    const step = runner.next(answer);
     if (step === null) { ended = true; break; }
     steps.push(step);
   }
@@ -87,8 +88,46 @@ describe('Hollowmere dialog content', () => {
     else expect(run(id, ['warden_defeated']).steps).not.toEqual(run(id).steps);
   });
 
-  it.each([[], ['warden_defeated']])('hesta gives one free rest per talk (flags: %s)', (...flags) => {
-    expect(run('hesta', flags).calls.filter((c) => c === 'heal')).toHaveLength(1);
+  describe.each([[[]], [['warden_defeated']]])('hesta the innkeeper (flags: %j)', (flags) => {
+    it('Yes with enough gold pays 6 once and rests once, never heals', () => {
+      const { calls } = run('hesta', flags, true, true);
+      expect(calls.filter((c) => c === 'pay:6')).toHaveLength(1);
+      expect(calls.filter((c) => c === 'rest:inn')).toHaveLength(1);
+      expect(calls).not.toContain('heal');
+    });
+    it('Yes without enough gold pays once and does not rest', () => {
+      const { calls } = run('hesta', flags, true, false);
+      expect(calls.filter((c) => c === 'pay:6')).toHaveLength(1);
+      expect(calls.some((c) => c.startsWith('rest:'))).toBe(false);
+    });
+    it('No neither pays nor rests', () => {
+      const { calls } = run('hesta', flags, false);
+      expect(calls.some((c) => c.startsWith('pay:') || c.startsWith('rest:'))).toBe(false);
+    });
+  });
+
+  it('every ask fits three lines, every rest is a one-shot song, every hesta price is 6', () => {
+    const walk = (nodes: DialogScript, visit: (n: Exclude<DialogNode, string>) => void) => {
+      for (const n of nodes as DialogNode[]) {
+        if (typeof n === 'string') continue;
+        visit(n);
+        if ('if' in n) { walk(n.then, visit); if (n.else) walk(n.else, visit); }
+        else if ('choice' in n) { walk(n.yes, visit); walk(n.no, visit); }
+        else if ('pay' in n) { walk(n.then, visit); if (n.else) walk(n.else, visit); }
+        else if ('save' in n) { walk(n.ok, visit); walk(n.fail, visit); }
+      }
+    };
+    for (const id of IDS) {
+      walk(DIALOGS[id], (n) => {
+        if ('choice' in n && n.ask) expect(wrapText(n.ask, 28).length).toBeLessThanOrEqual(3);
+        if ('rest' in n) {
+          const song = (SONGS as Record<string, { loop?: boolean } | undefined>)[n.rest];
+          expect(song).toBeDefined();
+          expect(song!.loop).toBe(false);
+        }
+        if ('pay' in n && id === 'hesta') expect(n.pay).toBe(6);
+      });
+    }
   });
 
   it.each([

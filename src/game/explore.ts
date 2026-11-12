@@ -11,6 +11,7 @@ import { cameraOrigin } from './camera';
 import { TransitionState } from './transition';
 import { DialogState, type DialogServices } from './dialog/dialogState';
 import { ShopState } from './shopState';
+import { SleepState } from './sleepState';
 import { MenuState } from './menu/menuState';
 import { setFlag, hasFlag, applyDeath } from './player';
 import { encounterStep, ENCOUNTER_GRACE } from './encounter';
@@ -187,6 +188,11 @@ export class ExploreState implements State {
         const def = game.shops[id];
         if (!def) throw new Error(`Unknown shop: ${id}`);
         game.stack.push(new ShopState(game, def));
+      },
+      rest: (id) => {
+        const song = game.songs[id];
+        if (!song) throw new Error(`Unknown song: ${id}`);
+        game.stack.push(new SleepState(game, { song, onWake: () => this.playMapSong() }));
       },
     };
   }

@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { validateSong } from '../src/engine/audio/sequencer';
+import { validateSong, rowDurationSec } from '../src/engine/audio/sequencer';
 import { HOLLOWMERE_SONG } from '../src/data/songs/hollowmere';
 import { SONGS } from '../src/data/songs';
 import { noteToMidi } from '../src/engine/audio/notes';
+import { INN_SONG } from '../src/data/songs/inn';
 import { BATTLE_MOTIF } from '../src/data/songs/battle';
 
 describe('HOLLOWMERE_SONG', () => {
@@ -259,5 +260,25 @@ describe('marsh and battle development', () => {
       if (hit) varied++;
     }
     expect(varied).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('INN_SONG', () => {
+  it('is registered, valid, plays once, and lasts about three seconds', () => {
+    expect(SONGS.inn).toBe(INN_SONG);
+    expect(INN_SONG.id).toBe('inn');
+    expect(() => validateSong(INN_SONG)).not.toThrow();
+    expect(INN_SONG.loop).toBe(false);
+    const sec = INN_SONG.tracks[0]!.rows.length * rowDurationSec(INN_SONG.tempo);
+    expect(sec).toBeGreaterThanOrEqual(2.5);
+    expect(sec).toBeLessThanOrEqual(3.5);
+  });
+
+  it('ends every pitched track with off', () => {
+    for (const t of INN_SONG.tracks) {
+      if (t.channel === 'noise') continue;
+      const last = [...t.rows].reverse().find((r) => r !== null);
+      expect(last).toBe('off');
+    }
   });
 });

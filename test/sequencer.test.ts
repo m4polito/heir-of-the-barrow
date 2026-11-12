@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { Sequencer, validateSong, rowDurationSec, type Song } from '../src/engine/audio/sequencer';
+import { Sequencer, validateSong, rowDurationSec, songFrames, type Song } from '../src/engine/audio/sequencer';
+import { INN_SONG } from '../src/data/songs/inn';
+import { VICTORY_SONG } from '../src/data/songs/victory';
 import type { ApuLike } from '../src/engine/audio/apu';
 
 interface Call { kind: string; ch?: string; freq?: number; time: number; vol?: number; duty?: number; preset?: string }
@@ -140,5 +142,15 @@ describe('sequencer', () => {
     seq.stop(2);
     expect(seq.playing).toBe(false);
     expect(apu.calls.at(-1)).toMatchObject({ kind: 'stop', time: 2 });
+  });
+});
+
+describe('songFrames', () => {
+  it('counts the frames a one-shot song lasts', () => {
+    expect(songFrames(INN_SONG)).toBe(180);
+    expect(VICTORY_SONG.tracks[0]!.rows.length).toBe(24);
+    expect(VICTORY_SONG.tempo).toBe(150);
+    // 24 rows * 0.1 s * 60 is 144.00000000000003 in floating point, so ceil gives 145: the same hold battleState always had
+    expect(songFrames(VICTORY_SONG)).toBe(145);
   });
 });

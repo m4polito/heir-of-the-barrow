@@ -1,7 +1,7 @@
 import type { State } from '../../engine/state';
 import type { Input } from '../../engine/input';
 import { LOGICAL_W } from '../../engine/constants';
-import { rowDurationSec } from '../../engine/audio/sequencer';
+import { songFrames } from '../../engine/audio/sequencer';
 import { MenuList } from '../../ui/menuList';
 import { drawWindow, drawMenu } from '../../ui/window';
 import { monsterArt } from '../../data/sprites/monsters';
@@ -138,7 +138,7 @@ export class BattleState implements State {
     if (song) {
       audio.playSong(song);
       if (song.loop === false) {
-        this.songHold = Math.ceil(song.tracks[0]!.rows.length * rowDurationSec(song.tempo) * 60);
+        this.songHold = songFrames(song);
       }
     }
     if (beat.fx === 'shake') this.shake = SHAKE_FRAMES;
