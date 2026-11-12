@@ -47,7 +47,8 @@ export class DialogState implements State {
   }
 
   private shownChars(): number {
-    return this.model.isChoice ? 0 : this.model.lines.reduce((n, l) => n + l.length, 0);
+    const shown = this.model.isChoice ? this.model.ask : this.model.lines;
+    return shown.reduce((n, l) => n + l.length, 0);
   }
 
   update(input: Input): void {
@@ -60,13 +61,13 @@ export class DialogState implements State {
       this.muted = true;
       model.skipAll(this.onChoice ? () => this.onChoice?.(false) : undefined);
     } else if (input.pressed('confirm')) {
-      if (model.isChoice) {
+      if (model.isChoice && model.revealed) {
         audio.playSfx('menuConfirm');
         this.onChoice?.(model.choiceCursor === 0);
       }
       model.confirm();
     }
-    if (model.isChoice) {
+    if (model.isChoice && model.revealed) {
       if (input.pressed('up') || input.pressed('down') || input.pressed('left') || input.pressed('right')) {
         model.moveChoice(1);
         audio.playSfx('menuMove');
@@ -86,10 +87,14 @@ export class DialogState implements State {
     const model = this.model;
     drawWindow(ctx, 8, 176, 240, 56);
     if (model.isChoice) {
+      const ask = model.ask;
+      ask.forEach((line, i) => font.drawText(ctx, line, 16, 184 + 10 * i));
+      if (!model.revealed) return;
       const [a, b] = model.lines;
-      font.drawText(ctx, a ?? '', 32, 194);
-      font.drawText(ctx, b ?? '', 32, 204);
-      font.drawText(ctx, '▶', 24, model.choiceCursor === 0 ? 194 : 204);
+      const y = 184 + 10 * Math.max(1, ask.length);
+      font.drawText(ctx, a ?? '', 32, y);
+      font.drawText(ctx, b ?? '', 96, y);
+      font.drawText(ctx, '▶', model.choiceCursor === 0 ? 24 : 88, y);
       return;
     }
     model.lines.forEach((line, i) => font.drawText(ctx, line, 16, 184 + 10 * i));

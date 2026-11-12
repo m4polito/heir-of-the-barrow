@@ -4,7 +4,7 @@ import { substitute } from '../../ui/wrap';
 export type DialogNode =
   | string
   | { if: string | { not: string }; then: DialogScript; else?: DialogScript }
-  | { choice: [string, string]; yes: DialogScript; no: DialogScript }
+  | { choice: [string, string]; ask?: string; yes: DialogScript; no: DialogScript }
   | { set: string }
   | { give: string }
   | { gold: number }
@@ -25,9 +25,9 @@ export interface ScriptEnv {
 
 export type ScriptStep =
   | { kind: 'text'; text: string }
-  | { kind: 'choice'; options: [string, string] };
+  | { kind: 'choice'; options: [string, string]; ask?: string };
 
-type Choice = { choice: [string, string]; yes: DialogScript; no: DialogScript };
+type Choice = { choice: [string, string]; ask?: string; yes: DialogScript; no: DialogScript };
 
 interface Frame {
   nodes: DialogScript;
@@ -91,7 +91,9 @@ export class ScriptRunner {
       this.pendingChoice = node;
       const [a, b] = node.choice;
       const vars = { name: this.env.name };
-      return { kind: 'choice', options: [substitute(a, vars), substitute(b, vars)] };
+      const step: ScriptStep = { kind: 'choice', options: [substitute(a, vars), substitute(b, vars)] };
+      if (node.ask !== undefined) step.ask = substitute(node.ask, vars);
+      return step;
     }
     if ('set' in node) this.env.set(node.set);
     else if ('give' in node) {

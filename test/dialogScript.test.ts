@@ -101,6 +101,15 @@ describe('ScriptRunner', () => {
     expect(r.next()).toEqual({ kind: 'choice', options: ['Yes Wren', 'No'] });
   });
 
+  it('a choice carries its question, with {name} substituted', () => {
+    const { env } = makeEnv({ name: 'Wren' });
+    const r = new ScriptRunner([{ choice: ['Yes', 'No'], ask: 'Ready, {name}?', yes: [], no: [] }], env);
+    expect(r.next()).toEqual({ kind: 'choice', options: ['Yes', 'No'], ask: 'Ready, Wren?' });
+    const r2 = new ScriptRunner([{ choice: ['Yes', 'No'], yes: [], no: [] }], env);
+    const step = r2.next() as Extract<ScriptStep, { kind: 'choice' }>;
+    expect(typeof step.ask).not.toBe('string');
+  });
+
   it('reads the name when text is produced', () => {
     const { env } = makeEnv({ name: 'Wren' });
     const r = new ScriptRunner(['{name}'], env);

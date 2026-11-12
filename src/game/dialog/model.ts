@@ -1,11 +1,26 @@
 import { wrapText } from '../../ui/wrap';
 import type { ScriptRunner } from './script';
 
-type Page = { kind: 'text'; lines: string[] } | { kind: 'choice'; options: [string, string] };
+type Page =
+  | { kind: 'text'; lines: string[] }
+  | { kind: 'choice'; options: [string, string]; ask: string[] };
+
+/** Revealed part of wrapped lines when `shown` characters have been typed. */
+function typed(lines: string[], shown: number): string[] {
+  const out: string[] = [];
+  let left = shown;
+  for (const line of lines) {
+    if (left <= 0) break;
+    out.push(line.slice(0, left));
+    left -= line.length;
+  }
+  return out;
+}
 
 /**
  * Typewriter and pagination model for one dialog. A text step is wrapped to
- * `cols` and split into pages of `rows` lines; a choice step is a single page.
+ * `cols` and split into pages of `rows` lines; a choice step is a single page whose
+ * optional question (at most 3 lines) types out before the answers appear.
  * `hasMore` (the blinking marker) also peeks at the runner, but only through
  * the side-effect-free `hasPending`, so script effects never run early.
  */
@@ -31,7 +46,8 @@ export class DialogModel {
 
   private get pageLength(): number {
     const p = this.page;
-    return p && p.kind === 'text' ? p.lines.reduce((n, l) => n + l.length, 0) : 0;
+    if (!p) return 0;
+    return (p.kind === 'text' ? p.lines : p.ask).reduce((n, l) => n + l.length, 0);
   }
 
   /**
@@ -43,19 +59,18 @@ export class DialogModel {
     const p = this.page;
     if (!p) return [];
     if (p.kind === 'choice') return [...p.options];
-    const out: string[] = [];
-    let left = this.shown;
-    for (const line of p.lines) {
-      if (left <= 0) break;
-      out.push(line.slice(0, left));
-      left -= line.length;
-    }
-    return out;
+    return typed(p.lines, this.shown);
+  }
+
+  /** Typed part of a choice page's question; empty when there is none. */
+  get ask(): string[] {
+    const p = this.page;
+    return p && p.kind === 'choice' ? typed(p.ask, this.shown) : [];
   }
 
   get revealed(): boolean {
     const p = this.page;
-    return !p || p.kind === 'choice' || this.shown >= this.pageLength;
+    return !p || this.shown >= this.pageLength;
   }
 
   /** More pages within the current step; the only thing confirm() advances through. */
@@ -80,10 +95,10 @@ export class DialogModel {
   /** Reveals one more character. Returns true if that character was not a space. */
   tick(): boolean {
     const p = this.page;
-    if (this.finished || !p || p.kind !== 'text' || this.revealed) return false;
+    if (this.finished || !p || this.revealed) return false;
     let index = this.shown;
     this.shown++;
-    for (const line of p.lines) {
+    for (const line of p.kind === 'text' ? p.lines : p.ask) {
       if (index < line.length) return line[index] !== ' ';
       index -= line.length;
     }
@@ -119,7 +134,7 @@ export class DialogModel {
 
   moveChoice(_delta: -1 | 1): void {
     // two options: either direction wraps to the other one
-    if (this.isChoice) this.choiceCursor = this.choiceCursor === 0 ? 1 : 0;
+    if (this.isChoice && this.revealed) this.choiceCursor = this.choiceCursor === 0 ? 1 : 0;
   }
 
   private load(step: ReturnType<ScriptRunner['next']>): void {
@@ -130,7 +145,9 @@ export class DialogModel {
       this.pages = [];
       this.finished = true;
     } else if (step.kind === 'choice') {
-      this.pages = [{ kind: 'choice', options: step.options }];
+      const ask = step.ask === undefined ? [] : wrapText(step.ask, this.cols);
+      if (ask.length > 3) throw new Error(`Choice question too long: ${step.ask}`);
+      this.pages = [{ kind: 'choice', options: step.options, ask }];
     } else {
       const wrapped = wrapText(step.text, this.cols);
       this.pages = [];

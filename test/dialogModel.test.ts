@@ -181,3 +181,74 @@ describe('DialogModel.skipAll', () => {
     expect(m.done).toBe(true);
   });
 });
+
+describe('DialogModel choice with a question', () => {
+  const ask = (q: string) => model([{ choice: ['Yes', 'No'], ask: q, yes: [], no: [] }]);
+
+  it('types the question, then reveals', () => {
+    const m = ask('Equip it?');
+    expect(m.isChoice).toBe(true);
+    expect(m.revealed).toBe(false);
+    for (let i = 0; i < 3; i++) m.tick();
+    expect(m.ask).toEqual(['Equ']);
+    for (let i = 0; i < 6; i++) m.tick();
+    expect(m.ask).toEqual(['Equip it?']);
+    expect(m.revealed).toBe(true);
+    expect(m.tick()).toBe(false);
+    expect(m.lines).toEqual(['Yes', 'No']);
+  });
+
+  it('tick returns true for a non-space question character', () => {
+    const m = ask('a b');
+    expect(m.tick()).toBe(true);
+    expect(m.tick()).toBe(false);
+    expect(m.tick()).toBe(true);
+  });
+
+  it('moveChoice waits for the reveal', () => {
+    const m = ask('Equip it?');
+    m.moveChoice(1);
+    expect(m.choiceCursor).toBe(0);
+    for (let i = 0; i < 9; i++) m.tick();
+    m.moveChoice(1);
+    expect(m.choiceCursor).toBe(1);
+  });
+
+  it('confirm while typing only reveals the rest', () => {
+    const sets: string[] = [];
+    const env: ScriptEnv = { name: 'Wren', has: () => false, set: (f) => sets.push(f), give: () => true, gold: () => {}, heal: () => {}, sfx: () => {} };
+    const m2 = new DialogModel(new ScriptRunner([{ choice: ['Yes', 'No'], ask: 'Equip it?', yes: [{ set: 'y' }], no: [] }], env));
+    for (let i = 0; i < 3; i++) m2.tick();
+    m2.confirm();
+    expect(m2.revealed).toBe(true);
+    expect(m2.isChoice).toBe(true);
+    expect(m2.ask).toEqual(['Equip it?']);
+    expect(sets).toEqual([]);
+    m2.confirm();
+    expect(sets).toEqual(['y']);
+  });
+
+  it('a choice with no question is revealed at once with an empty ask', () => {
+    const m = model([{ choice: ['Yes', 'No'], yes: [], no: [] }]);
+    expect(m.revealed).toBe(true);
+    expect(m.ask).toEqual([]);
+  });
+
+  it('a question over 3 lines throws; 3 lines is fine', () => {
+    const long = 'word '.repeat(24).trim();
+    expect(() => ask(long)).toThrow('Choice question too long');
+    expect(() => ask('A bed is still 6 gold, and I will not hear otherwise. Stay?')).not.toThrow();
+  });
+
+  it('skipAll on a typing question answers No once', () => {
+    const log: string[] = [];
+    const env: ScriptEnv = { name: 'Wren', has: () => false, set: (f) => log.push(f), give: () => true, gold: () => {}, heal: () => {}, sfx: () => {} };
+    const m = new DialogModel(new ScriptRunner([{ choice: ['Yes', 'No'], ask: 'Equip it?', yes: [{ set: 'yes' }], no: [{ set: 'no' }] }], env));
+    m.tick();
+    let n = 0;
+    m.skipAll(() => n++);
+    expect(n).toBe(1);
+    expect(log).toEqual(['no']);
+    expect(m.done).toBe(true);
+  });
+});
