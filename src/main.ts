@@ -5,7 +5,7 @@ import { StateStack } from './engine/state';
 import { startLoop } from './engine/loop';
 import { PALETTE } from './data/palette';
 import { BootState } from './game/boot';
-import { ExploreState } from './game/explore';
+import { TitleState } from './game/title';
 import { createGame } from './game/game';
 import { createPlayer } from './game/player';
 import { createRng } from './engine/rng';
@@ -47,7 +47,7 @@ const game = createGame({
 stack.push(
   new BootState({
     font,
-    onStart: () => stack.reset(new ExploreState(game, STORY.newGame.map, STORY.newGame.entry)),
+    onStart: () => stack.reset(new TitleState(game)),
   }),
 );
 
