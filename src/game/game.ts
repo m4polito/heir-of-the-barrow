@@ -43,6 +43,8 @@ export interface Game {
   readonly spells: SpellTable;
   readonly shops: ShopTable;
   readonly story: StoryConfig;
+  /** Browser storage for saves; absent where there is none. */
+  readonly storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
   player: PlayerState;
   debug: { noEncounters: boolean };
   debugOpen?: () => void;

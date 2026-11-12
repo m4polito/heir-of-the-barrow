@@ -28,11 +28,12 @@ function safeLocalStorage(): Storage | null {
   }
 }
 
+const storage = safeLocalStorage();
 const screen = new Screen(document.getElementById('game')!);
 const input = new Input();
 input.attach(window);
 const font = new Font(buildFontSheet(PALETTE));
-const audio = new AudioManager(safeLocalStorage(), { muteKey: STORY.storagePrefix + '.mute' });
+const audio = new AudioManager(storage, { muteKey: STORY.storagePrefix + '.mute' });
 audio.installUnlockListener(window);
 const stack = new StateStack();
 const game = createGame({
@@ -50,6 +51,7 @@ const game = createGame({
   spells: SPELLS,
   shops: SHOPS,
   story: STORY,
+  storage,
   player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
 });
 if (import.meta.env.DEV) {

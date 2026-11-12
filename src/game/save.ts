@@ -15,8 +15,8 @@ const FLAG_LEN_MAX = 32;
 const TORCH_STEPS_MAX = 65535;
 const DIRS: readonly Dir[] = ['up', 'down', 'left', 'right'];
 const EQUIP_SLOTS: readonly EquipSlot[] = ['weapon', 'armor', 'shield'];
-/** The grid's character rows; the last row holds the BACK and END actions. */
-const NAME_CHARS = NAME_GRID.slice(0, -1).join('');
+/** The grid's character rows; the last row holds the BACK and END actions. Read lazily: nameEntry and explore import each other. */
+const nameChars = () => NAME_GRID.slice(0, -1).join('');
 
 export interface SaveData {
   version: 1;
@@ -109,7 +109,8 @@ function validate(raw: unknown, ctx: SaveContext): SaveData | null {
 
   const { name, level, xp, hp, mp, gold, torchSteps } = raw;
   if (typeof name !== 'string' || name.length < 1 || name.length > NAME_MAX) return null;
-  for (const ch of name) if (!NAME_CHARS.includes(ch)) return null;
+  const allowed = nameChars();
+  for (const ch of name) if (!allowed.includes(ch)) return null;
   if (!isInt(level, 1, LEVELS.length)) return null;
   const row = LEVELS[level - 1]!;
   if (!isInt(xp, 0, XP_MAX) || !isInt(gold, 0, GOLD_MAX)) return null;

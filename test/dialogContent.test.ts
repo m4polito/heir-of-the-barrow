@@ -8,7 +8,7 @@ const IDS: DialogId[] = [
   'maren_intro', 'maren_fallen', 'maren', 'hesta', 'garrik', 'odo', 'pip', 'bram', 'tobin', 'villager_a', 'villager_b',
 ];
 
-function run(id: DialogId, flags: string[] = [], answer = true, canPay = true) {
+function run(id: DialogId, flags: string[] = [], answer = true, canPay = true, canSave = true) {
   const set = new Set(flags);
   const calls: string[] = [];
   const env: ScriptEnv = {
@@ -20,7 +20,7 @@ function run(id: DialogId, flags: string[] = [], answer = true, canPay = true) {
     heal: () => { calls.push('heal'); },
     sfx: (s) => { calls.push(`sfx:${s}`); },
     pay: (n) => { calls.push(`pay:${n}`); return canPay; },
-    save: () => true,
+    save: () => { calls.push('save'); return canSave; },
     rest: (song) => { calls.push(`rest:${song}`); },
     shop: (id) => { calls.push(`shop:${id}`); },
   };
@@ -149,6 +149,36 @@ describe('Hollowmere dialog content', () => {
 
   it.each([['garrik', 'forge'], ['odo', 'goods']] as const)('%s opens the %s shop once', (id, shop) => {
     expect(run(id).calls.filter((c) => c.startsWith('shop:'))).toEqual([`shop:${shop}`]);
+  });
+
+  describe.each([[[]], [['warden_defeated']]])('maren saves (flags: %j)', (flags) => {
+    const texts = (r: ReturnType<typeof run>) => r.steps.flatMap((s) => (s.kind === 'text' ? [s.text] : []));
+    it('Yes saves once and says it is written', () => {
+      const r = run('maren', flags, true, true, true);
+      expect(r.calls.filter((c) => c === 'save')).toHaveLength(1);
+      expect(texts(r)).toContain('It is written.');
+    });
+    it('Yes with a failing save says the page will not take the ink', () => {
+      const r = run('maren', flags, true, true, false);
+      expect(r.calls.filter((c) => c === 'save')).toHaveLength(1);
+      expect(texts(r)).toContain('The page will not take the ink. Nothing was written.');
+      expect(texts(r)).not.toContain('It is written.');
+    });
+    it('No never saves', () => {
+      expect(run('maren', flags, false).calls).not.toContain('save');
+    });
+  });
+
+  it('maren_intro sends the hero to the forge and still ends on the fire', () => {
+    const { steps, calls } = run('maren_intro');
+    const texts = steps.flatMap((s) => (s.kind === 'text' ? [s.text] : []));
+    expect(texts).toContain("Take your coin to Garrik's forge before you try the gate.");
+    expect(texts[texts.length - 1]).toBe('Stay as long as you like. The fire is warm.');
+    expect(calls).not.toContain('save');
+  });
+
+  it('maren_fallen never saves', () => {
+    expect(run('maren_fallen').calls).not.toContain('save');
   });
 
   it('carries no name tags in any string', () => {

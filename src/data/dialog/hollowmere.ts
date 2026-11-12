@@ -26,6 +26,7 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
     { set: 'shield_received' },
     "{name} received Aldric's Shield.",
     'It is dented, and it is yours.',
+    "Take your coin to Garrik's forge before you try the gate.",
     'Stay as long as you like. The fire is warm.',
   ],
 
@@ -38,15 +39,21 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
   maren: [
     {
       if: 'warden_defeated',
-      then: [
-        "You went down there. And you came back to Maren's door.",
-        'What did you find, {name}?',
-        'No. Tell me later. I am not ready.',
-      ],
+      then: ["You went down there. And you came back to Maren's door."],
+      else: ["Sit by old Maren's fire a moment. The Dimming is worse at night."],
+    },
+    {
+      choice: ['Yes', 'No'],
+      ask: 'Shall I remember your journey?',
+      yes: [{ save: true, ok: [{ sfx: 'menuConfirm' }, 'It is written.'], fail: ['The page will not take the ink. Nothing was written.'] }],
+      no: [],
+    },
+    {
+      if: 'warden_defeated',
+      then: ['What did you find, {name}?', 'No. Tell me later. I am not ready.'],
       else: [
-        "Sit by old Maren's fire a moment. The Dimming is worse at night.",
         'We stopped saying the word years ago. The cold stayed anyway.',
-        'Rest here when you need to. I will keep the lamp lit.',
+        'Come back when you need to. I will keep the lamp lit.',
       ],
     },
   ],

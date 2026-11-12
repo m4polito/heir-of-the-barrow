@@ -13,6 +13,7 @@ import { DialogState, type DialogServices } from './dialog/dialogState';
 import { ShopState } from './shopState';
 import { SleepState } from './sleepState';
 import { MenuState } from './menu/menuState';
+import { toSave, saveKey, writeSave } from './save';
 import { setFlag, hasFlag, applyDeath } from './player';
 import { encounterStep, ENCOUNTER_GRACE } from './encounter';
 import { backdropArt } from '../data/sprites/backdrops';
@@ -194,6 +195,12 @@ export class ExploreState implements State {
         if (!song) throw new Error(`Unknown song: ${id}`);
         game.stack.push(new SleepState(game, { song, onWake: () => this.playMapSong() }));
       },
+      save: () =>
+        writeSave(
+          game.storage,
+          saveKey(game.story.storagePrefix),
+          toSave(game.player, { map: this._map.id, x: this._hero.x, y: this._hero.y, facing: this._hero.facing }),
+        ),
     };
   }
 
