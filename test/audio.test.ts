@@ -1,0 +1,67 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readMutePref, AudioManager } from '../src/engine/audio/audio';
+
+describe('readMutePref', () => {
+  it('reads the stored flag defensively', () => {
+    expect(readMutePref({ getItem: () => '1' })).toBe(true);
+    expect(readMutePref({ getItem: () => '0' })).toBe(false);
+    expect(readMutePref({ getItem: () => null })).toBe(false);
+    expect(readMutePref({ getItem: () => { throw new Error('x'); } })).toBe(false);
+    expect(readMutePref(null)).toBe(false);
+  });
+});
+
+describe('AudioManager', () => {
+  let constructed = 0;
+  beforeEach(() => {
+    constructed = 0;
+    vi.useFakeTimers();
+    const param = () => ({ value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {} });
+    vi.stubGlobal('AudioContext', class {
+      currentTime = 0;
+      destination = {};
+      sampleRate = 44100;
+      constructor() { constructed++; }
+      resume() { return Promise.resolve(); }
+      createGain() { return { gain: param(), connect() {} }; }
+      createOscillator() { return { type: 'sine', frequency: param(), setPeriodicWave() {}, connect() {}, start() {} }; }
+      createPeriodicWave() { return {}; }
+      createBuffer() { return { getChannelData() { return new Float32Array(16); } }; }
+    });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('unlocks synchronously inside the keydown handler, once', () => {
+    const handlers: Record<string, () => void> = {};
+    const removed: string[] = [];
+    const win = {
+      addEventListener: (t: string, h: () => void) => { handlers[t] = h; },
+      removeEventListener: (t: string) => { removed.push(t); },
+    } as unknown as Window;
+    const audio = new AudioManager(null);
+    audio.installUnlockListener(win);
+    expect(Object.keys(handlers).sort()).toEqual(['keydown', 'pointerdown']);
+    expect(audio.unlocked).toBe(false);
+    handlers.keydown!();
+    expect(audio.unlocked).toBe(true);
+    expect(constructed).toBe(1);
+    expect(removed).toContain('pointerdown');
+    handlers.keydown!();
+    expect(constructed).toBe(1);
+  });
+
+  it('toggleMute flips pref and persists', () => {
+    const store = new Map<string, string>();
+    const audio = new AudioManager({
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => { store.set(k, v); },
+    } as Storage);
+    expect(audio.muted).toBe(false);
+    expect(audio.toggleMute()).toBe(true);
+    expect(store.get('dimming.mute')).toBe('1');
+    expect(audio.toggleMute()).toBe(false);
+  });
+});
