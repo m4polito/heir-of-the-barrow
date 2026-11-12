@@ -48,7 +48,7 @@ export class BattleState implements State {
     this.onEnd = opts.onEnd;
     this._battle = new Battle(
       game.rng,
-      { hp: p.hp, atk: attackOf(game.items, p), def: defenseOf(game.items, p), agi: p.agi },
+      { hp: p.hp, maxHp: p.maxHp, mp: p.mp, atk: attackOf(game.items, p), def: defenseOf(game.items, p), agi: p.agi },
       opts.monster,
     );
     this.shownHeroHp = this._battle.heroHp;

@@ -100,7 +100,7 @@ describe('early-game pacing', () => {
     p = addItem(ITEMS, p, 'aldric_shield').player;
     p = equip(ITEMS, p, 'wooden_club').player;
     p = equip(ITEMS, p, 'aldric_shield').player;
-    const hero = { hp: p.hp, atk: attackOf(ITEMS, p), def: defenseOf(ITEMS, p), agi: p.agi };
+    const hero = { hp: p.hp, maxHp: p.maxHp, mp: p.mp, atk: attackOf(ITEMS, p), def: defenseOf(ITEMS, p), agi: p.agi };
     expect(hero.atk).toBe(6);
     expect(hero.def).toBe(6);
     const rng = createRng(11);
