@@ -15,6 +15,11 @@ export const TILE_IDS = {
   counter: 11,
   bed: 12,
   table: 13,
+  marsh: 14,
+  hill: 15,
+  town: 16,
+  barrowMouth: 17,
+  deadTree: 18,
 } as const;
 
 export interface TileDef {
@@ -317,6 +322,106 @@ const TABLE = art({ o: 10, b: 9, k: 0 }, [
   'oooooooooooooooo',
 ]);
 
+// Marsh: deep-teal 19 standing water, dark-green 21 reed stems with pale-lime 22 tips.
+const MARSH = art({ m: 19, d: 21, l: 22 }, [
+  'mmmmmmmmmmmmmmmm',
+  'mmmlmmmmmmmmlmmm',
+  'mmmdmmmmmmmmdmmm',
+  'mmldmmmmmmmlddmm',
+  'mmmdmmmmmmmmdmmm',
+  'mmmmmmmmmmmmmmmm',
+  'mmmmmmmlmmmmmmmm',
+  'mmlmmmmdmmmmmmmm',
+  'mmdmmmmdlmmmmmlm',
+  'mmdmmmmdmmmmmmdm',
+  'mmmmmmmmmmmmmmdm',
+  'mmmmmmmmmmmmmmmm',
+  'mmmmlmmmmlmmmmmm',
+  'mmmmdmmmmdmmmmmm',
+  'mmmldmmmddmmmmmm',
+  'mmmmmmmmmmmmmmmm',
+]);
+
+// Hill: grass 6 ground, light-green 7 mound, dark-green 21 shaded flank.
+const HILL = art({ g: 6, l: 7, d: 21 }, [
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'ggggggllllgggggg',
+  'gggggllllllggggg',
+  'ggggllllllllgggg',
+  'gggllllllllllggg',
+  'gglllllllllllddg',
+  'gllllllllllllddg',
+  'gllllllllllllddg',
+  'gllllllllllldddg',
+  'gddddddddddddddg',
+  'gggddddddddddggg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+]);
+
+// Town: red 13 roofs with dark-red 12 eaves, gray 2 wall with a gate gap, on grass 6.
+const TOWN = art({ g: 6, r: 13, d: 12, s: 2 }, [
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'ggggrrgggggrrggg',
+  'gggrrrrgggrrrrgg',
+  'ggrrrrrrgrrrrrrg',
+  'ggddddddgddddddg',
+  'gssssssssssssssg',
+  'gssssssssssssssg',
+  'gssssssssssssssg',
+  'gssssssssssssssg',
+  'gssssssggssssssg',
+  'gssssssggssssssg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+]);
+
+// Barrow mouth: light-green 7 mound on grass 6, gray 2/3 stones round a black 0 opening.
+const BARROW_MOUTH = art({ g: 6, l: 7, s: 2, h: 3, k: 0 }, [
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'ggggggllllgggggg',
+  'ggggllllllllgggg',
+  'ggllllllllllllgg',
+  'gglllhhhhhhlllgg',
+  'glllhsssssshlllg',
+  'glllsskkkksslllg',
+  'glllsskkkksslllg',
+  'glllsskkkksslllg',
+  'glllsskkkksslllg',
+  'glllsskkkksslllg',
+  'glsssssssssssslg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+]);
+
+// Dead tree: a bare willow, brown 9 trunk and gray 2 drooping boughs, on grass 6.
+const DEAD_TREE = art({ g: 6, b: 9, s: 2 }, [
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'gggsgggggggsgggg',
+  'gggsgbgggbgsgggg',
+  'gggsgbbgbbgsgggg',
+  'ggsgggbbbbgsgggg',
+  'ggggsgbbbggsgggg',
+  'gggggggbbbgggggg',
+  'ggggggbbbggggggg',
+  'gggggbbbbggggggg',
+  'gggggbbbgggggggg',
+  'ggggbbbbgggggggg',
+  'gggsbbbbbbsggggg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+  'gggggggggggggggg',
+]);
+
 export const TILES: readonly TileDef[] = [
   { id: TILE_IDS.grass, name: 'grass', walkable: true, encounterRate: 1, frames: [GRASS] },
   { id: TILE_IDS.road, name: 'road', walkable: true, encounterRate: 0.5, frames: [ROAD] },
@@ -332,4 +437,9 @@ export const TILES: readonly TileDef[] = [
   { id: TILE_IDS.counter, name: 'counter', walkable: false, encounterRate: 0, frames: [COUNTER] },
   { id: TILE_IDS.bed, name: 'bed', walkable: false, encounterRate: 0, frames: [BED] },
   { id: TILE_IDS.table, name: 'table', walkable: false, encounterRate: 0, frames: [TABLE] },
+  { id: TILE_IDS.marsh, name: 'marsh', walkable: true, encounterRate: 1.5, frames: [MARSH] },
+  { id: TILE_IDS.hill, name: 'hill', walkable: true, encounterRate: 1.5, frames: [HILL] },
+  { id: TILE_IDS.town, name: 'town', walkable: true, encounterRate: 0, frames: [TOWN] },
+  { id: TILE_IDS.barrowMouth, name: 'barrowMouth', walkable: false, encounterRate: 0, frames: [BARROW_MOUTH] },
+  { id: TILE_IDS.deadTree, name: 'deadTree', walkable: false, encounterRate: 0, frames: [DEAD_TREE] },
 ];

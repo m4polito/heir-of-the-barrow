@@ -47,6 +47,7 @@ export const HOLLOWMERE: GameMap = {
     inn: { x: 4, y: 10, facing: 'down' },
     forge: { x: 19, y: 10, facing: 'down' },
     shop: { x: 4, y: 17, facing: 'down' },
+    gate: { x: 11, y: 18, facing: 'up' },
   },
   npcs: [
     { id: 'pip', sprite: 'child', x: 13, y: 11, facing: 'down', wander: true, dialog: 'pip' },
@@ -60,5 +61,7 @@ export const HOLLOWMERE: GameMap = {
     { kind: 'warp', x: 4, y: 9, to: 'inn', entry: 'door' },
     { kind: 'warp', x: 19, y: 9, to: 'forge', entry: 'door' },
     { kind: 'warp', x: 4, y: 16, to: 'shop', entry: 'door' },
+    { kind: 'warp', x: 11, y: 19, to: 'marsh', entry: 'town' },
+    { kind: 'warp', x: 12, y: 19, to: 'marsh', entry: 'town' },
   ],
 };

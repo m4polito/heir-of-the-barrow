@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { TILES, TILE_IDS } from '../src/data/tiles';
 
 describe('tiles', () => {
-  it('has fourteen tiles indexed by id', () => {
-    expect(TILES.length).toBe(14);
+  it('has nineteen tiles indexed by id', () => {
+    expect(TILES.length).toBe(19);
     TILES.forEach((t, i) => expect(t.id).toBe(i));
   });
 
@@ -27,5 +27,14 @@ describe('tiles', () => {
     expect(TILES[TILE_IDS.wall]!.walkable).toBe(false);
     expect(TILES[TILE_IDS.floorWood]!.walkable).toBe(true);
     for (const id of [TILE_IDS.counter, TILE_IDS.bed, TILE_IDS.table]) expect(TILES[id]!.walkable).toBe(false);
+  });
+
+  it('overworld tiles: walkability and encounter rates', () => {
+    const t = (id: number) => TILES[id]!;
+    expect(t(TILE_IDS.marsh)).toMatchObject({ name: 'marsh', walkable: true, encounterRate: 1.5 });
+    expect(t(TILE_IDS.hill)).toMatchObject({ name: 'hill', walkable: true, encounterRate: 1.5 });
+    expect(t(TILE_IDS.town)).toMatchObject({ name: 'town', walkable: true, encounterRate: 0 });
+    expect(t(TILE_IDS.barrowMouth)).toMatchObject({ name: 'barrowMouth', walkable: false, encounterRate: 0 });
+    expect(t(TILE_IDS.deadTree)).toMatchObject({ name: 'deadTree', walkable: false, encounterRate: 0 });
   });
 });
