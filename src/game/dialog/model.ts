@@ -104,6 +104,19 @@ export class DialogModel {
     } else this.load(this.runner.next());
   }
 
+  /**
+   * Runs the rest of the script to its end with every choice answered No,
+   * calling `onChoice` once per choice (including one currently showing).
+   */
+  skipAll(onChoice?: () => void): void {
+    if (this.finished) return;
+    if (this.isChoice) onChoice?.();
+    for (let step = this.runner.next(false); step; step = this.runner.next(false)) {
+      if (step.kind === 'choice') onChoice?.();
+    }
+    this.load(null);
+  }
+
   moveChoice(_delta: -1 | 1): void {
     // two options: either direction wraps to the other one
     if (this.isChoice) this.choiceCursor = this.choiceCursor === 0 ? 1 : 0;

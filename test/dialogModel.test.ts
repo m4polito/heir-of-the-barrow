@@ -140,3 +140,44 @@ describe('DialogModel', () => {
     expect(m.done).toBe(true);
   });
 });
+
+describe('DialogModel.skipAll', () => {
+  function tracked(script: DialogScript) {
+    const log: string[] = [];
+    const env: ScriptEnv = {
+      name: 'Wren',
+      has: () => false,
+      set: (f) => log.push('set:' + f),
+      give: (i) => (log.push('give:' + i), true),
+      gold: (n) => log.push('gold:' + n),
+      heal: () => log.push('heal'),
+      sfx: (id) => log.push('sfx:' + id),
+    };
+    return { log, m: new DialogModel(new ScriptRunner(script, env)) };
+  }
+
+  it('applies remaining effects, answers every choice No, and finishes', () => {
+    const { m, log } = tracked([
+      'one',
+      { give: 'a' },
+      { choice: ['Y', 'N'], yes: [{ set: 'yes' }], no: [{ set: 'no' }] },
+      { gold: 5 },
+      { choice: ['Y2', 'N2'], yes: [{ set: 'yes2' }], no: [{ set: 'no2' }] },
+    ]);
+    let n = 0;
+    m.skipAll(() => n++);
+    expect(m.done).toBe(true);
+    expect(n).toBe(2);
+    expect(log).toEqual(['give:a', 'set:no', 'gold:5', 'set:no2']);
+  });
+
+  it('counts a choice page that is currently showing', () => {
+    const { m, log } = tracked([{ choice: ['Y', 'N'], yes: [{ set: 'yes' }], no: [{ set: 'no' }] }]);
+    expect(m.isChoice).toBe(true);
+    let n = 0;
+    m.skipAll(() => n++);
+    expect(n).toBe(1);
+    expect(log).toEqual(['set:no']);
+    expect(m.done).toBe(true);
+  });
+});

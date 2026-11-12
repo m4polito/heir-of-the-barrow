@@ -278,3 +278,96 @@ describe('leaving interiors', () => {
     expect(explore.hero).toMatchObject({ x: landing.x, y: landing.y });
   });
 });
+
+describe('escape from dialog', () => {
+  function cancelInput(stack: StateStack, fire: { cancel: boolean }) {
+    return {
+      held: () => false,
+      rearm: () => {},
+      pressed: (a: string) => a === 'cancel' && fire.cancel,
+    } as unknown as Input;
+  }
+  function setup(script: import('../src/game/dialog/script').DialogScript, onChoice?: (a: boolean) => void) {
+    const { stack, game } = makeGame();
+    const sfx: string[] = [];
+    game.audio.playSfx = ((id: string) => void sfx.push(id)) as typeof game.audio.playSfx;
+    let done = 0;
+    const d = new DialogState(game, script, { onDone: () => done++, onChoice });
+    stack.push(d);
+    const fire = { cancel: true };
+    const input = cancelInput(stack, fire);
+    return { stack, game, sfx, d, input, fire, done: () => done };
+  }
+
+  it('cancel on the opening scene still gives the shield and sets flags', () => {
+    const { stack, game } = makeGame();
+    const fire = { cancel: true };
+    const input = cancelInput(stack, fire);
+    const explore = new ExploreState(game, STORY.newGame.map, STORY.newGame.entry);
+    stack.push(explore);
+    stack.update({ held: () => false, rearm: () => {}, pressed: () => false } as unknown as Input);
+    expect(stack.top).toBeInstanceOf(DialogState);
+    stack.update(input);
+    expect(stack.top).toBe(explore);
+    expect(stack.states.some((s) => s instanceof DialogState)).toBe(false);
+    expect(game.player.inventory.some((s) => s.item === 'aldric_shield')).toBe(true);
+    expect(hasFlag(game.player, 'shield_received')).toBe(true);
+    expect(hasFlag(game.player, 'intro_done')).toBe(true);
+  });
+
+  it('cancel on a showing choice takes No and reports false; onDone once', () => {
+    const calls: boolean[] = [];
+    const script = ['hi', { choice: ['Y', 'N'], yes: [{ set: 'yes' }], no: [{ set: 'no' }] }] as import('../src/game/dialog/script').DialogScript;
+    const t = setup(script, (a) => calls.push(a));
+    t.fire.cancel = false;
+    t.input.pressed = (a: string) => a === 'confirm';
+    // advance to the choice with confirm presses
+    let guard = 0;
+    while (guard++ < 200 && !(t.d as unknown as { model: { isChoice: boolean } }).model.isChoice) t.stack.update(t.input);
+    expect((t.d as unknown as { model: { isChoice: boolean } }).model.isChoice).toBe(true);
+    t.input.pressed = (a: string) => a === 'cancel';
+    t.stack.update(t.input);
+    expect(calls).toEqual([false]);
+    expect(hasFlag(t.game.player, 'no')).toBe(true);
+    expect(hasFlag(t.game.player, 'yes')).toBe(false);
+    expect(t.stack.contains(t.d)).toBe(false);
+    expect(t.done()).toBe(1);
+    t.stack.update(t.input);
+    expect(t.done()).toBe(1);
+  });
+
+  it('cancel before the choice is reached does the same', () => {
+    const calls: boolean[] = [];
+    const script = ['hi', { choice: ['Y', 'N'], yes: [{ set: 'yes' }], no: [{ set: 'no' }] }] as import('../src/game/dialog/script').DialogScript;
+    const t = setup(script, (a) => calls.push(a));
+    t.stack.update(t.input);
+    expect(calls).toEqual([false]);
+    expect(hasFlag(t.game.player, 'no')).toBe(true);
+    expect(hasFlag(t.game.player, 'yes')).toBe(false);
+    expect(t.done()).toBe(1);
+  });
+
+  it('later sfx nodes stay silent; only menuCancel plays', () => {
+    const t = setup(['hi', { sfx: 'door' }, { set: 'x' }, { sfx: 'error' }, 'bye']);
+    t.stack.update(t.input);
+    expect(t.sfx).toEqual(['menuCancel']);
+    expect(hasFlag(t.game.player, 'x')).toBe(true);
+  });
+
+  it('the cancel that closes a dialog does not open the menu', () => {
+    const { stack, game } = makeGame();
+    game.player = setFlag(game.player, 'intro_done');
+    const explore = new ExploreState(game, STORY.newGame.map, STORY.newGame.entry);
+    stack.push(explore);
+    stack.push(new DialogState(game, ['hello', 'there']));
+    const fire = { cancel: true };
+    const input = cancelInput(stack, fire);
+    stack.update(input);
+    expect(stack.top).toBe(explore);
+    expect(stack.states).toHaveLength(1);
+    fire.cancel = false;
+    stack.update(input);
+    expect(stack.states).toHaveLength(1);
+    expect(stack.top).toBe(explore);
+  });
+});

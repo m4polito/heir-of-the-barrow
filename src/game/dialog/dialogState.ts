@@ -13,6 +13,7 @@ export class DialogState implements State {
   private readonly onDone?: () => void;
   private readonly onChoice?: (answer: boolean) => void;
   private completed = false;
+  private muted = false;
 
   constructor(
     private readonly game: Game,
@@ -38,7 +39,9 @@ export class DialogState implements State {
       heal: () => {
         game.player = { ...game.player, hp: game.player.maxHp, mp: game.player.maxMp };
       },
-      sfx: (id) => game.audio.playSfx(id),
+      sfx: (id) => {
+        if (!this.muted) game.audio.playSfx(id);
+      },
     };
     this.model = new DialogModel(new ScriptRunner(script, env));
   }
@@ -51,7 +54,12 @@ export class DialogState implements State {
     if (this.completed) return;
     const { audio } = this.game;
     const model = this.model;
-    if (input.pressed('confirm')) {
+    if (input.pressed('cancel')) {
+      // cancel wins over confirm: the rest of the script runs silently, choices resolve as No
+      audio.playSfx('menuCancel');
+      this.muted = true;
+      model.skipAll(this.onChoice ? () => this.onChoice?.(false) : undefined);
+    } else if (input.pressed('confirm')) {
       if (model.isChoice) {
         audio.playSfx('menuConfirm');
         this.onChoice?.(model.choiceCursor === 0);
