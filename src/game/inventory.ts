@@ -10,7 +10,9 @@ export interface InvResult {
 }
 
 export function addItem(p: PlayerState, id: ItemId, n = 1): InvResult {
-  const cap = ITEMS[id].stack;
+  const def = ITEMS[id] as (typeof ITEMS)[ItemId] | undefined;
+  if (!def) return { player: p, ok: false };
+  const cap = def.stack;
   const inv: InventorySlot[] = p.inventory.map((s) => ({ ...s }));
   let left = n;
   for (const s of inv) {

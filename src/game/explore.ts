@@ -1,14 +1,16 @@
-import { LOGICAL_W, LOGICAL_H, TILE, type Dir } from '../engine/constants';
+import { LOGICAL_W, LOGICAL_H, TILE, DIR_VECTORS, type Dir } from '../engine/constants';
 import type { State } from '../engine/state';
 import type { Input } from '../engine/input';
-import { TILES, TILE_IDS, ANIM_FRAME_LEN } from '../data/tiles';
+import { TILE_IDS, ANIM_FRAME_LEN } from '../data/tiles';
 import { HERO_SPRITES } from '../data/sprites/hero';
 import { npcArt } from '../data/sprites/npcs';
 import { isWalkable, tileAt, warpAt, type GameMap } from './map';
-import { createHero, updateHero, heroPixelOffset, type HeroState } from './hero';
+import { createHero, updateHero, heroPixelOffset, facingTile, opposite, heroIdle, type HeroState } from './hero';
 import { createNpc, updateNpc, npcPixelOffset, type NpcState } from './npc';
 import { cameraOrigin } from './camera';
 import { TransitionState } from './transition';
+import { DialogState } from './dialog/dialogState';
+import { setFlag, hasFlag } from './player';
 import type { Game } from './game';
 
 function lookup(game: Game, mapId: string, entry: string): { map: GameMap; hero: HeroState } {
@@ -16,13 +18,14 @@ function lookup(game: Game, mapId: string, entry: string): { map: GameMap; hero:
   if (!map) throw new Error(`Unknown map: ${mapId}`);
   const e = map.entry[entry];
   if (!e) throw new Error(`Unknown entry '${entry}' on map ${mapId}`);
+  if (!game.songs[map.music]) throw new Error(`Unknown song '${map.music}' for map ${mapId}`);
   return { map, hero: createHero(e.x, e.y, e.facing) };
 }
 
 export class ExploreState implements State {
   private _map: GameMap;
   private _hero: HeroState;
-  /** Set whenever a map is entered; consumed in Task 10. */
+  /** Set whenever a map is entered; consumed by the first update() as the top state. */
   private enteredMap: boolean;
   readonly npcs: NpcState[];
 
@@ -55,8 +58,7 @@ export class ExploreState implements State {
   }
 
   private playMapSong(): void {
-    const song = this.game.songs[this._map.music];
-    if (song) this.game.audio.playSong(song);
+    this.game.audio.playSong(this.game.songs[this._map.music]!);
   }
 
   warpTo(mapId: string, entry: string): void {
@@ -86,7 +88,59 @@ export class ExploreState implements State {
     return Object.values(map.entry).some((e) => e.x === x && e.y === y);
   }
 
+  private npcOn(x: number, y: number): NpcState | undefined {
+    return this.npcs.find((n) => n.x === x && n.y === y);
+  }
+
+  /** The NPC the hero can talk to: on the facing tile, or across one non-walkable tile (a counter). */
+  private talkTarget(): NpcState | undefined {
+    const map = this._map;
+    const inMap = (x: number, y: number) => x >= 0 && y >= 0 && x < map.width && y < map.height;
+    const near = facingTile(this._hero);
+    if (!inMap(near.x, near.y)) return undefined;
+    const direct = this.npcOn(near.x, near.y);
+    if (direct) return direct;
+    if (isWalkable(map, near.x, near.y)) return undefined;
+    const v = DIR_VECTORS[this._hero.facing];
+    const far = { x: near.x + v.dx, y: near.y + v.dy };
+    return inMap(far.x, far.y) ? this.npcOn(far.x, far.y) : undefined;
+  }
+
+  private script(id: string) {
+    const s = this.game.dialogs[id];
+    if (!s) throw new Error(`Unknown dialog: ${id}`);
+    return s;
+  }
+
+  private runAutoTrigger(): boolean {
+    for (const t of this._map.triggers) {
+      if (t.kind !== 'auto' || hasFlag(this.game.player, t.flag)) continue;
+      const flag = t.flag;
+      this.game.stack.push(
+        new DialogState(this.game, this.script(t.dialog), {
+          onDone: () => {
+            this.game.player = setFlag(this.game.player, flag);
+          },
+        }),
+      );
+      return true;
+    }
+    return false;
+  }
+
   update(input: Input): void {
+    if (this.enteredMap) {
+      this.enteredMap = false;
+      if (this.runAutoTrigger()) return;
+    }
+    if (input.pressed('confirm') && heroIdle(this._hero)) {
+      const npc = this.talkTarget();
+      if (npc) {
+        npc.facing = opposite(this._hero.facing);
+        this.game.stack.push(new DialogState(this.game, this.script(npc.def.dialog)));
+        return;
+      }
+    }
     const held = (a: Dir) => input.held(a);
     const map = this._map;
     this._hero = updateHero(

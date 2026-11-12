@@ -76,3 +76,12 @@ describe('inventory', () => {
     expect(equip(p, 'herb').ok).toBe(false);
   });
 });
+
+describe('addItem unknown id', () => {
+  it('returns ok:false and leaves the player unchanged', () => {
+    const p = empty();
+    const r = addItem(p, 'no_such_item' as never);
+    expect(r.ok).toBe(false);
+    expect(r.player).toBe(p);
+  });
+});
