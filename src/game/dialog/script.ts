@@ -4,11 +4,15 @@ import { substitute } from '../../ui/wrap';
 export type DialogNode =
   | string
   | { if: string | { not: string }; then: DialogScript; else?: DialogScript }
-  | { choice: [string, string]; yes: DialogScript; no: DialogScript }
+  | { choice: [string, string]; ask?: string; yes: DialogScript; no: DialogScript }
   | { set: string }
   | { give: string }
   | { gold: number }
   | { heal: true }
+  | { pay: number; then: DialogScript; else?: DialogScript }
+  | { rest: string }
+  | { save: true; ok: DialogScript; fail: DialogScript }
+  | { shop: string }
   | { sfx: SfxId };
 
 export type DialogScript = DialogNode[];
@@ -21,13 +25,18 @@ export interface ScriptEnv {
   gold(n: number): void;
   heal(): void;
   sfx(id: SfxId): void;
+  /** Takes n gold and returns true, or changes nothing and returns false. */
+  pay(n: number): boolean;
+  rest(song: string): void;
+  save(): boolean;
+  shop(id: string): void;
 }
 
 export type ScriptStep =
   | { kind: 'text'; text: string }
-  | { kind: 'choice'; options: [string, string] };
+  | { kind: 'choice'; options: [string, string]; ask?: string };
 
-type Choice = { choice: [string, string]; yes: DialogScript; no: DialogScript };
+type Choice = { choice: [string, string]; ask?: string; yes: DialogScript; no: DialogScript };
 
 interface Frame {
   nodes: DialogScript;
@@ -91,13 +100,26 @@ export class ScriptRunner {
       this.pendingChoice = node;
       const [a, b] = node.choice;
       const vars = { name: this.env.name };
-      return { kind: 'choice', options: [substitute(a, vars), substitute(b, vars)] };
+      const step: ScriptStep = { kind: 'choice', options: [substitute(a, vars), substitute(b, vars)] };
+      if (node.ask !== undefined) step.ask = substitute(node.ask, vars);
+      return step;
+    }
+    if ('pay' in node) {
+      const branch = this.env.pay(node.pay) ? node.then : node.else;
+      if (branch) this.stack.push({ nodes: branch, index: 0 });
+      return null;
+    }
+    if ('save' in node) {
+      this.stack.push({ nodes: this.env.save() ? node.ok : node.fail, index: 0 });
+      return null;
     }
     if ('set' in node) this.env.set(node.set);
     else if ('give' in node) {
       if (!this.env.give(node.give)) return this.text('You cannot carry more.');
     } else if ('gold' in node) this.env.gold(node.gold);
     else if ('heal' in node) this.env.heal();
+    else if ('rest' in node) this.env.rest(node.rest);
+    else if ('shop' in node) this.env.shop(node.shop);
     else this.env.sfx(node.sfx);
     return null;
   }

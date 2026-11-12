@@ -11,6 +11,7 @@ import type { ItemDef } from './items';
 import type { MonsterTable } from './battle/monster';
 import type { SpellTable } from './effects';
 import type { PlayerState } from './player';
+import type { ShopTable } from './shop';
 
 export interface StoryConfig {
   title: string;
@@ -40,7 +41,10 @@ export interface Game {
   readonly items: Record<string, ItemDef>;
   readonly monsters: MonsterTable;
   readonly spells: SpellTable;
+  readonly shops: ShopTable;
   readonly story: StoryConfig;
+  /** Browser storage for saves; absent where there is none. */
+  readonly storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
   player: PlayerState;
   debug: { noEncounters: boolean };
   debugOpen?: () => void;

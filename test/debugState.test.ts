@@ -1,6 +1,7 @@
 import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
 import { SPELLS } from '../src/data/spells';
+import { SHOPS } from '../src/data/shops';
 import { describe, expect, it, vi } from 'vitest';
 import { itemLines } from '../src/game/inventory';
 import { StateStack } from '../src/engine/state';
@@ -35,6 +36,7 @@ function setup() {
     songs: SONGS,
     items: ITEMS,
     spells: SPELLS,
+    shops: SHOPS,
     monsters: MONSTERS,
     story: STORY,
     player: createPlayer(STORY.defaultHeroName, STORY.startingItems),

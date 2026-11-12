@@ -26,6 +26,7 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
     { set: 'shield_received' },
     "{name} received Aldric's Shield.",
     'It is dented, and it is yours.',
+    "Take your coin to Garrik's forge before you try the gate.",
     'Stay as long as you like. The fire is warm.',
   ],
 
@@ -38,49 +39,62 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
   maren: [
     {
       if: 'warden_defeated',
-      then: [
-        "You went down there. And you came back to Maren's door.",
-        'What did you find, {name}?',
-        'No. Tell me later. I am not ready.',
-      ],
+      then: ["You went down there. And you came back to Maren's door."],
+      else: ["Sit by old Maren's fire a moment. The Dimming is worse at night."],
+    },
+    {
+      choice: ['Yes', 'No'],
+      ask: 'Shall I remember your journey?',
+      yes: [{ save: true, ok: [{ sfx: 'save' }, 'It is written.'], fail: ['The page will not take the ink. Nothing was written.'] }],
+      no: [],
+    },
+    {
+      if: 'warden_defeated',
+      then: ['What did you find, {name}?', 'No. Tell me later. I am not ready.'],
       else: [
-        "Sit by old Maren's fire a moment. The Dimming is worse at night.",
         'We stopped saying the word years ago. The cold stayed anyway.',
-        'Rest here when you need to. I will keep the lamp lit.',
+        'Come back when you need to. I will keep the lamp lit.',
       ],
     },
   ],
 
-  // Until the inn opens in Phase 5 (6 gold a night), Hesta's bed is a free full rest.
   hesta: [
     {
       if: 'warden_defeated',
       then: [
         'You came back. Sit. I told myself: Hesta, that one will want feeding.',
         'Your father never did come through that door again.',
-        'No coin for the bed today. Lie down a while.',
-        { heal: true },
-        'You rest. Your wounds close and your head clears.',
+        {
+          choice: ['Yes', 'No'],
+          ask: 'A bed is still 6 gold, and I will not hear otherwise. Stay?',
+          yes: [{ pay: 6, then: [{ rest: 'inn' }, 'Morning. Eat before you go. I mean it.'], else: ['That is not 6 gold. I said I will not hear otherwise.'] }],
+          no: ['Then sit a while anyway.'],
+        },
       ],
       else: [
         'As sure as my name is Hesta, you look more like him every day.',
         'Aldric drank his last cup in this room. He laughed the whole time.',
-        'The bed costs you nothing today. Lie down a while.',
-        { heal: true },
-        'You rest. Your wounds close and your head clears.',
+        {
+          choice: ['Yes', 'No'],
+          ask: 'A bed is 6 gold, if you need one. Stay?',
+          yes: [{ pay: 6, then: [{ rest: 'inn' }, 'Morning. You slept like a stone. He never could.'], else: ['That is not 6 gold. Come back when you have it.'] }],
+          no: ['Then mind the road. The bed will keep.'],
+        },
       ],
     },
   ],
 
   garrik: [
     'Aldric was a fool. I am Garrik the smith, and I say so to anyone.',
+    'You may need what a fool needs. Look over the racks.',
+    { shop: 'forge' },
     'He left a wife and a child for a hole in the ground.',
     'I will not make that mistake. I make blades and sleep sound.',
-    'You may need what a fool needs. Look over the racks.',
   ],
 
   odo: [
     "Odo's Goods, and Odo himself. Herbs and torches, that is all I carry.",
+    { shop: 'goods' },
     'Prices climb with the Dimming. I did not set them. The cold did.',
   ],
 

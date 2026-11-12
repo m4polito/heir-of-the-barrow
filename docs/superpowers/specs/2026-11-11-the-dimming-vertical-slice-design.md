@@ -224,11 +224,15 @@ type Line = string;   // auto-wrapped, {name} substituted
 type DialogScript =
   | Line[]
   | { if: FlagExpr; then: DialogScript; else?: DialogScript }
-  | { choice: [string, string]; yes: DialogScript; no: DialogScript }
+  | { choice: [string, string]; ask?: string; yes: DialogScript; no: DialogScript }
   | { set: string }                    // set a flag mid-conversation
-  | { give: ItemId } | { gold: number } | { heal: true };
+  | { give: ItemId } | { gold: number } | { heal: true }
+  | { pay: number; then: DialogScript; else?: DialogScript }   // take gold if the hero has it
+  | { rest: SongId }                   // full HP/MP, then the sleep screen with that jingle
+  | { save: true; ok: DialogScript; fail: DialogScript }
+  | { shop: ShopId };                  // open that shop; the script goes on when it closes
 ```
-Scripts are plain data arrays; a tiny interpreter runs them. Shops and the inn are states of their own but speak through this same system.
+Scripts are plain data arrays; a tiny interpreter runs them. A choice with `ask` shows the question and its two answers in one window: the question types out, then Yes and No appear side by side under it (a question is at most three lines). Shops, the inn and saving are opened from inside a villager's script by the `shop`, `pay`, `rest` and `save` steps, so a keeper's greeting and farewell are ordinary lines around the step. While a script is being skipped by cancel, a shop does not open, a rest restores HP and MP without the sleep screen, and every choice answers No.
 
 ### 8.3 Voice guidelines for writing NPCs
 - One idea per line; no line explains the whole world.
@@ -281,7 +285,7 @@ actions: [
 - HP 70, ATK 20, DEF 14, AGI 12 (starting values; tune in play-test).
 - Actions: attack (6), **Rot Breath** 7–12 fixed damage ignoring defense (3), **Mend** heals 15–25 when below half HP (2, cooldown 2 turns).
 - Cannot be run from. Victory plays the fanfare, awards ~300 XP and 0 gold, sets `warden_defeated`, drops the journal page into inventory.
-- Intended win condition: level 6–7 with the Bronze Sword and Leather Armor, two or three Herbs, Heal spell. Beatable at 5 with luck; not at 4. **The intent governs the numbers**: with the §9.5 formulas and §10 tables, a level 6 hero (ATK 26, DEF 13) does 5–9 per hit and takes about 5 per round, so the fight runs roughly 10–13 rounds. A unit test simulates the fight at levels 4, 5, 6 and 7 with the intended gear and asserts the win rates are near 0%, under 50%, over 70%, and over 90% respectively; if tuning moves the tables, the test moves with them.
+- Intended win condition: level 6–7 with the Bronze Sword and Leather Armor, two or three Herbs, Heal spell. Beatable at 5 with luck; not at 4. **The intent governs the numbers**: with the §9.5 formulas and §10 tables, a level 6 hero (ATK 27, DEF 14) has a long fight: about 19 rounds in simulation, a Phase 6 tuning target (the aim is 10–13). A unit test simulates the fight at levels 4, 5, 6 and 7 with the intended gear and asserts the win rates are near 0%, under 50%, over 70%, and over 90% respectively; if tuning moves the tables, the test moves with them.
 
 ### 9.9 Death
 "You have fallen." Fade to black. Respawn in Maren's house facing her at full HP/MP, gold halved (floor), XP and items kept. Maren speaks a death-specific line. No game over screen.
@@ -296,25 +300,25 @@ Message sequence: "The Mireling is defeated." → "You gain N experience and N g
 ### 10.1 Hero stat table (levels 1–10; slice targets reaching ~7)
 | Lv | XP to reach | STR | AGI | MaxHP | MaxMP | Learns |
 |---|---|---|---|---|---|---|
-| 1 | 0 | 4 | 4 | 15 | 0 | — |
-| 2 | 7 | 5 | 4 | 22 | 0 | — |
-| 3 | 23 | 7 | 6 | 24 | 5 | Heal |
-| 4 | 47 | 7 | 8 | 31 | 16 | — |
-| 5 | 110 | 12 | 10 | 35 | 20 | Ember |
-| 6 | 220 | 16 | 10 | 38 | 24 | — |
-| 7 | 450 | 18 | 17 | 40 | 26 | — |
-| 8 | 800 | 22 | 20 | 46 | 29 | Homeward |
-| 9 | 1300 | 30 | 22 | 50 | 36 | — |
-| 10 | 2000 | 35 | 31 | 54 | 40 | — |
+| 1 | 0 | 4 | 5 | 16 | 0 | — |
+| 2 | 8 | 5 | 5 | 19 | 4 | Heal |
+| 3 | 22 | 7 | 7 | 25 | 6 | — |
+| 4 | 50 | 9 | 9 | 29 | 12 | — |
+| 5 | 105 | 13 | 11 | 33 | 17 | — |
+| 6 | 210 | 17 | 12 | 36 | 23 | Ember |
+| 7 | 420 | 19 | 15 | 41 | 27 | — |
+| 8 | 780 | 23 | 19 | 45 | 31 | — |
+| 9 | 1250 | 28 | 23 | 50 | 35 | Homeward |
+| 10 | 1900 | 34 | 28 | 55 | 40 | — |
 
-Gains are the delta between rows. Numbers are a starting point in the classic's proportions; tune in play-test.
+Gains are the delta between rows. Numbers are original to this game; tune in play-test.
 
 ### 10.2 Spells
 | Spell | MP | Effect | In slice? |
 |---|---|---|---|
 | Heal | 4 | Restore 10–17 HP. Usable in and out of battle. | Yes |
 | Ember | 2 | 5–12 damage ignoring defense. Battle only. | Yes |
-| Homeward | 8 | Warp to Hollowmere. Field only. | Learned at 8; defined now, reachable later |
+| Homeward | 8 | Warp to Hollowmere. Field only. | Learned at 9; defined now, reachable later |
 
 ### 10.3 Equipment
 | Item | Slot | Stat | Price | Where |
@@ -345,21 +349,21 @@ Inventory: 8 slots; consumables stack up to 6 per slot; unequipped equipment occ
 | Barrow Mireling | 24 | 20 | 14 | 10 | 18 | 12–18 | 1/16 | Barrow |
 | Barrow Warden | 70 | 20 | 14 | 12 | 300 | 0 | 1/32 | boss |
 
-Tuned 2026-11-12 after the Phase 3 play-test; pinned by `test/balance.test.ts`.
+Tuned 2026-11-12 after the Phase 3 play-test; pinned by `test/balance.test.ts`. Level table replaced 2026-11-12 with an original curve.
 
 ---
 
 ## 11. Shops, Inn, Save/Load
 
 ### 11.1 Shops
-Talking to Garrik or Odo opens `Shop`: greeting → Buy / Sell / Leave. Buy lists items with prices; selecting shows "The Iron Knife? That'll be 60 gold." Yes/No. On buying equipment: "Will you equip it now?" Yes/No; old gear goes to inventory, or the shop offers to buy it if inventory is full. Refusals: not enough gold, inventory full, "You already carry one" for equipment. Sell lists inventory at half price. Each shopkeeper has distinct greeting and farewell lines.
+Talking to Garrik or Odo runs his script: greeting lines, then `Shop` (Buy / Sell / Leave, with the hero's gold shown under the menu), then farewell lines when the shop closes. Buy lists items with prices; selecting shows "The Iron Knife? That will be 60 gold." Yes/No. On buying equipment: "Will you equip it now?" Yes/No; old gear goes to the pack. Refusals: "You do not have enough gold.", "You cannot carry more.", and "You already carry one." for equipment the hero has in the pack or is wearing. With a full pack, equipment can still be bought if it is worn at once: the piece it replaces is traded in for its sale price, and the purchase is refused if that piece cannot be sold. Sell lists the pack at half price, rounded down; either shop buys anything except Aldric's Shield and key items ("I cannot buy that."); worn gear is not listed. The shop's own wording is the same for both keepers; each keeper's greeting and farewell are his own.
 
 ### 11.2 Inn
-Hesta: "A bed for the night is 6 gold. Stay?" Yes → fade out, short sleep jingle, fade in, full HP/MP, "Morning. You look more like him every day." No → farewell line. Fixed price in the slice.
+Hesta speaks two lines, then asks: "A bed is 6 gold, if you need one. Stay?" (after the Warden: "A bed is still 6 gold, and I will not hear otherwise. Stay?"). Yes with 6 gold → fade out, the three-second sleep jingle, fade in, full HP/MP, the town theme from its start, then "Morning. You slept like a stone. He never could." (after the Warden: "Morning. Eat before you go. I mean it."). Yes without 6 gold → "That is not 6 gold. Come back when you have it." No → a farewell line. Keys do nothing while the hero sleeps. Fixed price in the slice.
 
 ### 11.3 Save/Load
 - Saving happens **only by talking to Maren**: "Shall I remember your journey?" Yes → write save, "It is written." The trip home is part of the game's rhythm.
-- Save = JSON in `localStorage` under a versioned key, containing: `version`, hero name, level, XP, HP, MP, gold, equipment, inventory, flags, map id, position, facing, torch steps remaining, mute preference.
+- Save = JSON in `localStorage` under a versioned key, containing: `version`, hero name, level, XP, HP, MP, gold, equipment, inventory, flags, map id, position, facing, torch steps remaining (written as 0 until Phase 6). The mute preference keeps its own storage entry, because it must apply before Continue is chosen. Strength, agility and the HP and MP maximums are not stored; they are rebuilt from the level, and stored HP and MP are held to those maximums on load. A save that cannot be read (damaged, another version, an unknown item or map) is ignored, not deleted: Continue is not offered. Maren asks straight after her first line; a successful save plays its own sound with "It is written."; if the browser refuses to store the save she says "The page will not take the ink. Nothing was written." Nothing saves automatically, so reloading the page returns to the last save.
 - **Title → Continue** loads it. One slot in the slice.
 - **Password system: deferred past the slice** (owner's decision). A later phase adds a classic text password as a portable save: the save struct bit-packed with a checksum, a 32-character unambiguous alphabet, under 40 characters, offered by Maren after saving and entered from the title screen. The save struct should be designed so every field has a small fixed range (e.g. gold capped at 65535, flags as an indexed list) so that bit-packing later is a codec change, not a schema change.
 
@@ -398,7 +402,7 @@ Rows are a fixed subdivision (16th notes). A sequencer schedules notes ahead of 
 | `fallen` | Death | Short descending phrase |
 
 ### 12.4 Sound effects
-Menu move, menu confirm, menu cancel, text blip, door open, stairs, chest open, bump (blocked), encounter sting (precedes battle wipe), hero hit, monster hit, miss, critical, spell cast, heal, run success, run fail, buy, error/refusal.
+Menu move, menu confirm, menu cancel, text blip, door open, stairs, chest open, bump (blocked), encounter sting (precedes battle wipe), hero hit, monster hit, miss, critical, spell cast, heal, run success, run fail, buy, save, error/refusal.
 
 ### 12.5 Mixing
 Master gain with mute. Music about 6 dB under SFX. SFX play on separate voices so they never steal music channels.

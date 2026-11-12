@@ -1,6 +1,7 @@
 import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
 import { SPELLS } from '../src/data/spells';
+import { SHOPS } from '../src/data/shops';
 import { describe, it, expect } from 'vitest';
 import { StateStack, type State } from '../src/engine/state';
 import type { Input } from '../src/engine/input';
@@ -123,6 +124,7 @@ function makeGame(overrides: Partial<Parameters<typeof createGame>[0]> = {}) {
     songs: SONGS,
     items: ITEMS,
     spells: SPELLS,
+    shops: SHOPS,
     monsters: MONSTERS,
     story: STORY,
     player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
@@ -373,5 +375,169 @@ describe('escape from dialog', () => {
     stack.update(input);
     expect(stack.states).toHaveLength(1);
     expect(stack.top).toBe(explore);
+  });
+});
+
+describe('dialog services', () => {
+  type Script = import('../src/game/dialog/script').DialogScript;
+  const press = (a: string) => ({ held: () => false, rearm: () => {}, pressed: (k: string) => k === a }) as unknown as Input;
+
+  function setup(script: Script, services: ConstructorParameters<typeof DialogState>[2] = {}, gold = 0) {
+    const { stack, game } = makeGame();
+    game.audio.playSfx = (() => {}) as typeof game.audio.playSfx;
+    game.player = { ...game.player, gold, hp: 1, mp: 0 };
+    const d = new DialogState(game, script, services);
+    stack.push(d);
+    return { stack, game, d };
+  }
+  // confirm until the dialog reveals fully and moves on: first confirm reveals, second advances
+  const confirmTwice = (stack: StateStack) => {
+    stack.update(press('confirm'));
+    stack.update(press('confirm'));
+  };
+
+  it('pay subtracts the price when affordable', () => {
+    const { game, stack, d } = setup([{ pay: 6, then: ['ok'] }], {}, 6);
+    expect(game.player.gold).toBe(0);
+    expect(stack.states).toContain(d);
+  });
+
+  it('gold is clamped to 0..65535', () => {
+    expect(setup([{ gold: 100 }], {}, 65500).game.player.gold).toBe(65535);
+    expect(setup([{ gold: -100 }], {}, 40).game.player.gold).toBe(0);
+  });
+
+  it('pay changes nothing and skips then when gold is short', () => {
+    let done = 0;
+    const { game, stack, d } = setup([{ pay: 6, then: ['ok'] }], { onDone: () => done++ }, 5);
+    expect(game.player.gold).toBe(5);
+    stack.update(press('none'));
+    expect(stack.states).not.toContain(d);
+    expect(done).toBe(1);
+  });
+
+  it.each([-1, 1.5, NaN])('pay rejects the bad price %s', (n) => {
+    expect(() => setup([{ pay: n, then: ['ok'] }], {}, 10)).toThrow('Bad price');
+  });
+
+  it('pay 0 succeeds and takes nothing', () => {
+    const { game } = setup([{ pay: 0, then: ['ok'] }], {}, 3);
+    expect(game.player.gold).toBe(3);
+  });
+
+  it('save shows ok when the service succeeds, calling it once', () => {
+    let calls = 0;
+    const { game, stack } = setup([{ save: true, ok: ['w'], fail: ['f'] }], { services: { save: () => (calls++, true) } });
+    const drawn: string[] = [];
+    (game as { font: unknown }).font = { drawText: (_c: unknown, t: string) => drawn.push(t) };
+    const ctx = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
+    stack.update(press('none'));
+    (stack.top as DialogState).render(ctx, 1);
+    expect(drawn.filter((t) => t !== '▼').join('')).toBe('w');
+    expect(calls).toBe(1);
+  });
+
+  it('cancelled save still calls the service once', () => {
+    let calls = 0;
+    const { stack } = setup(['hi', { save: true, ok: [], fail: [] }], { services: { save: () => (calls++, true) } });
+    stack.update(press('cancel'));
+    expect(calls).toBe(1);
+  });
+
+  it('a dialog does nothing more in the update that opened a state', () => {
+    const sfx: string[] = [];
+    let done = 0;
+    const fakeState = fake('shopscreen', []);
+    const { stack, game, d } = setup(['hi', { shop: 's' }], {
+      onDone: () => done++,
+      services: { shop: () => stack.push(fakeState) },
+    });
+    game.audio.playSfx = ((id: string) => void sfx.push(id)) as typeof game.audio.playSfx;
+    stack.update(press('none'));
+    stack.update(press('confirm'));
+    sfx.length = 0;
+    stack.update(press('confirm'));
+    expect(stack.top).toBe(fakeState);
+    expect(stack.states).toContain(d);
+    expect(done).toBe(0);
+    expect(sfx).not.toContain('blip');
+    stack.remove(fakeState);
+    stack.update(press('none'));
+    expect(stack.states).not.toContain(d);
+    expect(done).toBe(1);
+  });
+
+  it('rest restores HP and MP and calls the service once', () => {
+    const calls: string[] = [];
+    const { game, stack, d } = setup(['hi', { rest: 'r' }, 'bye'], { services: { rest: (s) => calls.push(s) } });
+    game.player = { ...game.player, hp: 1, mp: 0 };
+    confirmTwice(stack);
+    expect(game.player.hp).toBe(game.player.maxHp);
+    expect(game.player.mp).toBe(game.player.maxMp);
+    expect(calls).toEqual(['r']);
+    expect(stack.states).toContain(d);
+    // it shows bye
+    const drawn: string[] = [];
+    (game as { font: unknown }).font = { drawText: (_c: unknown, t: string) => drawn.push(t) };
+    const ctx = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
+    for (let i = 0; i < 5; i++) stack.update(press('none'));
+    d.render(ctx, 1);
+    expect(drawn.filter((t) => t !== '▼').join('')).toBe('bye');
+  });
+
+  it('cancelled rest still restores but does not call the service', () => {
+    const calls: string[] = [];
+    const { game, stack, d } = setup(['hi', { rest: 'r' }, 'bye'], { services: { rest: (s) => calls.push(s) } });
+    stack.update(press('cancel'));
+    expect(game.player.hp).toBe(game.player.maxHp);
+    expect(game.player.mp).toBe(game.player.maxMp);
+    expect(calls).toEqual([]);
+    expect(stack.states).not.toContain(d);
+  });
+
+  it('shop opens a state over the dialog; removing it resumes the script', () => {
+    const log: string[] = [];
+    const fakeState = fake('shopscreen', log);
+    let pushed = false;
+    const { stack, d, game } = setup(['hi', { shop: 's' }, 'bye'], {
+      services: {
+        shop: (id) => {
+          expect(id).toBe('s');
+          pushed = true;
+          stack.push(fakeState);
+        },
+      },
+    });
+    confirmTwice(stack);
+    expect(pushed).toBe(true);
+    expect(stack.top).toBe(fakeState);
+    expect(stack.states[stack.states.length - 2]).toBe(d);
+    stack.remove(fakeState);
+    const drawn: string[] = [];
+    (game as { font: unknown }).font = { drawText: (_c: unknown, t: string) => drawn.push(t) };
+    const ctx = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
+    for (let i = 0; i < 5; i++) stack.update(press('none'));
+    d.render(ctx, 1);
+    expect(drawn.filter((t) => t !== '▼').join('')).toBe('bye');
+    confirmTwice(stack);
+    expect(stack.states).not.toContain(d);
+  });
+
+  it('cancelled shop does not call the service', () => {
+    let calls = 0;
+    const { stack, d } = setup(['hi', { shop: 's' }, 'bye'], { services: { shop: () => void calls++ } });
+    stack.update(press('cancel'));
+    expect(calls).toBe(0);
+    expect(stack.states).not.toContain(d);
+  });
+
+  it('save with no services takes the fail branch', () => {
+    const { game, stack } = setup([{ save: true, ok: ['w'], fail: ['f'] }]);
+    const drawn: string[] = [];
+    (game as { font: unknown }).font = { drawText: (_c: unknown, t: string) => drawn.push(t) };
+    const ctx = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
+    stack.update(press('none'));
+    (stack.top as DialogState).render(ctx, 1);
+    expect(drawn.filter((t) => t !== '▼').join('')).toBe('f');
   });
 });

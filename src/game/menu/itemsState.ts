@@ -40,7 +40,7 @@ export class ItemsState implements State {
         audio.playSfx('menuConfirm');
         let yes = false;
         stack.push(
-          new DialogState(this.game, ['Equip it?', { choice: ['Yes', 'No'], yes: [], no: [] }], {
+          new DialogState(this.game, [{ choice: ['Yes', 'No'], ask: 'Equip it?', yes: [], no: [] }], {
             onChoice: (answer) => {
               yes = answer;
             },

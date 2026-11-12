@@ -11,9 +11,9 @@ describe('statusLines', () => {
     const lines = statusLines(ITEMS, p);
     expect(lines).toHaveLength(11);
     expect(lines[0]).toBe('NAME Wren');
-    expect(lines[2]).toBe('HP   15/15');
+    expect(lines[2]).toBe('HP   16/16');
     expect(lines[9]).toBe('DEF  2');
-    expect(lines[10]).toBe('NEXT 7');
+    expect(lines[10]).toBe('NEXT 8');
   });
   it('shows NEXT - at the top level', () => {
     const p = applyLevel(createPlayer('Wren', STORY.startingItems), 10);

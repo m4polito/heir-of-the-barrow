@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ITEMS } from '../src/data/items';
 import { MONSTERS } from '../src/data/monsters';
+import { STORY } from '../src/data/story';
 import { createRng } from '../src/engine/rng';
 import { validateActions } from '../src/game/battle/ai';
+import { addItem, equip } from '../src/game/inventory';
+import { createPlayer } from '../src/game/player';
+import { buy, buyCheck } from '../src/game/shop';
 import { attackOf, defenseOf } from '../src/game/stats';
 import { fightOnly, healer, heroAt, simulate } from './helpers/simulate';
 import { WARDEN } from './helpers/warden';
@@ -42,8 +46,8 @@ describe('Barrow Warden win-rate bands', () => {
 
   it('a level 6 hero has the stats the spec states', () => {
     const p = heroAt(6, gear, 3);
-    expect(attackOf(ITEMS, p)).toBe(26);
-    expect(defenseOf(ITEMS, p)).toBe(13);
+    expect(attackOf(ITEMS, p)).toBe(27);
+    expect(defenseOf(ITEMS, p)).toBe(14);
   });
 
   it('level 4 almost never wins', () => {
@@ -61,5 +65,64 @@ describe('Barrow Warden win-rate bands', () => {
   it('level 7 almost always wins', () => {
     const r = run(7, 8);
     expect(r.winRate).toBeGreaterThan(0.9);
+  });
+});
+
+describe('the first purchase', () => {
+  const INN_PRICE = 6;
+  const bought = () => {
+    const start = createPlayer('Wren', STORY.startingItems);
+    return { start, after: buy(ITEMS, start, 'wooden_club') };
+  };
+  const clubAndShield = () => {
+    let p = bought().after;
+    p = equip(ITEMS, p, 'wooden_club').player;
+    p = addItem(ITEMS, p, 'aldric_shield').player;
+    p = equip(ITEMS, p, 'aldric_shield').player;
+    return { ...p, hp: p.maxHp, mp: p.maxMp };
+  };
+  const clubAndShieldAt = (level: number) => heroAt(level, ['wooden_club', 'aldric_shield'], 0);
+
+  it('the starting purse buys the Club and leaves the price of a night and an Herb', () => {
+    const { start, after } = bought();
+    const check = buyCheck(ITEMS, start, 'wooden_club');
+    expect(check.ok).toBe(true);
+    expect(check.ok && check.wearOnly).toBe(false);
+    expect(after.gold).toBe(10);
+    expect(after.gold).toBeGreaterThanOrEqual(INN_PRICE);
+    expect(after.gold).toBeGreaterThanOrEqual(ITEMS.herb!.price);
+  });
+
+  it('road: the Club and shield make a Mireling comfortable', () => {
+    const r = simulate(createRng(11), clubAndShield(), MONSTERS.mireling!, fightOnly, N);
+    expect(r.winRate).toBeGreaterThanOrEqual(0.99);
+    expect(r.meanRounds).toBeLessThanOrEqual(2.5);
+    expect(r.meanHpLost).toBeLessThanOrEqual(2.0);
+  });
+
+  it('the Club is felt: at least half a round faster than the shield alone', () => {
+    const club = simulate(createRng(11), clubAndShield(), MONSTERS.mireling!, fightOnly, N);
+    const bare = simulate(createRng(1), heroAt(1, ['aldric_shield'], 0), MONSTERS.mireling!, fightOnly, N);
+    expect(club.meanRounds).toBeLessThanOrEqual(bare.meanRounds - 0.5);
+  });
+
+  it('spec pacing: under 4 rounds and under 20% of max HP lost per fight', () => {
+    const p = clubAndShield();
+    const r = simulate(createRng(11), p, MONSTERS.mireling!, fightOnly, N);
+    expect(r.meanRounds).toBeLessThanOrEqual(4);
+    expect(r.meanHpLost).toBeLessThan(p.maxHp * 0.2);
+  });
+
+  it('marsh at level 3: Heal wins nearly always, fighting alone usually wins', () => {
+    const hero = clubAndShieldAt(3);
+    const heal = simulate(createRng(12), hero, MONSTERS.bog_mireling!, healer(8, null), N);
+    const plain = simulate(createRng(13), hero, MONSTERS.bog_mireling!, fightOnly, N);
+    expect(heal.winRate).toBeGreaterThanOrEqual(0.95);
+    expect(plain.winRate).toBeGreaterThanOrEqual(0.8);
+  });
+
+  it('marsh at level 2: the Club does not open it a level early', () => {
+    const r = simulate(createRng(14), clubAndShieldAt(2), MONSTERS.bog_mireling!, fightOnly, N);
+    expect(r.winRate).toBeLessThan(0.4);
   });
 });

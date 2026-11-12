@@ -5,7 +5,7 @@ import { SPELLS } from '../src/data/spells';
 import { ITEMS } from '../src/data/items';
 import { seqRng } from './helpers/seqRng';
 
-const lv3 = (): PlayerState => gainXp(createPlayer('Wren', [{ item: 'herb', count: 2 }]), 23).player;
+const lv3 = (): PlayerState => gainXp(createPlayer('Wren', [{ item: 'herb', count: 2 }]), 22).player;
 const herbs = (p: PlayerState) => p.inventory.find((s) => s.item === 'herb')?.count ?? 0;
 
 describe('castInField', () => {
@@ -13,26 +13,26 @@ describe('castInField', () => {
     const p = { ...lv3(), hp: 5 };
     const r = castInField(seqRng([0]), SPELLS, p, 'heal');
     expect(r).toMatchObject({ ok: true, text: 'You recover 10 HP.', sfx: 'heal' });
-    if (r.ok) expect(r.player).toMatchObject({ hp: 15, mp: 1 });
+    if (r.ok) expect(r.player).toMatchObject({ hp: 15, mp: 2 });
   });
   it('caps the heal at max hp', () => {
     const r = castInField(seqRng([0.99]), SPELLS, { ...lv3(), hp: 20 }, 'heal');
-    expect(r.ok && r.player.hp).toBe(24);
-    expect(r.text).toBe('You recover 4 HP.');
+    expect(r.ok && r.player.hp).toBe(25);
+    expect(r.text).toBe('You recover 5 HP.');
   });
   it('refuses without a draw or change', () => {
     const full = lv3();
     expect(castInField(seqRng([]), SPELLS, full, 'heal')).toEqual({ ok: false, text: 'You are not hurt.' });
     const low = { ...lv3(), hp: 5, mp: 3 };
     expect(castInField(seqRng([]), SPELLS, low, 'heal')).toEqual({ ok: false, text: 'Not enough MP.' });
-    const l5 = applyLevel(lv3(), 5);
-    expect(castInField(seqRng([]), SPELLS, l5, 'ember')).toEqual({ ok: false, text: 'You cannot use that now.' });
+    const l6 = applyLevel(lv3(), 6);
+    expect(castInField(seqRng([]), SPELLS, l6, 'ember')).toEqual({ ok: false, text: 'You cannot use that now.' });
   });
   it('homeward warps', () => {
-    const p = { ...applyLevel(lv3(), 8), mp: 29 };
+    const p = { ...applyLevel(lv3(), 9), mp: 35 };
     const r = castInField(seqRng([]), SPELLS, p, 'homeward');
     expect(r).toMatchObject({ ok: true, warp: true, text: 'You are carried home.', sfx: 'spell' });
-    if (r.ok) expect(r.player.mp).toBe(21);
+    if (r.ok) expect(r.player.mp).toBe(27);
   });
   it('throws on programming errors', () => {
     expect(() => castInField(seqRng([]), SPELLS, lv3(), 'ember')).toThrow();

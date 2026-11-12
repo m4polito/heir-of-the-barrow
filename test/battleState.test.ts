@@ -15,6 +15,7 @@ import type { MonsterDef } from '../src/game/battle/monster';
 import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
 import { SPELLS } from '../src/data/spells';
+import { SHOPS } from '../src/data/shops';
 import { MAPS } from '../src/data/maps';
 import { DIALOGS } from '../src/data/dialog/hollowmere';
 import { SONGS } from '../src/data/songs';
@@ -74,6 +75,7 @@ function setup(
     songs: SONGS,
     items: ITEMS,
     spells: SPELLS,
+    shops: SHOPS,
     monsters: MONSTERS,
     story: STORY,
     player: { ...base, ...player },
@@ -422,7 +424,7 @@ describe('BattleState', () => {
     });
 
     it('level-up: the jingle waits for the fanfare, then the stat lines show', () => {
-      const t = setup({ hp: 1, atk: 0, agi: 0, xp: 2 }, { xp: 5, hp: 9 });
+      const t = setup({ hp: 1, atk: 0, agi: 0, xp: 2 }, { xp: 6, hp: 9 });
       let victory = -1;
       let jingle = -1;
       let ended = -1;
@@ -439,22 +441,23 @@ describe('BattleState', () => {
       expect(victory).toBeGreaterThanOrEqual(0);
       expect(jingle - victory).toBeGreaterThanOrEqual(144);
       expect(ended - jingle).toBeGreaterThanOrEqual(60); // the jingle's hold: 10 rows at tempo 150
-      const order = ['You reach level 2.', 'Strength +1.', 'Max HP +7.'].map((x) => t.texts.indexOf(x));
+      const order = ['You reach level 2.', 'Strength +1.', 'Max HP +3. Max MP +4.'].map((x) => t.texts.indexOf(x));
       expect(order.every((i) => i >= 0)).toBe(true);
+      expect(t.texts).toContain('You learned Heal!');
       expect([...order].sort((a, b) => a - b)).toEqual(order);
-      // whatever the draws, the level-up adds 7 to the hp the battle ended with
-      expect(t.game.player).toMatchObject({ level: 2, xp: 7 });
-      expect(t.game.player.hp).toBe(t.state.battle.heroHp + 7);
+      // whatever the draws, the level-up adds 3 to the hp the battle ended with
+      expect(t.game.player).toMatchObject({ level: 2, xp: 8 });
+      expect(t.game.player.hp).toBe(t.state.battle.heroHp + 3);
     });
 
     it('learning a spell is announced', () => {
-      const t = setup({ hp: 1, atk: 0, xp: 2 }, { level: 2, xp: 22, str: 5, maxHp: 22, hp: 22 });
+      const t = setup({ hp: 1, atk: 0, xp: 2 }, { level: 5, xp: 208, str: 13, agi: 11, maxHp: 33, hp: 33, mp: 17 });
       for (let i = 0; i < 3000 && t.ends.length === 0; i++) {
         t.tick('confirm');
         t.seen();
       }
-      expect(t.texts).toContain('You learned Heal!');
-      expect(t.game.player).toMatchObject({ level: 3, mp: 5 });
+      expect(t.texts).toContain('You learned Ember!');
+      expect(t.game.player).toMatchObject({ level: 6, mp: 23 });
     });
   });
 });

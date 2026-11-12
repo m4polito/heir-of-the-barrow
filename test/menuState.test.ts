@@ -1,6 +1,7 @@
 import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
 import { SPELLS } from '../src/data/spells';
+import { SHOPS } from '../src/data/shops';
 import { describe, expect, it, vi } from 'vitest';
 import { StateStack } from '../src/engine/state';
 import type { Input } from '../src/engine/input';
@@ -38,6 +39,7 @@ function setup() {
     songs: SONGS,
     items: ITEMS,
     spells: SPELLS,
+    shops: SHOPS,
     monsters: MONSTERS,
     story: STORY,
     player: setFlag(createPlayer(STORY.defaultHeroName, STORY.startingItems), STORY.opening.flag),
@@ -119,7 +121,7 @@ describe('items and equip', () => {
     const items = new ItemsState(game);
     stack.push(items);
     items.update(keys('confirm'));
-    expect(game.player.hp).toBe(15);
+    expect(game.player.hp).toBe(16);
     expect(game.player.inventory).toEqual([]);
     items.update(keys());
     expect((items as unknown as { list: { items: string[] } }).list.items).toEqual(['Nothing']);
@@ -175,8 +177,7 @@ describe('items and equip', () => {
     items.update(keys('confirm'));
     const dlg = stack.top as DialogState;
     expect(dlg).toBeInstanceOf(DialogState);
-    // answer No: reveal, advance to the choice, move to No, confirm
-    dlg.update(keys('confirm'));
+    // answer No: reveal the question, move to No, confirm
     dlg.update(keys('confirm'));
     dlg.update(keys('down'));
     dlg.update(keys('confirm'));
@@ -190,9 +191,82 @@ describe('items and equip', () => {
     const dlg2 = stack.top as DialogState;
     dlg2.update(keys('confirm'));
     dlg2.update(keys('confirm'));
-    dlg2.update(keys('confirm'));
     expect(stack.top).toBe(items2);
     expect(game.player.equipment.shield).toBe('aldric_shield');
+  });
+
+  describe('Equip it? in one window', () => {
+    function withClub() {
+      const s = setup();
+      s.game.player = addItem(ITEMS, s.game.player, 'wooden_club').player;
+      const sounds: string[] = [];
+      s.game.audio.playSfx = ((id: string) => void sounds.push(id)) as typeof s.game.audio.playSfx;
+      const items = new ItemsState(s.game);
+      s.stack.push(items);
+      const idx = s.game.player.inventory.findIndex((i) => i.item === 'wooden_club');
+      for (let i = 0; i < idx; i++) s.stack.update(keys('down'));
+      return { ...s, items, sounds };
+    }
+    const idle = (stack: StateStack, n: number) => {
+      for (let i = 0; i < n; i++) stack.update(keys());
+    };
+
+    it('one press equips once the question has shown', () => {
+      const { stack, game, items } = withClub();
+      stack.update(keys('confirm'));
+      expect(stack.top).toBeInstanceOf(DialogState);
+      idle(stack, 9);
+      stack.update(keys('confirm'));
+      expect(game.player.equipment.weapon).toBe('wooden_club');
+      expect(stack.top).toBe(items);
+    });
+
+    it('a confirm right after opening only reveals', () => {
+      const { stack, game, sounds } = withClub();
+      stack.update(keys('confirm'));
+      stack.update(keys('confirm'));
+      expect(game.player.equipment.weapon).not.toBe('wooden_club');
+      expect(stack.top).toBeInstanceOf(DialogState);
+      expect(sounds.filter((s) => s === 'menuConfirm')).toHaveLength(1);
+      stack.update(keys('confirm'));
+      expect(game.player.equipment.weapon).toBe('wooden_club');
+    });
+
+    it('cancel while the question shows does not equip', () => {
+      for (const n of [2, 12]) {
+        const { stack, game, items } = withClub();
+        stack.update(keys('confirm'));
+        idle(stack, n);
+        stack.update(keys('cancel'));
+        expect(game.player.equipment.weapon).not.toBe('wooden_club');
+        expect(stack.top).toBe(items);
+      }
+    });
+
+    it('draws the question, then Yes and No on one row', () => {
+      const { stack, game } = withClub();
+      const drawn: [string, number, number][] = [];
+      (game as { font: Font }).font = {
+        drawText: (_c: unknown, t: string, x: number, y: number) => void drawn.push([t, x, y]),
+      } as unknown as Font;
+      const ctx = { fillRect: () => {}, strokeRect: () => {} } as unknown as CanvasRenderingContext2D;
+      const dlg = () => stack.top as DialogState;
+      stack.update(keys('confirm'));
+      dlg().update(keys());
+      dlg().render(ctx, 0);
+      expect(drawn.some(([t]) => t === 'Yes' || t === 'No')).toBe(false);
+      idle(stack, 12);
+      drawn.length = 0;
+      dlg().render(ctx, 0);
+      expect(drawn).toContainEqual(['Equip it?', 16, 184]);
+      expect(drawn).toContainEqual(['Yes', 32, 194]);
+      expect(drawn).toContainEqual(['No', 96, 194]);
+      expect(drawn).toContainEqual(['▶', 24, 194]);
+      stack.update(keys('right'));
+      drawn.length = 0;
+      dlg().render(ctx, 0);
+      expect(drawn).toContainEqual(['▶', 88, 194]);
+    });
   });
 
   it('equip state equips a candidate and unequips a slot', () => {
@@ -275,7 +349,7 @@ describe('spells', () => {
   });
 
   it('a battle-only spell cannot be cast in the field', () => {
-    const { spells, playSfx, game } = at(5, { hp: 5, mp: 20 });
+    const { spells, playSfx, game } = at(6, { hp: 5, mp: 20 });
     expect(listOf(spells)).toEqual(['Heal       4', 'Ember      2']);
     spells.update(keys('down'));
     spells.update(keys('confirm'));
@@ -285,7 +359,7 @@ describe('spells', () => {
 
   it('Homeward fades to the home map and entry', () => {
     const s = setup();
-    s.game.player = { ...applyLevel(s.game.player, 8), mp: 29 };
+    s.game.player = { ...applyLevel(s.game.player, 9), mp: 35 };
     s.stack.reset(new ExploreState(s.game, 'marsh', 'town'));
     s.stack.update(keys('cancel'));
     s.stack.update(keys('down'));
@@ -310,6 +384,6 @@ describe('spells', () => {
     const e = MAPS[STORY.home.map]!.entry[STORY.home.entry]!;
     expect(ex.hero.x).toBe(e.x);
     expect(ex.hero.y).toBe(e.y);
-    expect(s.game.player.mp).toBe(21);
+    expect(s.game.player.mp).toBe(27);
   });
 });

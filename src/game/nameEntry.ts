@@ -6,15 +6,9 @@ import { ExploreState } from './explore';
 import { TransitionState } from './transition';
 import type { Game } from './game';
 
-export const NAME_MAX = 8;
-export const NAME_GRID: string[] = [
-  'ABCDEFGHIJKLM',
-  'NOPQRSTUVWXYZ',
-  'abcdefghijklm',
-  'nopqrstuvwxyz',
-  "0123456789 '-",
-  'BACK END',
-];
+import { NAME_GRID, NAME_MAX } from './nameGrid';
+
+export { NAME_GRID, NAME_MAX };
 
 const ACTION_ROW = NAME_GRID.length - 1;
 const ACTIONS = ['back', 'end'] as const;

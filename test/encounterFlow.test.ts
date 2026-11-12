@@ -21,6 +21,7 @@ import { SONGS } from '../src/data/songs';
 import { STORY } from '../src/data/story';
 import { ITEMS } from '../src/data/items';
 import { SPELLS } from '../src/data/spells';
+import { SHOPS } from '../src/data/shops';
 import { PALETTE } from '../src/data/palette';
 
 function fieldMap(id: string, warp: boolean): GameMap {
@@ -72,6 +73,7 @@ function setup(mapId: 'field' | 'field2', player: Partial<PlayerState> = {},
     songs: SONGS,
     items: ITEMS,
     spells: SPELLS,
+    shops: SHOPS,
     monsters,
     story: STORY,
     player: { ...basePlayer, ...player },

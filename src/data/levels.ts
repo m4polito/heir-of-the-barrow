@@ -11,16 +11,16 @@ export interface LevelRow {
 }
 
 export const LEVELS: readonly LevelRow[] = [
-  { level: 1, xp: 0, str: 4, agi: 4, maxHp: 15, maxMp: 0 },
-  { level: 2, xp: 7, str: 5, agi: 4, maxHp: 22, maxMp: 0 },
-  { level: 3, xp: 23, str: 7, agi: 6, maxHp: 24, maxMp: 5, learns: 'heal' },
-  { level: 4, xp: 47, str: 7, agi: 8, maxHp: 31, maxMp: 16 },
-  { level: 5, xp: 110, str: 12, agi: 10, maxHp: 35, maxMp: 20, learns: 'ember' },
-  { level: 6, xp: 220, str: 16, agi: 10, maxHp: 38, maxMp: 24 },
-  { level: 7, xp: 450, str: 18, agi: 17, maxHp: 40, maxMp: 26 },
-  { level: 8, xp: 800, str: 22, agi: 20, maxHp: 46, maxMp: 29, learns: 'homeward' },
-  { level: 9, xp: 1300, str: 30, agi: 22, maxHp: 50, maxMp: 36 },
-  { level: 10, xp: 2000, str: 35, agi: 31, maxHp: 54, maxMp: 40 },
+  { level: 1, xp: 0, str: 4, agi: 5, maxHp: 16, maxMp: 0 },
+  { level: 2, xp: 8, str: 5, agi: 5, maxHp: 19, maxMp: 4, learns: 'heal' },
+  { level: 3, xp: 22, str: 7, agi: 7, maxHp: 25, maxMp: 6 },
+  { level: 4, xp: 50, str: 9, agi: 9, maxHp: 29, maxMp: 12 },
+  { level: 5, xp: 105, str: 13, agi: 11, maxHp: 33, maxMp: 17 },
+  { level: 6, xp: 210, str: 17, agi: 12, maxHp: 36, maxMp: 23, learns: 'ember' },
+  { level: 7, xp: 420, str: 19, agi: 15, maxHp: 41, maxMp: 27 },
+  { level: 8, xp: 780, str: 23, agi: 19, maxHp: 45, maxMp: 31 },
+  { level: 9, xp: 1250, str: 28, agi: 23, maxHp: 50, maxMp: 35, learns: 'homeward' },
+  { level: 10, xp: 1900, str: 34, agi: 28, maxHp: 55, maxMp: 40 },
 ];
 
 /** Highest level whose xp threshold is <= xp (capped at the table's last row). */

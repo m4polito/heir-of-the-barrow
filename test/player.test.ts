@@ -9,13 +9,13 @@ import { equip } from '../src/game/inventory';
 describe('levels', () => {
   it('has ten rows and level 3 matches the spec', () => {
     expect(LEVELS.length).toBe(10);
-    expect(LEVELS[2]).toEqual({ level: 3, xp: 23, str: 7, agi: 6, maxHp: 24, maxMp: 5, learns: 'heal' });
+    expect(LEVELS[2]).toEqual({ level: 3, xp: 22, str: 7, agi: 7, maxHp: 25, maxMp: 6 });
   });
   it('levelForXp', () => {
     expect(levelForXp(0)).toBe(1);
-    expect(levelForXp(22)).toBe(2);
-    expect(levelForXp(23)).toBe(3);
-    expect(levelForXp(2000)).toBe(10);
+    expect(levelForXp(21)).toBe(2);
+    expect(levelForXp(22)).toBe(3);
+    expect(levelForXp(1900)).toBe(10);
     expect(levelForXp(99999)).toBe(10);
   });
 });
@@ -23,7 +23,7 @@ describe('levels', () => {
 describe('player', () => {
   it('createPlayer', () => {
     const p = createPlayer('Wren', STORY.startingItems);
-    expect(p).toMatchObject({ name: 'Wren', level: 1, hp: 15, maxHp: 15, mp: 0, gold: 40, str: 4, agi: 4, flags: [] });
+    expect(p).toMatchObject({ name: 'Wren', level: 1, hp: 16, maxHp: 16, mp: 0, gold: 40, str: 4, agi: 5, flags: [] });
     expect(p.inventory).toEqual([{ item: 'herb', count: 1 }]);
     expect(p.equipment).toEqual({});
   });
@@ -38,7 +38,7 @@ describe('player', () => {
   it('applyLevel keeps hp ratio', () => {
     const p = { ...createPlayer('x', STORY.startingItems), hp: 10 };
     const q = applyLevel(p, 5);
-    expect(q).toMatchObject({ level: 5, str: 12, agi: 10, maxHp: 35, maxMp: 20, xp: 110, hp: 23 });
+    expect(q).toMatchObject({ level: 5, str: 13, agi: 11, maxHp: 33, maxMp: 17, xp: 105, hp: 20 });
     expect(p.level).toBe(1);
   });
   it('re-applying the same level never changes hp or mp', () => {
@@ -53,7 +53,7 @@ describe('player', () => {
     }
   });
   it('applyLevel gives full mp from 0/0 and clamps level', () => {
-    expect(applyLevel(createPlayer('x', STORY.startingItems), 3).mp).toBe(5);
+    expect(applyLevel(createPlayer('x', STORY.startingItems), 3).mp).toBe(6);
     expect(applyLevel(createPlayer('x', STORY.startingItems), 99).level).toBe(10);
     expect(applyLevel(createPlayer('x', STORY.startingItems), 0).level).toBe(1);
   });
@@ -104,7 +104,7 @@ describe('applyDeath and settleBattle', () => {
   });
   it('settleBattle levels the hero up on a reward', () => {
     const p = createPlayer('x', STORY.startingItems);
-    expect(settleBattle(p, end(9), { xp: 7, gold: 4 })).toMatchObject({ level: 2, hp: 16, gold: 44 });
+    expect(settleBattle(p, end(9), { xp: 8, gold: 4 })).toMatchObject({ level: 2, hp: 12, gold: 44 });
   });
 });
 
@@ -112,8 +112,11 @@ describe('levelling', () => {
   const hero = (over: Partial<ReturnType<typeof createPlayer>> = {}) => ({ ...createPlayer('x', STORY.startingItems), ...over });
   it('spellsKnown lists learned spells in table order', () => {
     expect(spellsKnown(1)).toEqual([]);
-    expect(spellsKnown(3)).toEqual(['heal']);
-    expect(spellsKnown(5)).toEqual(['heal', 'ember']);
+    expect(spellsKnown(2)).toEqual(['heal']);
+    expect(spellsKnown(5)).toEqual(['heal']);
+    expect(spellsKnown(6)).toEqual(['heal', 'ember']);
+    expect(spellsKnown(8)).toEqual(['heal', 'ember']);
+    expect(spellsKnown(9)).toEqual(['heal', 'ember', 'homeward']);
     expect(spellsKnown(10)).toEqual(['heal', 'ember', 'homeward']);
   });
   it('LEVELS never decreases', () => {
@@ -126,9 +129,9 @@ describe('levelling', () => {
   it('gainXp raises one level', () => {
     const p = hero({ xp: 5, hp: 9 });
     const before = structuredClone(p);
-    const r = gainXp(p, 2);
-    expect(r.player).toMatchObject({ level: 2, str: 5, maxHp: 22, hp: 16, xp: 7 });
-    expect(r.levelUp).toEqual({ from: 1, to: 2, str: 1, agi: 0, maxHp: 7, maxMp: 0, learned: [] });
+    const r = gainXp(p, 3);
+    expect(r.player).toMatchObject({ level: 2, str: 5, maxHp: 19, hp: 12, xp: 8 });
+    expect(r.levelUp).toEqual({ from: 1, to: 2, str: 1, agi: 0, maxHp: 3, maxMp: 4, learned: ['heal'] });
     expect(p).toEqual(before);
   });
   it('gainXp without a level only changes xp', () => {
@@ -138,16 +141,16 @@ describe('levelling', () => {
     expect(r.player).toEqual({ ...p, xp: 1 });
   });
   it('gainXp can jump several levels', () => {
-    const r = gainXp(hero({ hp: 15 }), 47);
+    const r = gainXp(hero({ hp: 16 }), 50);
     expect(r.player.level).toBe(4);
-    expect(r.levelUp).toEqual({ from: 1, to: 4, str: 3, agi: 4, maxHp: 16, maxMp: 16, learned: ['heal'] });
-    expect(r.player).toMatchObject({ hp: 31, mp: 16 });
+    expect(r.levelUp).toEqual({ from: 1, to: 4, str: 5, agi: 4, maxHp: 13, maxMp: 12, learned: ['heal'] });
+    expect(r.player).toMatchObject({ hp: 29, mp: 12 });
   });
   it('gainXp at the top level and the xp cap', () => {
     const top = applyLevel(hero(), 10);
-    const r = gainXp({ ...top, xp: 2000 }, 500);
+    const r = gainXp({ ...top, xp: 1900 }, 500);
     expect(r.levelUp).toBeNull();
-    expect(r.player).toMatchObject({ level: 10, xp: 2500 });
+    expect(r.player).toMatchObject({ level: 10, xp: 2400 });
     expect(gainXp({ ...top, xp: 65530 }, 18).player.xp).toBe(65535);
   });
   it('gainXp never lowers a level set above its xp', () => {
@@ -157,8 +160,8 @@ describe('levelling', () => {
     expect(r.levelUp).toBeNull();
   });
   it('xpToNext', () => {
-    expect(xpToNext(hero())).toBe(7);
-    expect(xpToNext(hero({ xp: 5 }))).toBe(2);
+    expect(xpToNext(hero())).toBe(8);
+    expect(xpToNext(hero({ xp: 5 }))).toBe(3);
     expect(xpToNext(applyLevel(hero(), 10))).toBeNull();
   });
 });

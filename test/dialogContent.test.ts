@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { DIALOGS, type DialogId } from '../src/data/dialog/hollowmere';
 import { ScriptRunner, type DialogNode, type DialogScript, type ScriptEnv, type ScriptStep } from '../src/game/dialog/script';
+import { SONGS } from '../src/data/songs';
 import { wrapText } from '../src/ui/wrap';
 
 const IDS: DialogId[] = [
   'maren_intro', 'maren_fallen', 'maren', 'hesta', 'garrik', 'odo', 'pip', 'bram', 'tobin', 'villager_a', 'villager_b',
 ];
 
-function run(id: DialogId, flags: string[] = []) {
+function run(id: DialogId, flags: string[] = [], answer = true, canPay = true, canSave = true) {
   const set = new Set(flags);
   const calls: string[] = [];
   const env: ScriptEnv = {
@@ -18,12 +19,16 @@ function run(id: DialogId, flags: string[] = []) {
     gold: () => {},
     heal: () => { calls.push('heal'); },
     sfx: (s) => { calls.push(`sfx:${s}`); },
+    pay: (n) => { calls.push(`pay:${n}`); return canPay; },
+    save: () => { calls.push('save'); return canSave; },
+    rest: (song) => { calls.push(`rest:${song}`); },
+    shop: (id) => { calls.push(`shop:${id}`); },
   };
   const runner = new ScriptRunner(DIALOGS[id], env);
   const steps: ScriptStep[] = [];
   let ended = false;
   for (let i = 0; i < 100; i++) {
-    const step = runner.next(true);
+    const step = runner.next(answer);
     if (step === null) { ended = true; break; }
     steps.push(step);
   }
@@ -36,7 +41,9 @@ function strings(script: DialogScript): string[] {
     for (const n of nodes as DialogNode[]) {
       if (typeof n === 'string') out.push(n);
       else if ('if' in n) { walk(n.then); if (n.else) walk(n.else); }
-      else if ('choice' in n) { out.push(...n.choice); walk(n.yes); walk(n.no); }
+      else if ('choice' in n) { if (n.ask) out.push(n.ask); out.push(...n.choice); walk(n.yes); walk(n.no); }
+      else if ('pay' in n) { walk(n.then); if (n.else) walk(n.else); }
+      else if ('save' in n) { walk(n.ok); walk(n.fail); }
     }
   };
   walk(script);
@@ -81,8 +88,62 @@ describe('Hollowmere dialog content', () => {
     else expect(run(id, ['warden_defeated']).steps).not.toEqual(run(id).steps);
   });
 
-  it.each([[], ['warden_defeated']])('hesta gives one free rest per talk (flags: %s)', (...flags) => {
-    expect(run('hesta', flags).calls.filter((c) => c === 'heal')).toHaveLength(1);
+  describe.each([[[]], [['warden_defeated']]])('hesta the innkeeper (flags: %j)', (flags) => {
+    it('Yes with enough gold pays 6 once and rests once, never heals', () => {
+      const { calls } = run('hesta', flags, true, true);
+      expect(calls.filter((c) => c === 'pay:6')).toHaveLength(1);
+      expect(calls.filter((c) => c === 'rest:inn')).toHaveLength(1);
+      expect(calls).not.toContain('heal');
+    });
+    it('Yes without enough gold pays once and does not rest', () => {
+      const { calls } = run('hesta', flags, true, false);
+      expect(calls.filter((c) => c === 'pay:6')).toHaveLength(1);
+      expect(calls.some((c) => c.startsWith('rest:'))).toBe(false);
+    });
+    it('No neither pays nor rests', () => {
+      const { calls, steps } = run('hesta', flags, false);
+      expect(calls.some((c) => c.startsWith('pay:') || c.startsWith('rest:'))).toBe(false);
+      const texts = steps.flatMap((s) => (s.kind === 'text' ? [s.text] : []));
+      expect(texts).toContain(flags.length ? 'Then sit a while anyway.' : 'Then mind the road. The bed will keep.');
+    });
+  });
+
+  it('no script opens straight into a shop, rest, pay or save step', () => {
+    const service = (n: DialogNode | undefined) =>
+      n !== undefined && typeof n !== 'string' && ('shop' in n || 'rest' in n || 'pay' in n || 'save' in n);
+    const check = (id: string, nodes: DialogScript) => {
+      expect(service((nodes as DialogNode[])[0]), `${id} starts with a service step`).toBe(false);
+      const first = (nodes as DialogNode[])[0];
+      if (first !== undefined && typeof first !== 'string' && 'if' in first) {
+        check(id, first.then);
+        if (first.else) check(id, first.else);
+      }
+    };
+    for (const [id, script] of Object.entries(DIALOGS)) check(id, script);
+  });
+
+  it('every ask fits three lines, every rest is a one-shot song, every hesta price is 6', () => {
+    const walk = (nodes: DialogScript, visit: (n: Exclude<DialogNode, string>) => void) => {
+      for (const n of nodes as DialogNode[]) {
+        if (typeof n === 'string') continue;
+        visit(n);
+        if ('if' in n) { walk(n.then, visit); if (n.else) walk(n.else, visit); }
+        else if ('choice' in n) { walk(n.yes, visit); walk(n.no, visit); }
+        else if ('pay' in n) { walk(n.then, visit); if (n.else) walk(n.else, visit); }
+        else if ('save' in n) { walk(n.ok, visit); walk(n.fail, visit); }
+      }
+    };
+    for (const id of IDS) {
+      walk(DIALOGS[id], (n) => {
+        if ('choice' in n && n.ask) expect(wrapText(n.ask, 28).length).toBeLessThanOrEqual(3);
+        if ('rest' in n) {
+          const song = (SONGS as Record<string, { loop?: boolean } | undefined>)[n.rest];
+          expect(song).toBeDefined();
+          expect(song!.loop).toBe(false);
+        }
+        if ('pay' in n && id === 'hesta') expect(n.pay).toBe(6);
+      });
+    }
   });
 
   it.each([
@@ -100,6 +161,41 @@ describe('Hollowmere dialog content', () => {
     const text = first && first.kind === 'text' ? first.text : '';
     expect(text).toContain('Maren');
     expect(text).toContain('Wren');
+  });
+
+  it.each([['garrik', 'forge'], ['odo', 'goods']] as const)('%s opens the %s shop once', (id, shop) => {
+    expect(run(id).calls.filter((c) => c.startsWith('shop:'))).toEqual([`shop:${shop}`]);
+  });
+
+  describe.each([[[]], [['warden_defeated']]])('maren saves (flags: %j)', (flags) => {
+    const texts = (r: ReturnType<typeof run>) => r.steps.flatMap((s) => (s.kind === 'text' ? [s.text] : []));
+    it('Yes saves once and says it is written', () => {
+      const r = run('maren', flags, true, true, true);
+      expect(r.calls.filter((c) => c === 'save')).toHaveLength(1);
+      expect(texts(r)).toContain('It is written.');
+      expect(r.calls.filter((c) => c === 'sfx:save')).toHaveLength(1);
+    });
+    it('Yes with a failing save says the page will not take the ink', () => {
+      const r = run('maren', flags, true, true, false);
+      expect(r.calls.filter((c) => c === 'save')).toHaveLength(1);
+      expect(texts(r)).toContain('The page will not take the ink. Nothing was written.');
+      expect(texts(r)).not.toContain('It is written.');
+    });
+    it('No never saves', () => {
+      expect(run('maren', flags, false).calls).not.toContain('save');
+    });
+  });
+
+  it('maren_intro sends the hero to the forge and still ends on the fire', () => {
+    const { steps, calls } = run('maren_intro');
+    const texts = steps.flatMap((s) => (s.kind === 'text' ? [s.text] : []));
+    expect(texts).toContain("Take your coin to Garrik's forge before you try the gate.");
+    expect(texts[texts.length - 1]).toBe('Stay as long as you like. The fire is warm.');
+    expect(calls).not.toContain('save');
+  });
+
+  it('maren_fallen never saves', () => {
+    expect(run('maren_fallen').calls).not.toContain('save');
   });
 
   it('carries no name tags in any string', () => {
