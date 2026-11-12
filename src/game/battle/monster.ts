@@ -1,3 +1,5 @@
+import type { MonsterAction } from './ai';
+
 export interface MonsterDef {
   id: string;
   name: string;
@@ -13,6 +15,7 @@ export interface MonsterDef {
   dodge: number;
   runFactor: number;
   boss?: boolean;
+  actions?: MonsterAction[];
 }
 
 export type MonsterTable = Record<string, MonsterDef>;

@@ -7,6 +7,7 @@ import { compilePixelArt } from '../src/engine/pixels';
 import { createRng } from '../src/engine/rng';
 import { monsterArt } from '../src/data/sprites/monsters';
 import { BACKDROPS, backdropArt } from '../src/data/sprites/backdrops';
+import { validateActions } from '../src/game/battle/ai';
 import { Battle } from '../src/game/battle/battle';
 import { addItem, equip } from '../src/game/inventory';
 import { createPlayer } from '../src/game/player';
@@ -27,6 +28,11 @@ describe('monster table', () => {
       expect(MONSTERS[id]!.id).toBe(id);
     });
   }
+  it('every monster has no actions or valid ones', () => {
+    for (const m of Object.values(MONSTERS) as MonsterDef[]) {
+      if (m.actions) expect(() => validateActions(m.actions!)).not.toThrow();
+    }
+  });
   it('has exactly three monsters', () => {
     expect(Object.keys(MONSTERS)).toHaveLength(3);
   });
