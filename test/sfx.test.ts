@@ -81,6 +81,17 @@ describe('SfxPlayer', () => {
     }
   });
 
+  it('heal is not a contiguous slice of runOk', () => {
+    const notes = (id: 'heal' | 'runOk') => SFX[id].map((x) => x.note ?? '-');
+    const h = notes('heal');
+    const r = notes('runOk');
+    let found = false;
+    for (let k = 0; k + h.length <= r.length; k++) {
+      if (h.every((n, i) => n === r[k + i])) found = true;
+    }
+    expect(found).toBe(false);
+  });
+
   it('validates every entry', () => {
     for (const steps of Object.values(SFX)) {
       for (const s of steps) {

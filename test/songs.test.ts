@@ -188,11 +188,13 @@ describe('SONGS.levelup', () => {
     }
   });
 
-  it('does not reuse the victory figure shifted by one interval', () => {
-    const a = intervals(song.tracks[0]!.rows);
-    const b = intervals(SONGS.victory.tracks[0]!.rows);
-    expect(a).not.toEqual(b.slice(0, a.length));
-    expect(new Set(a).size).toBeGreaterThan(1);
+  it('never steps through the victory figure (5, 4, 3 semitones) on p1 or p2', () => {
+    for (const t of song.tracks.slice(0, 2)) {
+      const a = intervals(t.rows);
+      for (let k = 0; k + 3 <= a.length; k++) {
+        expect(a.slice(k, k + 3), `${t.channel} window ${k}`).not.toEqual([5, 4, 3]);
+      }
+    }
   });
 });
 

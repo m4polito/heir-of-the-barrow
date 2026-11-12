@@ -1,7 +1,7 @@
 import type { Song, Track } from '../../engine/audio/sequencer';
 
 // "Level up": a one-second jingle in D major, 10 rows. A quick rising run
-// climbs through three chords, then lands on a held D major chord.
+// climbs through G major and A major, then lands on a held D major chord.
 //   rows 0-1: G major (G, B, D)   p1 G4 B4, p2 D4 G4, tri G2
 //   rows 2-3: A major (A, C#, E)  p1 C#5 E5, p2 A4 C#5, tri A2
 //   rows 4-8: D major (D, F#, A)  p1 A5, p2 F#5, tri D3, all held
