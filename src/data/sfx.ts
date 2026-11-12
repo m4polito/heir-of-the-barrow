@@ -15,7 +15,8 @@ export type SfxId =
   | 'runOk'
   | 'runFail'
   | 'spell'
-  | 'heal';
+  | 'heal'
+  | 'buy';
 
 /** `frames` are 60 fps frames; a step lasts frames / 60 seconds. */
 export interface SfxStep {
@@ -77,4 +78,5 @@ export const SFX: Record<SfxId, SfxStep[]> = {
   runFail: [p1('E4', 3, 9, 0.125), p1('C4', 3, 9, 0.125), p1('G#3', 6, 9, 0.125)],
   spell: [p1('A4', 2, 9, 0.125), p1('E5', 2, 9, 0.125), p1('A5', 2, 9, 0.125), p1('C#6', 2, 9, 0.125), p1('E6', 4, 9, 0.125)],
   heal: [p1('E6', 3, 7, 0.25), p1('C6', 3, 7, 0.25), p1('G5', 3, 7, 0.25), p1('C6', 5, 7, 0.25)],
+  buy: [p1('B5', 2, 8, 0.5), p1('F#6', 6, 8, 0.5)],
 };

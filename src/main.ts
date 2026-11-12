@@ -16,6 +16,7 @@ import { SONGS } from './data/songs';
 import { ITEMS } from './data/items';
 import { MONSTERS } from './data/monsters';
 import { SPELLS } from './data/spells';
+import { SHOPS } from './data/shops';
 import { STORY } from './data/story';
 import { AudioManager } from './engine/audio/audio';
 
@@ -47,6 +48,7 @@ const game = createGame({
   items: ITEMS,
   monsters: MONSTERS,
   spells: SPELLS,
+  shops: SHOPS,
   story: STORY,
   player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
 });

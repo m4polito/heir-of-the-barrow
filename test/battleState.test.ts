@@ -15,6 +15,7 @@ import type { MonsterDef } from '../src/game/battle/monster';
 import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
 import { SPELLS } from '../src/data/spells';
+import { SHOPS } from '../src/data/shops';
 import { MAPS } from '../src/data/maps';
 import { DIALOGS } from '../src/data/dialog/hollowmere';
 import { SONGS } from '../src/data/songs';
@@ -74,6 +75,7 @@ function setup(
     songs: SONGS,
     items: ITEMS,
     spells: SPELLS,
+    shops: SHOPS,
     monsters: MONSTERS,
     story: STORY,
     player: { ...base, ...player },

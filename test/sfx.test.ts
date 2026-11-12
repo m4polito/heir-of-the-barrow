@@ -101,3 +101,12 @@ describe('SfxPlayer', () => {
     }
   });
 });
+
+describe('buy effect', () => {
+  it('exists and differs from every other effect', () => {
+    expect(SFX.buy).toBeDefined();
+    for (const [id, steps] of Object.entries(SFX)) {
+      if (id !== 'buy') expect(JSON.stringify(steps), id).not.toBe(JSON.stringify(SFX.buy));
+    }
+  });
+});

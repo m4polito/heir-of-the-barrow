@@ -1,6 +1,7 @@
 import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
 import { SPELLS } from '../src/data/spells';
+import { SHOPS } from '../src/data/shops';
 import { describe, expect, it } from 'vitest';
 import { NAME_GRID, NAME_MAX, NameEntryModel, NameEntryState } from '../src/game/nameEntry';
 import { TitleState } from '../src/game/title';
@@ -112,6 +113,7 @@ function setup() {
     songs: SONGS,
     items: ITEMS,
     spells: SPELLS,
+    shops: SHOPS,
     monsters: MONSTERS,
     story: STORY,
     player: createPlayer(STORY.defaultHeroName, STORY.startingItems),

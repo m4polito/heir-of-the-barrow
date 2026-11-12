@@ -1,6 +1,7 @@
 import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
 import { SPELLS } from '../src/data/spells';
+import { SHOPS } from '../src/data/shops';
 import { describe, it, expect } from 'vitest';
 import { StateStack, type State } from '../src/engine/state';
 import type { Input } from '../src/engine/input';
@@ -123,6 +124,7 @@ function makeGame(overrides: Partial<Parameters<typeof createGame>[0]> = {}) {
     songs: SONGS,
     items: ITEMS,
     spells: SPELLS,
+    shops: SHOPS,
     monsters: MONSTERS,
     story: STORY,
     player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
