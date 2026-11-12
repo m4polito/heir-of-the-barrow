@@ -1,6 +1,6 @@
 # Phase 5: Commerce and Rest — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Garrik and Odo sell and buy; Hesta's bed costs 6 gold and plays a sleep jingle; Maren saves the game and the title screen offers Continue; a yes/no question shows its text and its answers in one window; balance tests confirm that a level 1 hero who spends the starting gold on the Wooden Club clears road fights comfortably.
 
@@ -9,6 +9,12 @@
 **Tech Stack:** TypeScript 5, Vite 6, Vitest 3 (node), Canvas 2D, Web Audio. No runtime dependencies.
 
 **Spec:** `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md` (§5.2, §7, §8, §10.3, §10.4, §11, §12.3, §12.4, §14 Phase 5, §15). Carry-forward: `docs/superpowers/notes/2026-11-12-phase-4-carry-forward.md`; the two-press "Equip it?" item is from `docs/superpowers/notes/2026-11-11-phase-2-carry-forward.md`.
+
+## Execution status (updated 2026-11-12, phase stop)
+
+- **Tasks 0 to 9 complete and reviewed; the whole-branch review and its one fix wave are done (head `ce7d3c7` plus the docs commit). Stopped for the owner's play-test; not merged.** Measured balance numbers, rulings, questions for the owner, deferred minors and the play-test list are in `docs/superpowers/notes/2026-11-12-phase-5-carry-forward.md`.
+- Tasks ran in the order 0, 1, 3, 2, 6, 4, 5, 7, 8.
+- Where the delivered code differs from the task text below: a dialog whose step opened another screen waits until it is on top again, and `pay` throws on a negative or fractional price (Task 2); `songFrames(VICTORY_SONG)` is 145, not 144 (Task 5); a saved HP or MP above the level's maximum is accepted and held to the maximum on load, not rejected (Task 6); the name grid lives in `src/game/nameGrid.ts` (Tasks 6 and 7); the shop ignores a key already held when it opens (Task 4); the dialog `gold` step is held to 0 to 65535; Task 8's pacing bound is 20% of maximum HP.
 
 ## Execution
 
@@ -142,15 +148,15 @@ test/balance.test.ts             + first-purchase cases
   - If any balance test fails with the new table, stop and report the measured numbers. Do not retune anything.
   - Design doc: §10.1's table becomes the table above, and its closing sentence becomes "Numbers are original to this game; tune in play-test."; §10.2's Homeward row says "Learned at 9"; §9.8's sentence about the level 6 hero states attack 27 and defence 14 and drops the per-hit and round figures that no longer hold ("does 5–9 per hit and takes about 5 per round, so the fight runs roughly 10–13 rounds" becomes "the fight is long: about 19 rounds in simulation, a Phase 6 tuning target (the aim is 10–13)"); the note under §10.5 gains "Level table replaced 2026-11-12 with an original curve.".
 
-- [ ] **Step 1: Change `LEVELS`** to the table (Homeward at 9).
-- [ ] **Step 2: Run the suite and list every failure**
+- [x] **Step 1: Change `LEVELS`** to the table (Homeward at 9).
+- [x] **Step 2: Run the suite and list every failure**
 Run: `npm test`
 Expected: FAIL only in tests that pin table values; every case in `test/balance.test.ts` except the stated level 6 stats PASSES. If another balance case fails, stop and report.
-- [ ] **Step 3: Update the pinned values** in those tests, one by one, by the rules above; update the design doc.
-- [ ] **Step 4: Run everything**
+- [x] **Step 3: Update the pinned values** in those tests, one by one, by the rules above; update the design doc.
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/data/levels.ts test docs/superpowers/specs
 git commit -m "feat: an original level table; Heal at 2, Ember at 6, Homeward at 9"
@@ -180,7 +186,7 @@ Owner checks to list (not to perform): a new hero's Status shows HP 16 and AGI 5
     - Render: question lines at `(16, 184 + 10·i)`. The options are drawn only when `revealed`, on one row at `y = 184 + 10 × max(1, question line count)`: first option at x 32, second at x 96, `▶` at x 24 or x 88.
   - `itemsState.ts`: the script becomes `[{ choice: ['Yes', 'No'], ask: 'Equip it?', yes: [], no: [] }]`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `dialogScript.test.ts`: `[{ choice: ['Yes', 'No'], ask: 'Ready, {name}?', yes: [], no: [] }]` with name `Wren` → first step `{ kind: 'choice', options: ['Yes', 'No'], ask: 'Ready, Wren?' }`. A choice without `ask` yields a step with no `ask` key set to a string.
   - `dialogModel.test.ts`, question `'Equip it?'`: `isChoice` true and `revealed` false at once; `ask` equals `['Equ']` after 3 ticks and `['Equip it?']` after 9, when `revealed` is true; `tick()` returns false for nothing left. `moveChoice(1)` before reveal leaves `choiceCursor` 0; after reveal it becomes 1.
   - `confirm()` after 3 ticks: `revealed` true, `isChoice` still true, the runner has not advanced (a `yes: [{ set: 'y' }]` branch has not run). A second `confirm()` runs it.
@@ -193,17 +199,17 @@ Owner checks to list (not to perform): a new hero's Status shows HP 16 and AGI 5
     - cancel while the question is typing or shown: not equipped, dialog gone.
     - Render with a text-recording font: before reveal neither `Yes` nor `No` is drawn; after reveal `Yes` is drawn at `(32, 194)`, `No` at `(96, 194)`, `▶` at `(24, 194)`; after one `right`, `▶` at `(88, 194)`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/dialogScript.test.ts test/dialogModel.test.ts test/menuState.test.ts`
 Expected: FAIL (`ask` unknown; two presses still needed).
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/dialog src/game/menu/itemsState.ts test/dialogScript.test.ts test/dialogModel.test.ts test/menuState.test.ts
 git commit -m "feat: a question and its answers share one window; Equip it? takes one press"
@@ -235,7 +241,7 @@ Owner checks to list (not to perform): in Items, choosing a piece of gear shows 
     - `save`: returns `services.save?.() ?? false`.
   - `dialogContent.test.ts`: `strings()` also walks `ask`, `pay.then`, `pay.else`, `save.ok` and `save.fail`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - Runner, with a recording env: `[{ pay: 6, then: ['a'], else: ['b'] }]` → text `a` when `pay` returns true, `b` when false, and `pay` was called once with 6. Without `else` and a false `pay`, the script goes on to the node after it.
   - `[{ save: true, ok: ['w'], fail: ['f'] }]` → `w` or `f` by `env.save()`.
   - `['x', { shop: 's' }, { rest: 'r' }, 'y']`: after the first step, the next `next()` calls `shop('s')` then `rest('r')`, in that order, once each, and returns `y`.
@@ -245,17 +251,17 @@ Owner checks to list (not to perform): in Items, choosing a piece of gear shows 
   - `['hi', { shop: 's' }, 'bye']` with a `services.shop` that pushes a fake state: after confirming past `hi` the fake state is on top and the dialog is under it; removing the fake state and confirming shows `bye`, then the dialog ends. Cancelled at `hi`: the service is not called (Review Focus 3).
   - `[{ save: true, ok: ['w'], fail: ['f'] }]` with no services shows `f`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/dialogScript.test.ts test/state.test.ts`
 Expected: FAIL (nodes unknown).
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/dialog test/dialogScript.test.ts test/state.test.ts test/dialogContent.test.ts
 git commit -m "feat: dialog steps for paying, resting, saving and opening a shop"
@@ -292,7 +298,7 @@ git commit -m "feat: dialog steps for paying, resting, saving and opening a shop
   - `data/sfx.ts`: `SfxId` gains `'buy'`: `[p1('B5', 2, 8, 0.5), p1('F#6', 6, 8, 0.5)]`.
   - Story-free guard: the banned-import pattern gains `shops`; the banned strings gain `'forge'`, `'goods'`, `'wooden_club'`, `'garrik`, `'odo'`, `'hesta`, `'inn'`.
 
-- [ ] **Step 1: Write failing tests** in `test/shop.test.ts` (items from `ITEMS`):
+- [x] **Step 1: Write failing tests** in `test/shop.test.ts` (items from `ITEMS`):
   - `sellPrice`: Wooden Club 15, Herb 5, Torch 4, Plank Shield 12, Aldric's Shield 0, Journal Page 0, `undefined` 0.
   - A new player (40 gold, one Herb): `buyCheck(wooden_club)` → `{ ok: true, wearOnly: false, tradeIn: null }`; `buy` → gold 10, pack is the Herb and the Club; the input player is unchanged. `buyCheck(iron_knife)` → `gold`.
   - Exactly 30 gold buys the Club and leaves 0; 29 → `gold` (Review Focus 2).
@@ -308,17 +314,17 @@ git commit -m "feat: dialog steps for paying, resting, saving and opening a shop
   - Data: every stock id of every shop is in `ITEMS` with a price above 0 and appears once.
   - `sfx.test.ts`: `buy` exists and its note sequence equals no other effect's.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/shop.test.ts test/sfx.test.ts`
 Expected: FAIL (module missing).
 
-- [ ] **Step 3: Implement** per Interfaces; add `shops: SHOPS` to each test's `createGame` call.
+- [x] **Step 3: Implement** per Interfaces; add `shops: SHOPS` to each test's `createGame` call.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/shop.ts src/data/shops.ts src/game/game.ts src/main.ts src/data/sfx.ts test
 git commit -m "feat: shop rules, shop stock and the buy sound"
@@ -364,7 +370,7 @@ git commit -m "feat: shop rules, shop stock and the buy sound"
     ],
     ```
 
-- [ ] **Step 1: Write failing tests** in `test/shopState.test.ts` (real maps and dialogs; sounds recorded; a helper presses confirm until the top state changes or a question is revealed):
+- [x] **Step 1: Write failing tests** in `test/shopState.test.ts` (real maps and dialogs; sounds recorded; a helper presses confirm until the top state changes or a question is revealed):
   - `new ExploreState(game, 'elder_house', { x: 6, y: 4, facing: 'left' })` → hero at (6, 4) facing left; `{ x: 0, y: 0, facing: 'up' }` and `{ x: 99, y: 0, facing: 'up' }` throw `Bad position on map elder_house`.
   - In `forge`, standing at (5, 4) facing up (Garrik is across the counter) with a new player: confirming through his two lines puts a `ShopState` on top with a `DialogState` under it, `phase` `menu`.
   - Buy → `rows` equals `stockRows(ITEMS, SHOPS.forge.stock)`. Confirm on the Wooden Club, Yes, Yes → gold 10, `equipment.weapon === 'wooden_club'`, the Club is not in the pack, `buy` played once, and the shop is back on the Buy list.
@@ -381,17 +387,17 @@ git commit -m "feat: shop rules, shop stock and the buy sound"
   - `explore` with a dialog `[{ shop: 'nope' }]` throws `Unknown shop: nope`.
   - `dialogContent.test.ts`: `garrik` calls `shop:forge` once and `odo` calls `shop:goods` once; the own-name test still passes for both.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/shopState.test.ts test/dialogContent.test.ts`
 Expected: FAIL (module missing).
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/shopState.ts src/game/explore.ts src/data/dialog/hollowmere.ts test/shopState.test.ts test/dialogContent.test.ts
 git commit -m "feat: the shop screen; Garrik and Odo open for business"
@@ -450,7 +456,7 @@ Owner checks to list (not to perform): Garrik greets, the shop shows Buy / Sell 
     ],
     ```
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `sequencer.test.ts`: `songFrames(INN_SONG)` is 180; `songFrames(VICTORY_SONG)` equals the value `battleState` computed before (24 rows at tempo 150 → 144).
   - `songs.test.ts`: `INN_SONG` passes `validateSong`, does not loop, lasts between 2.5 and 3.5 seconds, and every pitched track ends with `off`.
   - `sleepState.test.ts`, audio calls recorded, a 4-row test song at tempo 150 (`songFrames` 24):
@@ -464,17 +470,17 @@ Owner checks to list (not to perform): Garrik greets, the shop shows Buy / Sell 
   - `dialogContent.test.ts`: the "one free rest per talk" test is replaced. On both branches, answering Yes with enough gold calls `pay:6` once and `rest:inn` once and never `heal`; answering Yes without enough gold calls `pay:6` once and no `rest`; answering No calls neither. Every `ask` in `DIALOGS` wraps to 3 lines or fewer at 28 columns; every `rest` id is a non-looping song in `SONGS`; every `pay` in `hesta` is 6. (The test's fake env takes the answer and whether `pay` succeeds as parameters.)
   - `explore` with a dialog `[{ rest: 'nope' }]` throws `Unknown song: nope`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/sleepState.test.ts test/songs.test.ts test/sequencer.test.ts test/dialogContent.test.ts`
 Expected: FAIL (modules missing).
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/sleepState.ts src/data/songs src/engine/audio/sequencer.ts src/game/battle/battleState.ts src/game/explore.ts src/data/dialog/hollowmere.ts test
 git commit -m "feat: the inn: six gold, a sleep jingle, and Hesta's lines"
@@ -511,7 +517,7 @@ Owner checks to list (not to perform): Hesta's question shows with Yes and No un
   - `writeSave(storage: Pick<Storage, 'setItem'> | null | undefined, key: string, data: SaveData): boolean` — false for no storage or a throwing one.
   - `readSave(storage: Pick<Storage, 'getItem'> | null | undefined, key: string, ctx: SaveContext): SaveData | null` — `null` for no storage or a throwing one.
 
-- [ ] **Step 1: Write failing tests** in `test/save.test.ts` (`ITEMS`, `MAPS`; a good save is `toSave` of a level 4 hero with a Club worn, `herb ×2` and Aldric's Shield in the pack, flags `['intro_done', 'shield_received']`, at `elder_house` (6, 4) facing `up`):
+- [x] **Step 1: Write failing tests** in `test/save.test.ts` (`ITEMS`, `MAPS`; a good save is `toSave` of a level 4 hero with a Club worn, `herb ×2` and Aldric's Shield in the pack, flags `['intro_done', 'shield_received']`, at `elder_house` (6, 4) facing `up`):
   - Round trip: `fromSave(parseSave(JSON.stringify(toSave(p, at)), ctx)!)` equals `p`; `map`, `x`, `y`, `facing` equal `at`; `torchSteps` is 0.
   - A hero raised by the debug overlay (level 5 with 0 XP) round-trips at level 5 with level 5's strength and maximums.
   - `toSave` output changed afterwards (push to `inventory`, `flags`) leaves `p` unchanged.
@@ -521,17 +527,17 @@ Owner checks to list (not to perform): Hesta's question shows with Yes and No un
   - `saveKey('x')` is `'x.save.v1'`.
   - `writeSave` with a Map-backed storage returns true and stores text that `readSave` reads back equal; with `null` → false; with a `setItem` that throws → false. `readSave` with a `getItem` that throws → `null`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/save.test.ts`
 Expected: FAIL (module missing).
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/save.ts test/save.test.ts
 git commit -m "feat: the save format: write, read back, and reject anything damaged"
@@ -582,7 +588,7 @@ git commit -m "feat: the save format: write, read back, and reject anything dama
     ```
     and in `maren_intro`, after `'It is dented, and it is yours.'`: `"Take your coin to Garrik's forge before you try the gate."`
 
-- [ ] **Step 1: Write failing tests** in `test/continue.test.ts` (a Map-backed storage passed as `storage`; the opening flag set unless stated):
+- [x] **Step 1: Write failing tests** in `test/continue.test.ts` (a Map-backed storage passed as `storage`; the opening flag set unless stated):
   - In `elder_house` at the `start` entry, talk to Maren, confirm to the question, Yes → the storage holds one entry under `dimming.save.v1`; `readSave` of it gives `map` `elder_house`, the hero's tile, facing `up`, and `fromSave` of it equals `game.player`; the dialog shows `It is written.` and `menuConfirm` played for it.
   - No → the storage is empty and the next text is `We stopped saying the word years ago. The cold stayed anyway.` Cancel on the first line, and cancel at the question → the storage is empty (Review Focus 3).
   - A storage whose `setItem` throws, Yes → the text is `The page will not take the ink. Nothing was written.`; no throw. No `storage` on the game at all → the same line (Review Focus 1).
@@ -596,17 +602,17 @@ git commit -m "feat: the save format: write, read back, and reject anything dama
   - `title.test.ts`: with a text-recording font and a save, `Continue` is drawn at `(112, 150)` and `New Game` at `(112, 162)`; without one, `New Game` at `(112, 150)`.
   - `dialogContent.test.ts`: `maren` with a successful save reaches `It is written.` on both branches and calls `save` once; with a failing save reaches the "will not take the ink" line; answering No calls `save` zero times; `maren_intro` contains the forge line and still ends with `Stay as long as you like. The fire is warm.`; `maren_intro` and `maren_fallen` never call `save`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/continue.test.ts test/title.test.ts test/dialogContent.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/game.ts src/main.ts src/game/explore.ts src/game/title.ts src/data/dialog/hollowmere.ts test
 git commit -m "feat: Maren remembers the journey; Continue on the title screen"
@@ -625,7 +631,7 @@ Owner checks to list (not to perform): Maren asks "Shall I remember your journey
 - Consumes: `heroAt`, `simulate`, `fightOnly`, `healer` from `test/helpers/simulate.ts`; Task 3's `buyCheck` and `buy`; `equip`, `createPlayer`, `STORY`, `ITEMS`, `MONSTERS`.
 - Produces: a `describe('the first purchase')` block. No game numbers change (decision 16). If a threshold below fails with the real code, stop and report the measured numbers to the orchestrator; do not move a threshold or a game number.
 
-- [ ] **Step 1: Write the tests** (`N = 4000`, a fixed seed each; values measured with Task 0's table are in brackets):
+- [x] **Step 1: Write the tests** (`N = 4000`, a fixed seed each; values measured with Task 0's table are in brackets):
   - The starting purse buys the Club: for `createPlayer('Wren', STORY.startingItems)`, `buyCheck(ITEMS, p, 'wooden_club')` is ok and not `wearOnly`; after `buy`, gold is 10, which is at least the inn's 6 and at least the Herb's price.
   - Road, comfortably: that same player, after `buy`, `equip` of the Club, and Aldric's Shield added and equipped, at full HP, against `mireling` with `fightOnly`: win rate ≥ 0.99; mean rounds ≤ 2.5 [2.17]; mean HP lost ≤ 2.0 [1.36].
   - The Club is felt: its mean rounds are at least 0.5 fewer than the shield-only hero's from the same test file [3.11 against 2.17].
@@ -633,15 +639,15 @@ Owner checks to list (not to perform): Maren asks "Shall I remember your journey
   - Marsh at level 3 with the Club and shield: `healer(8, null)` wins ≥ 0.95 [0.999]; `fightOnly` wins ≥ 0.8 [0.947].
   - Marsh at level 2 with the Club and shield, `fightOnly`: wins < 0.4 [0.093], so the Club does not open the marsh a level early.
 
-- [ ] **Step 2: Run them**
+- [x] **Step 2: Run them**
 Run: `npx vitest run test/balance.test.ts`
 Expected: PASS, including the Phase 4 cases unchanged.
 
-- [ ] **Step 3: Run everything**
+- [x] **Step 3: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 ```bash
 git add test/balance.test.ts
 git commit -m "test: the starting gold buys a Club that makes the road comfortable"
@@ -655,13 +661,13 @@ git commit -m "test: the starting gold buys a Club that makes the road comfortab
 - Modify: `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md`, this plan
 - Create: `docs/superpowers/notes/2026-11-12-phase-5-carry-forward.md`
 
-- [ ] **Step 1: Update the design doc** (decision 18): §8.2 gains `ask` on a choice and the `pay`, `rest`, `save` and `shop` steps, and says shops and the inn are opened from dialog scripts; §11.1 gains the Leave row, the one-of-each rule and the full-pack trade-in as built; §11.2 carries Hesta's lines; §11.3 says the mute setting keeps its own entry and that stats are rebuilt from the level.
-- [ ] **Step 2: Verify the branch**
+- [x] **Step 1: Update the design doc** (decision 18): §8.2 gains `ask` on a choice and the `pay`, `rest`, `save` and `shop` steps, and says shops and the inn are opened from dialog scripts; §11.1 gains the Leave row, the one-of-each rule and the full-pack trade-in as built; §11.2 carries Hesta's lines; §11.3 says the mute setting keeps its own entry and that stats are rebuilt from the level.
+- [x] **Step 2: Verify the branch**
 Run: `npm test && npx tsc --noEmit && npm run build`, then search the built bundle for `Give: ` and `Fight: `.
 Expected: PASS; clean; no matches.
-- [ ] **Step 3: Write the carry-forward note**: where execution stands, the measured balance table, rulings with their cost if wrong, the final review's findings, deferred minors (including those still open from Phase 4), questions for the owner (including the Phase 4 questions still unanswered), and the owner play-test list below plus every task's owner checks. Mark the list as not performed by anyone.
-- [ ] **Step 4: Tick this plan's steps and add an "Execution status" section** listing where the delivered code differs from the task text.
-- [ ] **Step 5: Commit**
+- [x] **Step 3: Write the carry-forward note**: where execution stands, the measured balance table, rulings with their cost if wrong, the final review's findings, deferred minors (including those still open from Phase 4), questions for the owner (including the Phase 4 questions still unanswered), and the owner play-test list below plus every task's owner checks. Mark the list as not performed by anyone.
+- [x] **Step 4: Tick this plan's steps and add an "Execution status" section** listing where the delivered code differs from the task text.
+- [x] **Step 5: Commit**
 ```bash
 git add docs
 git commit -m "docs: Phase 5 complete — design doc in step, rulings, owner play-test list"

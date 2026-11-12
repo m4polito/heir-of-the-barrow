@@ -224,11 +224,15 @@ type Line = string;   // auto-wrapped, {name} substituted
 type DialogScript =
   | Line[]
   | { if: FlagExpr; then: DialogScript; else?: DialogScript }
-  | { choice: [string, string]; yes: DialogScript; no: DialogScript }
+  | { choice: [string, string]; ask?: string; yes: DialogScript; no: DialogScript }
   | { set: string }                    // set a flag mid-conversation
-  | { give: ItemId } | { gold: number } | { heal: true };
+  | { give: ItemId } | { gold: number } | { heal: true }
+  | { pay: number; then: DialogScript; else?: DialogScript }   // take gold if the hero has it
+  | { rest: SongId }                   // full HP/MP, then the sleep screen with that jingle
+  | { save: true; ok: DialogScript; fail: DialogScript }
+  | { shop: ShopId };                  // open that shop; the script goes on when it closes
 ```
-Scripts are plain data arrays; a tiny interpreter runs them. Shops and the inn are states of their own but speak through this same system.
+Scripts are plain data arrays; a tiny interpreter runs them. A choice with `ask` shows the question and its two answers in one window: the question types out, then Yes and No appear side by side under it (a question is at most three lines). Shops, the inn and saving are opened from inside a villager's script by the `shop`, `pay`, `rest` and `save` steps, so a keeper's greeting and farewell are ordinary lines around the step. While a script is being skipped by cancel, a shop does not open, a rest restores HP and MP without the sleep screen, and every choice answers No.
 
 ### 8.3 Voice guidelines for writing NPCs
 - One idea per line; no line explains the whole world.
@@ -352,14 +356,14 @@ Tuned 2026-11-12 after the Phase 3 play-test; pinned by `test/balance.test.ts`. 
 ## 11. Shops, Inn, Save/Load
 
 ### 11.1 Shops
-Talking to Garrik or Odo opens `Shop`: greeting → Buy / Sell / Leave. Buy lists items with prices; selecting shows "The Iron Knife? That'll be 60 gold." Yes/No. On buying equipment: "Will you equip it now?" Yes/No; old gear goes to inventory, or the shop offers to buy it if inventory is full. Refusals: not enough gold, inventory full, "You already carry one" for equipment. Sell lists inventory at half price. Each shopkeeper has distinct greeting and farewell lines.
+Talking to Garrik or Odo runs his script: greeting lines, then `Shop` (Buy / Sell / Leave, with the hero's gold shown under the menu), then farewell lines when the shop closes. Buy lists items with prices; selecting shows "The Iron Knife? That will be 60 gold." Yes/No. On buying equipment: "Will you equip it now?" Yes/No; old gear goes to the pack. Refusals: "You do not have enough gold.", "You cannot carry more.", and "You already carry one." for equipment the hero has in the pack or is wearing. With a full pack, equipment can still be bought if it is worn at once: the piece it replaces is traded in for its sale price, and the purchase is refused if that piece cannot be sold. Sell lists the pack at half price, rounded down; either shop buys anything except Aldric's Shield and key items ("I cannot buy that."); worn gear is not listed. The shop's own wording is the same for both keepers; each keeper's greeting and farewell are his own.
 
 ### 11.2 Inn
-Hesta: "A bed for the night is 6 gold. Stay?" Yes → fade out, short sleep jingle, fade in, full HP/MP, "Morning. You look more like him every day." No → farewell line. Fixed price in the slice.
+Hesta speaks two lines, then asks: "A bed is 6 gold, if you need one. Stay?" (after the Warden: "A bed is still 6 gold, and I will not hear otherwise. Stay?"). Yes with 6 gold → fade out, the three-second sleep jingle, fade in, full HP/MP, the town theme from its start, then "Morning. You slept like a stone. He never could." (after the Warden: "Morning. Eat before you go. I mean it."). Yes without 6 gold → "That is not 6 gold. Come back when you have it." No → a farewell line. Keys do nothing while the hero sleeps. Fixed price in the slice.
 
 ### 11.3 Save/Load
 - Saving happens **only by talking to Maren**: "Shall I remember your journey?" Yes → write save, "It is written." The trip home is part of the game's rhythm.
-- Save = JSON in `localStorage` under a versioned key, containing: `version`, hero name, level, XP, HP, MP, gold, equipment, inventory, flags, map id, position, facing, torch steps remaining, mute preference.
+- Save = JSON in `localStorage` under a versioned key, containing: `version`, hero name, level, XP, HP, MP, gold, equipment, inventory, flags, map id, position, facing, torch steps remaining (written as 0 until Phase 6). The mute preference keeps its own storage entry, because it must apply before Continue is chosen. Strength, agility and the HP and MP maximums are not stored; they are rebuilt from the level, and stored HP and MP are held to those maximums on load. A save that cannot be read (damaged, another version, an unknown item or map) is ignored, not deleted: Continue is not offered. Maren asks straight after her first line; if the browser refuses to store the save she says "The page will not take the ink. Nothing was written." Nothing saves automatically, so reloading the page returns to the last save.
 - **Title → Continue** loads it. One slot in the slice.
 - **Password system: deferred past the slice** (owner's decision). A later phase adds a classic text password as a portable save: the save struct bit-packed with a checksum, a 32-character unambiguous alphabet, under 40 characters, offered by Maren after saving and entered from the title screen. The save struct should be designed so every field has a small fixed range (e.g. gold capped at 65535, flags as an indexed list) so that bit-packing later is a codec change, not a schema change.
 
