@@ -29,6 +29,22 @@ export interface AutoTrigger {
 
 export type Trigger = WarpTrigger | AutoTrigger;
 
+export interface EncounterEntry {
+  monster: string;
+  weight: number;
+}
+
+export interface EncounterZone {
+  backdrop: string;
+  monsters: EncounterEntry[];
+}
+
+export interface EncounterTable {
+  baseRate: number;
+  /** Zones keyed by `TileDef.name`. */
+  zones: Record<string, EncounterZone>;
+}
+
 export interface GameMap {
   id: string;
   width: number;
@@ -39,6 +55,9 @@ export interface GameMap {
   entry: Record<string, { x: number; y: number; facing: Dir }>;
   npcs: NpcPlacement[];
   triggers: Trigger[];
+  encounters?: EncounterTable;
+  /** Tile id drawn outside the map's bounds. */
+  border?: number;
 }
 
 export function parseAsciiMap(
