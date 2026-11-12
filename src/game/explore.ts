@@ -6,7 +6,7 @@ import { rgbaToCanvas } from '../engine/canvasImage';
 import { PALETTE } from '../data/palette';
 import { TILES, ANIM_FRAME_LEN } from '../data/tiles';
 import { HERO_SPRITES } from '../data/sprites/hero';
-import { tileAt, type GameMap } from './map';
+import { isWalkable, tileAt, type GameMap } from './map';
 import { updateHero, heroPixelOffset, type HeroState } from './hero';
 import { cameraOrigin } from './camera';
 
@@ -34,7 +34,7 @@ export class ExploreState implements State {
 
   update(input: Input): void {
     const held = (a: Dir) => input.held(a);
-    this.hero = updateHero(this.hero, held, this.map);
+    this.hero = updateHero(this.hero, held, (x, y) => isWalkable(this.map, x, y));
   }
 
   render(ctx: CanvasRenderingContext2D, frame: number): void {
