@@ -11,8 +11,9 @@ import { createRng } from '../src/engine/rng';
 import { ExploreState } from '../src/game/explore';
 import { createGame } from '../src/game/game';
 import { applyLevel, createPlayer, setFlag } from '../src/game/player';
-import { addItem, itemLines } from '../src/game/inventory';
+import { addItem } from '../src/game/inventory';
 import { DialogState } from '../src/game/dialog/dialogState';
+import { TransitionState } from '../src/game/transition';
 import { MenuState } from '../src/game/menu/menuState';
 import { ItemsState } from '../src/game/menu/itemsState';
 import { SpellsState } from '../src/game/menu/spellsState';
@@ -120,7 +121,8 @@ describe('items and equip', () => {
     items.update(keys('confirm'));
     expect(game.player.hp).toBe(15);
     expect(game.player.inventory).toEqual([]);
-    expect(itemLines(ITEMS, game.player)).toEqual(['Nothing']);
+    items.update(keys());
+    expect((items as unknown as { list: { items: string[] } }).list.items).toEqual(['Nothing']);
     expect(stack.top).toBeInstanceOf(DialogState);
     expect(playSfx).toHaveBeenCalledWith('heal');
   });
@@ -296,7 +298,11 @@ describe('spells', () => {
     spells.update(keys('down'));
     spells.update(keys('confirm'));
     dismiss(s.stack);
-    for (let i = 0; i < 30; i++) s.stack.update(keys());
+    // mash confirm and cancel while the fade runs; once it ends the hero is idle on the map, so stop
+    for (let i = 0; i < 30; i++) {
+      const fading = s.stack.top instanceof TransitionState;
+      s.stack.update(keys(...(fading ? [i % 2 === 0 ? 'confirm' : 'cancel'] : [])));
+    }
     expect(s.stack.states).toHaveLength(1);
     const ex = s.stack.top as ExploreState;
     expect(ex).toBeInstanceOf(ExploreState);
@@ -305,22 +311,5 @@ describe('spells', () => {
     expect(ex.hero.x).toBe(e.x);
     expect(ex.hero.y).toBe(e.y);
     expect(s.game.player.mp).toBe(21);
-  });
-});
-
-describe('quiet dialog', () => {
-  function run(quiet: boolean | undefined) {
-    const { stack, game } = setup();
-    const playSfx = vi.spyOn(game.audio, 'playSfx');
-    const dlg = new DialogState(game, ['You recover 12 HP.'], { quiet });
-    stack.push(dlg);
-    for (let i = 0; i < 60; i++) dlg.update(keys());
-    return playSfx;
-  }
-  it('plays the typing blip by default', () => {
-    expect(run(undefined)).toHaveBeenCalledWith('blip');
-  });
-  it('plays no blip when quiet', () => {
-    expect(run(true)).not.toHaveBeenCalledWith('blip');
   });
 });

@@ -17,7 +17,6 @@ export function showFieldResult(game: Game, result: FieldResult): void {
   const { home } = game.story;
   stack.push(
     new DialogState(game, [result.text], {
-      quiet: true,
       onDone: result.warp
         ? () =>
             stack.push(
