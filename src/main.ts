@@ -5,13 +5,19 @@ import { StateStack } from './engine/state';
 import { startLoop } from './engine/loop';
 import { PALETTE } from './data/palette';
 import { BootState } from './game/boot';
+import { ExploreState } from './game/explore';
+import { createHero } from './game/hero';
+import { HOLLOWMERE } from './data/maps/hollowmere';
 
 const screen = new Screen(document.getElementById('game')!);
 const input = new Input();
 input.attach(window);
 const font = new Font(buildFontSheet(PALETTE));
 const stack = new StateStack();
-stack.push(new BootState({ font, onStart: () => {} }));
+stack.push(new BootState({ font, onStart: () => {
+    const s = HOLLOWMERE.entry.start!;
+    stack.replace(new ExploreState({ map: HOLLOWMERE, hero: createHero(s.x, s.y, s.facing) }));
+  } }));
 
 window.addEventListener('resize', () => screen.resize());
 
