@@ -156,6 +156,46 @@ describe('SONGS.victory', () => {
   });
 });
 
+describe('SONGS.levelup', () => {
+  const song = SONGS.levelup;
+  const intervals = (rows: (string | null)[]) => {
+    const m = rows.filter((c): c is string => c !== null && c !== 'off').map(noteToMidi);
+    return m.slice(1).map((n, i) => n - m[i]!);
+  };
+
+  it('is a valid one-shot 10-row jingle at tempo 150', () => {
+    expect(() => validateSong(song)).not.toThrow();
+    expect(song.id).toBe('levelup');
+    expect(song.tempo).toBe(150);
+    expect(song.loop).toBe(false);
+    expect(song.loopFrom).toBeUndefined();
+    for (const t of song.tracks) expect(t.rows.length).toBe(10);
+  });
+
+  it('pins channels, duty and volume, with no noise', () => {
+    expect(pinned(song)).toEqual([
+      ['p1', 0.5, 11],
+      ['p2', 0.25, 8],
+      ['tri', undefined, 14],
+    ]);
+  });
+
+  it('ends every track with off at or before row 9', () => {
+    for (const t of song.tracks) {
+      const last = lastNonNull(t.rows);
+      expect(t.rows[last]).toBe('off');
+      expect(last).toBeLessThanOrEqual(9);
+    }
+  });
+
+  it('does not reuse the victory figure shifted by one interval', () => {
+    const a = intervals(song.tracks[0]!.rows);
+    const b = intervals(SONGS.victory.tracks[0]!.rows);
+    expect(a).not.toEqual(b.slice(0, a.length));
+    expect(new Set(a).size).toBeGreaterThan(1);
+  });
+});
+
 describe('SONGS.fallen', () => {
   const song = SONGS.fallen;
 

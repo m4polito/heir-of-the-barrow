@@ -76,6 +76,6 @@ export const SFX: Record<SfxId, SfxStep[]> = {
   ],
   runFail: [p1('E4', 3, 9, 0.125), p1('C4', 3, 9, 0.125), p1('G#3', 6, 9, 0.125)],
   // Placeholders; Task 5 gives these their real sound.
-  spell: [p1('C5', 3, 8, 0.5)],
-  heal: [p1('G5', 3, 8, 0.5)],
+  spell: [p1('A4', 2, 9, 0.125), p1('E5', 2, 9, 0.125), p1('A5', 2, 9, 0.125), p1('C#6', 2, 9, 0.125), p1('E6', 4, 9, 0.125)],
+  heal: [p1('G5', 4, 7, 0.5), p1('C6', 4, 7, 0.5), p1('E6', 6, 7, 0.5)],
 };

@@ -74,6 +74,8 @@ describe('SfxPlayer', () => {
     }
     const total = (id: keyof typeof SFX) => SFX[id].reduce((n, s) => n + s.frames, 0);
     expect(total('encounter')).toBe(32);
+    expect(total('spell')).toBe(12);
+    expect(total('heal')).toBe(14);
     for (const id of ['heroHit', 'monsterHit', 'miss', 'critical', 'runOk', 'runFail'] as const) {
       expect(total(id), id).toBeLessThanOrEqual(16);
     }
