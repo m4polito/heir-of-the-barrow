@@ -78,18 +78,13 @@ export class Sequencer {
     this.song = null;
   }
 
-  /**
-   * Emits every row dated before `untilTime`. Rows already behind the audio clock
-   * (`now`, after a timer stall) are skipped, not played late, so a release never
-   * lands in the past; the row/time bookkeeping advances as usual to keep tempo.
-   */
-  schedule(untilTime: number, now = -Infinity): void {
+  schedule(untilTime: number): void {
     const song = this.song;
     if (!song) return;
     const rowDur = rowDurationSec(song.tempo);
     const rowCount = song.tracks[0]!.rows.length;
     while (this.cursorTime < untilTime) {
-      if (this.cursorTime >= now) this.emitRow(song, this.cursorRow, this.cursorTime);
+      this.emitRow(song, this.cursorRow, this.cursorTime);
       this.cursorRow++;
       this.cursorTime += rowDur;
       if (this.cursorRow >= rowCount) this.cursorRow = song.loopFrom ?? 0;

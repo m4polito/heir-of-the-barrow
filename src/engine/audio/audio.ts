@@ -72,7 +72,7 @@ export class AudioManager {
     this.master = master;
     this.songGain = songGain;
     this.sequencer = sequencer;
-    setInterval(() => sequencer.schedule(ctx.currentTime + 0.1, ctx.currentTime), 25);
+    setInterval(() => sequencer.schedule(ctx.currentTime + 0.1), 25);
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') void ctx.resume().catch(() => {});
