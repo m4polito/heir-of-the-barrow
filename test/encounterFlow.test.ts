@@ -50,10 +50,13 @@ const base = {
 };
 const MONSTER_TABLE: Record<string, MonsterDef> = {
   weak: { ...base, id: 'weak', hp: 1, atk: 0, agi: 1, gold: [3, 3], xp: 2 },
+  meek: { ...base, id: 'meek', hp: 99, atk: 0, agi: 1, runFactor: 0, gold: [7, 7], xp: 9 },
   brute: { ...base, id: 'brute', hp: 99, atk: 100, agi: 99, gold: [3, 3], xp: 2 },
 };
 
-function setup(mapId: 'field' | 'field2', player: Partial<PlayerState> = {}) {
+function setup(mapId: 'field' | 'field2', player: Partial<PlayerState> = {},
+  monsters: Record<string, MonsterDef> = MONSTER_TABLE,
+) {
   const stack = new StateStack();
   const basePlayer = setFlag(createPlayer(STORY.defaultHeroName, STORY.startingItems), STORY.opening.flag);
   const game = createGame({
@@ -67,7 +70,7 @@ function setup(mapId: 'field' | 'field2', player: Partial<PlayerState> = {}) {
     dialogs: DIALOGS,
     songs: SONGS,
     items: ITEMS,
-    monsters: MONSTER_TABLE,
+    monsters,
     story: STORY,
     player: { ...basePlayer, ...player },
   });
@@ -144,19 +147,50 @@ describe('random encounters', () => {
     expect(stack.top).toBeInstanceOf(TransitionState);
   });
 
+  /** Walk right until the fourth step starts a battle, then let the fade finish. */
+  function walkIntoBattle(t: ReturnType<typeof setup>): void {
+    t.ticks(33, 'right');
+    expect(t.stack.top).toBeInstanceOf(TransitionState);
+    t.ticks(30, 'right');
+    expect(t.hasBattle()).toBe(true);
+  }
+
+  /** Three steps back the way we came start nothing; the fourth does. */
+  function expectGraceRestarted(t: ReturnType<typeof setup>): void {
+    t.ticks(32, 'left');
+    expect(t.stack.states).toEqual([t.explore]);
+    t.ticks(1, 'left');
+    expect(t.stack.top).toBeInstanceOf(TransitionState);
+  }
+
   it('a won battle pays out, replays the map song and restarts the grace', () => {
-    const { stack, game, explore, playSong, ticks, mash } = setup('field2', { str: 50 });
+    const t = setup('field2', { str: 50 });
+    const { stack, game, explore, playSong, mash } = t;
     const gold = game.player.gold;
     const xp = game.player.xp;
-    explore.startBattle('weak', 'grass');
+    walkIntoBattle(t);
     mash(() => stack.top === explore);
     expect(game.player.gold).toBe(gold + 3);
     expect(game.player.xp).toBe(xp + 2);
     expect(playSong.mock.lastCall?.[0]).toBe(SONGS.marsh);
-    ticks(32, 'right');
-    expect(stack.states).toEqual([explore]);
-    ticks(1, 'right');
-    expect(stack.top).toBeInstanceOf(TransitionState);
+    expectGraceRestarted(t);
+  });
+
+  it('a fled battle changes nothing, replays the map song and restarts the grace', () => {
+    // 'meek' can never stop the hero running; it stands in for the map's 'weak'
+    const t = setup('field2', {}, { ...MONSTER_TABLE, weak: MONSTER_TABLE.meek! });
+    const { stack, game, explore, playSong, tick, mash } = t;
+    const gold = game.player.gold;
+    const xp = game.player.xp;
+    walkIntoBattle(t);
+    const battle = stack.states.find((s) => s instanceof BattleState) as BattleState;
+    mash(() => battle.phase === 'command', 600);
+    tick('down');
+    mash(() => stack.top === explore);
+    expect(game.player.gold).toBe(gold);
+    expect(game.player.xp).toBe(xp);
+    expect(playSong.mock.lastCall?.[0]).toBe(SONGS.marsh);
+    expectGraceRestarted(t);
   });
 });
 
@@ -202,6 +236,6 @@ describe('guards', () => {
 
   it('the constructor rejects an unknown dialog', () => {
     const { game } = setup('field2');
-    expect(() => new ExploreState(game, 'field', 'start', { dialog: 'nope' })).toThrow();
+    expect(() => new ExploreState(game, 'field', 'start', { dialog: 'nope' })).toThrow('Unknown dialog: nope');
   });
 });

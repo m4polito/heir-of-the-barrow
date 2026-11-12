@@ -8,6 +8,8 @@ import { AudioManager } from '../src/engine/audio/audio';
 import { SpriteCache } from '../src/engine/spriteCache';
 import { createRng } from '../src/engine/rng';
 import { ExploreState } from '../src/game/explore';
+import { TransitionState } from '../src/game/transition';
+import { BattleState } from '../src/game/battle/battleState';
 import { createGame } from '../src/game/game';
 import { createPlayer } from '../src/game/player';
 import { DebugState, installDebug } from '../src/game/debug';
@@ -108,18 +110,40 @@ describe('DebugState', () => {
     expect(stack.top).toBeUndefined();
   });
 
+  it('lists one Fight row per monster, between the warp rows and Close', () => {
+    const { dbg } = setup();
+    const labels = (dbg as unknown as { labels(): string[] }).labels();
+    const lastWarp = labels.map((l) => l.startsWith('Warp: ')).lastIndexOf(true);
+    const close = labels.indexOf('Close');
+    expect(labels.slice(lastWarp + 1, close)).toEqual(Object.keys(MONSTERS).map((id) => `Fight: ${id}`));
+    for (const id of ['mireling', 'bog_mireling', 'barrow_mireling']) expect(labels).toContain(`Fight: ${id}`);
+    expect(close).toBe(labels.length - 1);
+  });
+
+  it('a Fight row closes the overlay and starts that battle over explore', () => {
+    const { stack, game, dbg } = setup();
+    const labels = (dbg as unknown as { labels(): string[] }).labels();
+    pick(dbg, labels.indexOf('Fight: barrow_mireling'));
+    expect(stack.states.includes(dbg)).toBe(false);
+    expect(stack.top).toBeInstanceOf(TransitionState);
+    for (let i = 0; i < 30; i++) stack.update(keys());
+    const battle = stack.states.find((s) => s instanceof BattleState) as BattleState;
+    expect(battle.battle.monster.id).toBe('barrow_mireling');
+    expect(game.monsters.barrow_mireling).toBeDefined();
+  });
+
   it('Close and cancel pop back to explore', () => {
     const a = setup();
     a.dbg.update(keys('cancel'));
     expect(a.stack.top).toBeInstanceOf(ExploreState);
     const b = setup();
-    pick(b.dbg, 6 + Object.keys(b.game.maps).length);
+    pick(b.dbg, 6 + Object.keys(b.game.maps).length + Object.keys(b.game.monsters).length);
     expect(b.stack.top).toBeInstanceOf(ExploreState);
   });
 
   it('every row, including the last, is reachable', () => {
     const { dbg } = setup();
-    const n = 7 + Object.keys(MAPS).length;
+    const n = 7 + Object.keys(MAPS).length + Object.keys(MONSTERS).length;
     for (let i = 0; i < n - 1; i++) dbg.update(keys('down'));
     // (list is private; reaching Close above proves the last row is addressable)
     expect(() => dbg.update(keys('confirm'))).not.toThrow();
