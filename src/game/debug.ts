@@ -6,6 +6,7 @@ import type { Game } from './game';
 import type { GameMap } from './map';
 import { applyLevel, GOLD_MAX } from './player';
 import { ExploreState } from './explore';
+import { addItem } from './inventory';
 
 const VISIBLE_ROWS = 10;
 
@@ -13,15 +14,17 @@ function defaultEntry(map: GameMap): string {
   return 'start' in map.entry ? 'start' : Object.keys(map.entry)[0]!;
 }
 
-/** Dev-only overlay: level, gold, encounters, heal, warp, fight. Never imported by production code. */
+/** Dev-only overlay: level, gold, encounters, heal, warp, fight, give. Never imported by production code. */
 export class DebugState implements State {
   private readonly list: MenuList;
   private readonly mapIds: string[];
   private readonly monsterIds: string[];
+  private readonly itemIds: string[];
 
   constructor(private readonly game: Game) {
     this.mapIds = Object.keys(game.maps);
     this.monsterIds = Object.keys(game.monsters);
+    this.itemIds = Object.keys(game.items);
     this.list = new MenuList(this.labels());
   }
 
@@ -35,6 +38,7 @@ export class DebugState implements State {
       'Full heal',
       ...this.mapIds.map((id) => `Warp: ${id}`),
       ...this.monsterIds.map((id) => `Fight: ${id}`),
+      ...this.itemIds.map((id) => `Give: ${id}`),
       'Close',
     ];
   }
@@ -43,6 +47,7 @@ export class DebugState implements State {
     const { game } = this;
     const warpStart = 6;
     const fightStart = warpStart + this.mapIds.length;
+    const giveStart = fightStart + this.monsterIds.length;
     if (index === 0) game.player = applyLevel(game.player, game.player.level + 1);
     else if (index === 1) game.player = applyLevel(game.player, game.player.level - 1);
     else if (index === 2) game.player = { ...game.player, gold: Math.min(GOLD_MAX, game.player.gold + 100) };
@@ -56,6 +61,10 @@ export class DebugState implements State {
       game.stack.pop();
       const top = game.stack.top;
       if (top instanceof ExploreState) top.startBattle(this.monsterIds[index - fightStart]!, 'grass');
+    } else if (index < giveStart + this.itemIds.length) {
+      const added = addItem(game.items, game.player, this.itemIds[index - giveStart]!);
+      if (added.ok) game.player = added.player;
+      else game.audio.playSfx('error');
     } else {
       game.stack.pop();
     }
