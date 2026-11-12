@@ -36,7 +36,7 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
       ],
       else: [
         'The Dimming is worse at night.',
-        'I do not say its name aloud much. It listens, I think.',
+        'We stopped saying the word years ago. The cold stayed anyway.',
         'Rest here when you need to. I will keep the lamp lit.',
       ],
     },
@@ -48,7 +48,7 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
       then: [
         'You came back. Sit. Eat something.',
         'Your father never did come through that door again.',
-        'A bed is 6 gold, but tonight it is free.',
+        'A bed is still 6 gold, and I will not hear otherwise.',
       ],
       else: [
         'You look more like him every day.',
