@@ -6,10 +6,15 @@ import { startLoop } from './engine/loop';
 import { PALETTE } from './data/palette';
 import { BootState } from './game/boot';
 import { ExploreState } from './game/explore';
-import { createHero } from './game/hero';
-import { HOLLOWMERE } from './data/maps/hollowmere';
+import { createGame } from './game/game';
+import { createPlayer } from './game/player';
+import { createRng } from './engine/rng';
+import { SpriteCache } from './engine/spriteCache';
+import { MAPS } from './data/maps';
+import { DIALOGS } from './data/dialog/hollowmere';
+import { SONGS } from './data/songs';
+import { STORY } from './data/story';
 import { AudioManager } from './engine/audio/audio';
-import { HOLLOWMERE_SONG } from './data/songs/hollowmere';
 
 function safeLocalStorage(): Storage | null {
   try {
@@ -26,11 +31,25 @@ const font = new Font(buildFontSheet(PALETTE));
 const audio = new AudioManager(safeLocalStorage());
 audio.installUnlockListener(window);
 const stack = new StateStack();
-stack.push(new BootState({ font, onStart: () => {
-    audio.playSong(HOLLOWMERE_SONG);
-    const s = HOLLOWMERE.entry.start!;
-    stack.replace(new ExploreState({ map: HOLLOWMERE, hero: createHero(s.x, s.y, s.facing) }));
-  } }));
+const game = createGame({
+  stack,
+  input,
+  font,
+  audio,
+  sprites: new SpriteCache(PALETTE),
+  rng: createRng(Date.now()),
+  maps: MAPS,
+  dialogs: DIALOGS,
+  songs: SONGS,
+  story: STORY,
+  player: createPlayer(STORY.defaultHeroName),
+});
+stack.push(
+  new BootState({
+    font,
+    onStart: () => stack.reset(new ExploreState(game, STORY.newGame.map, STORY.newGame.entry)),
+  }),
+);
 
 window.addEventListener('resize', () => screen.resize());
 
