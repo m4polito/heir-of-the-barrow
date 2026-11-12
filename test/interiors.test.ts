@@ -139,6 +139,10 @@ describe('story config', () => {
     });
     expect(Object.keys(DIALOGS)).toContain(STORY.opening.dialog);
   });
+  it('respawn entry and dialog exist', () => {
+    expect(BY_ID[STORY.respawn.map]!.entry[STORY.respawn.entry]).toBeDefined();
+    expect(Object.keys(DIALOGS)).toContain(STORY.respawn.dialog);
+  });
 });
 
 // Vite reads the sources as raw text (the project has no Node typings, so no fs).

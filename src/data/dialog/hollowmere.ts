@@ -2,6 +2,7 @@ import type { DialogScript } from '../../game/dialog/script';
 
 export type DialogId =
   | 'maren_intro'
+  | 'maren_fallen'
   | 'maren'
   | 'hesta'
   | 'garrik'
@@ -25,6 +26,12 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
     "{name} received Aldric's Shield.",
     'It is dented, and it is yours.',
     'Stay as long as you like. The fire is warm.',
+  ],
+
+  maren_fallen: [
+    'You are home, {name}. You are safe now.',
+    'Bram found you and carried you here. He said nothing.',
+    'Half your gold is gone. You are not.',
   ],
 
   maren: [

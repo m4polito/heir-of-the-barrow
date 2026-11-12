@@ -4,7 +4,7 @@ import { ScriptRunner, type DialogNode, type DialogScript, type ScriptEnv, type 
 import { wrapText } from '../src/ui/wrap';
 
 const IDS: DialogId[] = [
-  'maren_intro', 'maren', 'hesta', 'garrik', 'odo', 'pip', 'bram', 'tobin', 'villager_a', 'villager_b',
+  'maren_intro', 'maren_fallen', 'maren', 'hesta', 'garrik', 'odo', 'pip', 'bram', 'tobin', 'villager_a', 'villager_b',
 ];
 
 function run(id: DialogId, flags: string[] = []) {

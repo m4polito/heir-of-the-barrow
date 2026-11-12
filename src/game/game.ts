@@ -17,6 +17,8 @@ export interface StoryConfig {
   defaultHeroName: string;
   newGame: { map: string; entry: string };
   opening: { map: string; flag: string; dialog: string };
+  /** Where the hero wakes after a lost battle, and what is said. */
+  respawn: { map: string; entry: string; dialog: string };
   startingItems: { item: string; count: number }[];
   /** Prefix for browser storage keys (for example `<prefix>.mute`). */
   storagePrefix: string;
