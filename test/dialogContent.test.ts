@@ -82,7 +82,7 @@ describe('Hollowmere dialog content', () => {
   });
 
   it('contains no banned words in any branch', () => {
-    const banned = /dragon|erdrick|tantegel|alefgard|slime/i;
+    const banned = /dragon|erdrick|tantegel|alefgard|slime|erdwin/i;
     for (const id of IDS) for (const s of strings(DIALOGS[id])) expect(s).not.toMatch(banned);
   });
 });

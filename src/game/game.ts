@@ -12,6 +12,7 @@ import type { PlayerState } from './player';
 
 export interface StoryConfig {
   title: string;
+  subtitle: string;
   defaultHeroName: string;
   newGame: { map: string; entry: string };
   opening: { map: string; flag: string; dialog: string };
