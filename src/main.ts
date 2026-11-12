@@ -9,6 +9,7 @@ import { ExploreState } from './game/explore';
 import { createHero } from './game/hero';
 import { HOLLOWMERE } from './data/maps/hollowmere';
 import { AudioManager } from './engine/audio/audio';
+import { HOLLOWMERE_SONG } from './data/songs/hollowmere';
 
 function safeLocalStorage(): Storage | null {
   try {
@@ -26,6 +27,7 @@ const audio = new AudioManager(safeLocalStorage());
 audio.installUnlockListener(window);
 const stack = new StateStack();
 stack.push(new BootState({ font, onStart: () => {
+    audio.playSong(HOLLOWMERE_SONG);
     const s = HOLLOWMERE.entry.start!;
     stack.replace(new ExploreState({ map: HOLLOWMERE, hero: createHero(s.x, s.y, s.facing) }));
   } }));
