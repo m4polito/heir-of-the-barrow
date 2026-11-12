@@ -8,7 +8,7 @@ import { SpriteCache } from '../src/engine/spriteCache';
 import { createRng } from '../src/engine/rng';
 import { createGame } from '../src/game/game';
 import { createPlayer } from '../src/game/player';
-import { BattleState, battleStatLines } from '../src/game/battle/battleState';
+import { BattleState, battleStatLines, COMMAND_WINDOW, SUB_WINDOW } from '../src/game/battle/battleState';
 import { spellLines } from '../src/game/menu/spellsState';
 import type { BattleOutcome } from '../src/game/battle/battle';
 import type { MonsterDef } from '../src/game/battle/monster';
@@ -20,6 +20,8 @@ import { DIALOGS } from '../src/data/dialog/hollowmere';
 import { SONGS } from '../src/data/songs';
 import { STORY } from '../src/data/story';
 import { PALETTE } from '../src/data/palette';
+import { seqRng } from './helpers/seqRng';
+import type { Rng } from '../src/engine/rng';
 
 function fakeInput() {
   let down = new Set<Action>();
@@ -53,7 +55,11 @@ const MONSTER: MonsterDef = {
   runFactor: 1,
 };
 
-function setup(monster: Partial<MonsterDef> = {}, player: Partial<ReturnType<typeof createPlayer>> = {}) {
+function setup(
+  monster: Partial<MonsterDef> = {},
+  player: Partial<ReturnType<typeof createPlayer>> = {},
+  rng: Rng = createRng(1),
+) {
   const stack = new StateStack();
   const base = createPlayer(STORY.defaultHeroName, STORY.startingItems);
   const game = createGame({
@@ -62,7 +68,7 @@ function setup(monster: Partial<MonsterDef> = {}, player: Partial<ReturnType<typ
     font: {} as Font,
     audio: new AudioManager(null),
     sprites: new SpriteCache(PALETTE),
-    rng: createRng(1),
+    rng,
     maps: MAPS,
     dialogs: DIALOGS,
     songs: SONGS,
@@ -151,6 +157,17 @@ describe('battleStatLines', () => {
   });
 });
 
+describe('BattleState layout', () => {
+  it('the command and sub-list windows sit between the backdrop strip and the message window', () => {
+    const BACKDROP_BOTTOM = 96 + 24;
+    const MESSAGE_TOP = 176;
+    for (const w of [COMMAND_WINDOW, SUB_WINDOW]) {
+      expect(w.y).toBeGreaterThanOrEqual(BACKDROP_BOTTOM);
+      expect(w.y + w.h).toBeLessThanOrEqual(MESSAGE_TOP);
+    }
+  });
+});
+
 describe('BattleState', () => {
   it('starts the battle song on enter', () => {
     const { playSong } = setup();
@@ -207,18 +224,29 @@ describe('BattleState', () => {
     expect(playSfx).toHaveBeenCalledWith('runOk');
   });
 
-  it('Run does not play the confirm blip over its own sound', () => {
-    const { playSfx, state, tick } = setup({ agi: 1 }, { agi: 99 });
-    for (let i = 0; i < 2000 && state.phase !== 'command'; i++) pump(tick, i);
-    tick('down');
-    tick('down');
-    tick('down');
-    const before = playSfx.mock.calls.length;
-    tick('confirm');
-    for (let i = 0; i < 10; i++) tick();
-    const after = playSfx.mock.calls.slice(before).map((c) => c[0]);
+  /** The sound ids played from accepting the current menu row until its first beats have started. */
+  function acceptSounds(t: Setup): string[] {
+    const before = t.playSfx.mock.calls.length;
+    t.tick('confirm');
+    for (let i = 0; i < 10; i++) t.tick();
+    return t.playSfx.mock.calls.slice(before).map((c) => c[0] as string);
+  }
+
+  it('a Run that succeeds plays no confirm blip over its own sound', () => {
+    const t = setup({ agi: 1 }, { agi: 99 });
+    toCommand(t);
+    t.tick('down');
+    t.tick('down');
+    t.tick('down');
+    const after = acceptSounds(t);
     expect(after).not.toContain('menuConfirm');
-    expect(after.some((s) => s === 'runOk' || s === 'runFail')).toBe(true);
+    expect(after).toContain('runOk');
+  });
+
+  it('Fight plays the confirm blip', () => {
+    const t = setup({ atk: 0 });
+    toCommand(t);
+    expect(acceptSounds(t)).toContain('menuConfirm');
   });
 
   /** Confirm on every tick; returns the tick a song first started and the tick onEnd ran. */
@@ -322,20 +350,31 @@ describe('BattleState', () => {
       dryNoTurn();
     });
 
-    it('accepting a spell plays no confirm blip, accepting an item does', () => {
-      const spell = setup({ atk: 0 }, HERO3);
-      toCommand(spell);
-      spell.choose(1);
-      const before = spell.playSfx.mock.calls.length;
-      spell.tick('confirm');
-      expect(spell.playSfx.mock.calls.slice(before).map((c) => c[0])).not.toContain('menuConfirm');
+    it('a spell cast when the hero acts first plays no confirm blip', () => {
+      const t = setup({ atk: 0, agi: 0 }, HERO3);
+      toCommand(t);
+      t.choose(1);
+      expect(acceptSounds(t)).not.toContain('menuConfirm');
+    });
 
-      const item = setup({ atk: 0 }, { hp: 3, inventory: [{ item: 'herb', count: 1 }] });
-      toCommand(item);
-      item.choose(2);
-      const b2 = item.playSfx.mock.calls.length;
-      item.tick('confirm');
-      expect(item.playSfx.mock.calls.slice(b2).map((c) => c[0])).toContain('menuConfirm');
+    it('a spell cast when the monster acts first plays the confirm blip, after the monster acts', () => {
+      // monster roll 3 * 253 beats hero roll 6 * 0, so the monster goes first
+      const t = setup({ atk: 5, agi: 3 }, HERO3, seqRng([0.99, 0, 0.5, 0, 0.5, 0, 0.5, 0]));
+      const act = vi.spyOn(t.state.battle, 'act');
+      toCommand(t);
+      t.choose(1);
+      expect(acceptSounds(t)).toContain('menuConfirm');
+      const beats = act.mock.results[0]!.value as { text: string }[];
+      const castAt = beats.findIndex((b) => b.text === 'You cast Heal.');
+      expect(beats[0]!.text).toBe('The Testling attacks!');
+      expect(castAt).toBeGreaterThan(0);
+    });
+
+    it('accepting an item plays the confirm blip', () => {
+      const t = setup({ atk: 0 }, { hp: 3, inventory: [{ item: 'herb', count: 1 }] });
+      toCommand(t);
+      t.choose(2);
+      expect(acceptSounds(t)).toContain('menuConfirm');
     });
 
     it('cancel leaves the spell list without acting', () => {

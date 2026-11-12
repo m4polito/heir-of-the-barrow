@@ -143,6 +143,26 @@ describe('Battle spells, items and monster actions', () => {
     expect(b.heroMp).toBe(1);
   });
 
+  it('monster first, then Heal: the blow lands before the cast and the heal is added once', () => {
+    const b = new Battle(seqRng([0.99, 0, 0.5, 0, 0]), { ...base, hp: 8, maxHp: 24, mp: 5 }, M, KIT);
+    const beats = b.act({ spell: 'heal' });
+    expect(texts(beats)).toEqual(['The Mireling attacks!', 'You take 1 damage.', 'You cast Heal.', 'You recover 10 HP.']);
+    expect(beats[2]).toMatchObject({ heroHp: 7, heroMp: 1 });
+    expect(b.heroMp).toBe(1);
+    expect(b.heroHp).toBe(8 - 1 + 10);
+    expect(b.outcome).toBeNull();
+  });
+
+  it('monster first and the blow kills: no cast, no MP spent, nothing used', () => {
+    const b = new Battle(seqRng([0.99, 0, 0.5, 0]), { ...base, hp: 1, maxHp: 24, mp: 5 }, M, KIT);
+    const beats = b.act({ spell: 'heal' });
+    expect(texts(beats)).not.toContain('You cast Heal.');
+    expect(texts(beats).pop()).toBe('You have fallen.');
+    expect(b.outcome).toBe('lost');
+    expect(b.heroMp).toBe(5);
+    expect(b.itemsUsed).toEqual([]);
+  });
+
   it('heal clamps to max hp', () => {
     const b = new Battle(seqRng([0, 0.99, 0.99, 0.5, 0]), { ...base, hp: 20, maxHp: 24, mp: 5 }, M, KIT);
     const beats = b.act({ spell: 'heal' });

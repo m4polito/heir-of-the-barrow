@@ -107,7 +107,7 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
       ],
       else: [
         'Let Tobin drink. Tobin has nothing to say to you.',
-        'He keeps his eyes on his cup and mumbles.',
+        'He keeps his eyes on his cup.',
         'Leave it.',
       ],
     },

@@ -21,6 +21,20 @@ const SHAKE_FRAMES = 4;
 const FLASH_FRAMES = 8;
 const BACKDROP_TILES = 16;
 
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** The backdrop strip fills y 96-119; these windows sit below it and above the message window (y 176). */
+export const COMMAND_WINDOW: Rect = { x: 8, y: 120, w: 72, h: 52 };
+export const SUB_WINDOW: Rect = { x: 84, y: 120, w: 164, h: 52 };
+/** Menu rows start this far below a window's top, and this far in from its left. */
+const MENU_DY = 8;
+const MENU_DX = 8;
+
 export type BattlePhase = 'beats' | 'command' | 'spell' | 'item' | 'ending';
 
 /** A sub-list open beside the command menu: the rows shown and the id each one stands for. */
@@ -147,11 +161,7 @@ export class BattleState implements State {
     const row = this.menu.selected;
     if (row === 'Spell') this.openSub('spell');
     else if (row === 'Item') this.openSub('item');
-    else {
-      // Run's first beat carries its own sound; a blip here would be cut off by it.
-      if (row === 'Fight') audio.playSfx('menuConfirm');
-      this.perform(row === 'Fight' ? 'fight' : 'run');
-    }
+    else this.perform(row === 'Fight' ? 'fight' : 'run');
   }
 
   private openSub(kind: 'spell' | 'item'): void {
@@ -189,11 +199,7 @@ export class BattleState implements State {
       const why = this._battle.refusal(cmd);
       this.closeSub();
       if (why) this.say(why);
-      else {
-        // A spell's first beat carries its own sound; a blip here would be cut off by it.
-        if (sub.kind === 'item') audio.playSfx('menuConfirm');
-        this.perform(cmd);
-      }
+      else this.perform(cmd);
     }
   }
 
@@ -210,6 +216,8 @@ export class BattleState implements State {
 
   private perform(cmd: BattleCommand): void {
     const beats = this._battle.act(cmd);
+    // Accepting a command always answers with a sound: the blip, unless the first beat brings its own.
+    if (!beats[0]?.sfx) this.game.audio.playSfx('menuConfirm');
     if (this._battle.outcome === 'won') {
       const up = gainXp(this.game.player, this._battle.reward?.xp ?? 0).levelUp;
       if (up) {
@@ -265,12 +273,14 @@ export class BattleState implements State {
     );
 
     if (this._phase === 'command' || this.sub) {
-      drawWindow(ctx, 8, 116, 72, 56);
-      drawMenu(ctx, font, this.menu.items, this._phase === 'command' ? this.menu.cursor : -1, 16, 124);
+      const c = COMMAND_WINDOW;
+      drawWindow(ctx, c.x, c.y, c.w, c.h);
+      drawMenu(ctx, font, this.menu.items, this._phase === 'command' ? this.menu.cursor : -1, c.x + MENU_DX, c.y + MENU_DY);
     }
     if (this.sub) {
-      drawWindow(ctx, 84, 116, 164, 56);
-      drawMenu(ctx, font, this.sub.menu.items, this.sub.menu.cursor, 92, 124);
+      const w = SUB_WINDOW;
+      drawWindow(ctx, w.x, w.y, w.w, w.h);
+      drawMenu(ctx, font, this.sub.menu.items, this.sub.menu.cursor, w.x + MENU_DX, w.y + MENU_DY);
     }
 
     drawWindow(ctx, 8, 176, 240, 56);
