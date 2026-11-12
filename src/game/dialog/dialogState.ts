@@ -12,14 +12,16 @@ import { ScriptRunner, type DialogScript, type ScriptEnv } from './script';
 export class DialogState implements State {
   private readonly model: DialogModel;
   private readonly onDone?: () => void;
+  private readonly onChoice?: (answer: boolean) => void;
   private completed = false;
 
   constructor(
     private readonly game: Game,
     script: DialogScript,
-    opts: { onDone?: () => void } = {},
+    opts: { onDone?: () => void; onChoice?: (answer: boolean) => void } = {},
   ) {
     this.onDone = opts.onDone;
+    this.onChoice = opts.onChoice;
     const env: ScriptEnv = {
       name: game.player.name,
       has: (flag) => hasFlag(game.player, flag),
@@ -51,7 +53,10 @@ export class DialogState implements State {
     const { audio } = this.game;
     const model = this.model;
     if (input.pressed('confirm')) {
-      if (model.isChoice) audio.playSfx('menuConfirm');
+      if (model.isChoice) {
+        audio.playSfx('menuConfirm');
+        this.onChoice?.(model.choiceCursor === 0);
+      }
       model.confirm();
     }
     if (model.isChoice) {

@@ -10,6 +10,7 @@ import { createNpc, updateNpc, npcPixelOffset, type NpcState } from './npc';
 import { cameraOrigin } from './camera';
 import { TransitionState } from './transition';
 import { DialogState } from './dialog/dialogState';
+import { MenuState } from './menu/menuState';
 import { setFlag, hasFlag } from './player';
 import type { Game } from './game';
 
@@ -141,6 +142,11 @@ export class ExploreState implements State {
         this.game.stack.push(new DialogState(this.game, this.script(npc.def.dialog)));
         return;
       }
+    }
+    if (input.pressed('cancel') && heroIdle(this._hero)) {
+      this.game.audio.playSfx('menuConfirm');
+      this.game.stack.push(new MenuState(this.game));
+      return;
     }
     const held = (a: Dir) => input.held(a);
     const map = this._map;
