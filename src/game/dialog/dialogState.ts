@@ -14,14 +14,16 @@ export class DialogState implements State {
   private readonly onChoice?: (answer: boolean) => void;
   private completed = false;
   private muted = false;
+  private readonly quiet: boolean;
 
   constructor(
     private readonly game: Game,
     script: DialogScript,
-    opts: { onDone?: () => void; onChoice?: (answer: boolean) => void } = {},
+    opts: { onDone?: () => void; onChoice?: (answer: boolean) => void; quiet?: boolean } = {},
   ) {
     this.onDone = opts.onDone;
     this.onChoice = opts.onChoice;
+    this.quiet = opts.quiet ?? false;
     const env: ScriptEnv = {
       name: game.player.name,
       has: (flag) => hasFlag(game.player, flag),
@@ -72,7 +74,7 @@ export class DialogState implements State {
         audio.playSfx('menuMove');
       }
     } else {
-      if (model.tick() && (this.shownChars() - 1) % 2 === 0) audio.playSfx('blip');
+      if (model.tick() && !this.quiet && (this.shownChars() - 1) % 2 === 0) audio.playSfx('blip');
     }
     if (model.done) {
       this.completed = true;

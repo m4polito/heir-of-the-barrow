@@ -1,5 +1,5 @@
 import type { ItemTable } from './items';
-import type { PlayerState } from './player';
+import { xpToNext, type PlayerState } from './player';
 
 export function attackOf(items: ItemTable, p: PlayerState): number {
   const w = p.equipment.weapon;
@@ -24,5 +24,6 @@ export function statusLines(items: ItemTable, p: PlayerState): string[] {
     'AGI  ' + p.agi,
     'ATK  ' + attackOf(items, p),
     'DEF  ' + defenseOf(items, p),
+    'NEXT ' + (xpToNext(p) ?? '-'),
   ];
 }

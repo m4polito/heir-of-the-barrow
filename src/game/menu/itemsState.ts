@@ -4,6 +4,8 @@ import { MenuList } from '../../ui/menuList';
 import { drawWindow, drawMenu } from '../../ui/window';
 import { equip, isEquipment, itemLines } from '../inventory';
 import { DialogState } from '../dialog/dialogState';
+import { useItemInField } from '../fieldUse';
+import { showFieldResult } from './fieldResult';
 import type { Game } from '../game';
 
 export class ItemsState implements State {
@@ -51,8 +53,7 @@ export class ItemsState implements State {
           }),
         );
       } else {
-        audio.playSfx('error');
-        stack.push(new DialogState(this.game, ['You cannot use that now.']));
+        showFieldResult(this.game, useItemInField(this.game.rng, this.game.items, player, slot.item));
       }
     } else if (input.pressed('cancel')) {
       audio.playSfx('menuCancel');

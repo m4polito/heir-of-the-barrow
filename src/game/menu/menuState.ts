@@ -5,11 +5,12 @@ import { drawWindow, drawMenu } from '../../ui/window';
 import type { Game } from '../game';
 import { StatusState } from './statusState';
 import { ItemsState } from './itemsState';
+import { SpellsState } from './spellsState';
 import { EquipState } from './equipState';
 
-/** Top-level in-game menu: Status, Items, Equip. */
+/** Top-level in-game menu: Status, Items, Spells, Equip. */
 export class MenuState implements State {
-  private readonly list = new MenuList(['Status', 'Items', 'Equip']);
+  private readonly list = new MenuList(['Status', 'Items', 'Spells', 'Equip']);
 
   constructor(private readonly game: Game) {}
 
@@ -26,6 +27,7 @@ export class MenuState implements State {
       audio.playSfx('menuConfirm');
       if (this.list.cursor === 0) stack.push(new StatusState(this.game));
       else if (this.list.cursor === 1) stack.push(new ItemsState(this.game));
+      else if (this.list.cursor === 2) stack.push(new SpellsState(this.game));
       else stack.push(new EquipState(this.game));
     } else if (input.pressed('cancel')) {
       audio.playSfx('menuCancel');
@@ -34,7 +36,7 @@ export class MenuState implements State {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    drawWindow(ctx, 8, 8, 72, 40);
+    drawWindow(ctx, 8, 8, 72, 50);
     drawMenu(ctx, this.game.font, this.list.items, this.list.cursor, 14, 16);
   }
 }

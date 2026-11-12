@@ -1,7 +1,7 @@
 import { ITEMS } from '../src/data/items';
 import { STORY } from '../src/data/story';
 import { describe, expect, it } from 'vitest';
-import { createPlayer } from '../src/game/player';
+import { applyLevel, createPlayer } from '../src/game/player';
 import { addItem, equip, equipLines, itemLines } from '../src/game/inventory';
 import { statusLines } from '../src/game/stats';
 
@@ -9,10 +9,15 @@ describe('statusLines', () => {
   it('lists the hero numbers in order', () => {
     const p = createPlayer('Wren', STORY.startingItems);
     const lines = statusLines(ITEMS, p);
-    expect(lines).toHaveLength(10);
+    expect(lines).toHaveLength(11);
     expect(lines[0]).toBe('NAME Wren');
     expect(lines[2]).toBe('HP   15/15');
     expect(lines[9]).toBe('DEF  2');
+    expect(lines[10]).toBe('NEXT 7');
+  });
+  it('shows NEXT - at the top level', () => {
+    const p = applyLevel(createPlayer('Wren', STORY.startingItems), 10);
+    expect(statusLines(ITEMS, p)[10]).toBe('NEXT -');
   });
   it('reflects equipment', () => {
     let p = createPlayer('Wren', STORY.startingItems);

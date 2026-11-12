@@ -139,6 +139,9 @@ describe('story config', () => {
     });
     expect(Object.keys(DIALOGS)).toContain(STORY.opening.dialog);
   });
+  it('home entry exists', () => {
+    expect(BY_ID[STORY.home.map]!.entry[STORY.home.entry]).toBeDefined();
+  });
   it('respawn entry and dialog exist', () => {
     expect(BY_ID[STORY.respawn.map]!.entry[STORY.respawn.entry]).toBeDefined();
     expect(Object.keys(DIALOGS)).toContain(STORY.respawn.dialog);
