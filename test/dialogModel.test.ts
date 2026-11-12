@@ -11,6 +11,10 @@ function model(script: DialogScript, name = 'Wren', cols?: number, rows?: number
     gold: () => {},
     heal: () => {},
     sfx: () => {},
+    pay: () => true,
+    rest: () => {},
+    save: () => true,
+    shop: () => {},
   };
   return new DialogModel(new ScriptRunner(script, env), cols, rows);
 }
@@ -87,6 +91,10 @@ describe('DialogModel', () => {
       gold: () => {},
       heal: () => {},
       sfx: () => {},
+      pay: () => true,
+      rest: () => {},
+      save: () => true,
+      shop: () => {},
     };
     const m = new DialogModel(new ScriptRunner(['one', { set: 'f' }, { give: 'x' }, 'two'], env));
     m.confirm();
@@ -152,6 +160,10 @@ describe('DialogModel.skipAll', () => {
       gold: (n) => log.push('gold:' + n),
       heal: () => log.push('heal'),
       sfx: (id) => log.push('sfx:' + id),
+      pay: () => true,
+      rest: () => {},
+      save: () => true,
+      shop: () => {},
     };
     return { log, m: new DialogModel(new ScriptRunner(script, env)) };
   }
@@ -216,7 +228,7 @@ describe('DialogModel choice with a question', () => {
 
   it('confirm while typing only reveals the rest', () => {
     const sets: string[] = [];
-    const env: ScriptEnv = { name: 'Wren', has: () => false, set: (f) => sets.push(f), give: () => true, gold: () => {}, heal: () => {}, sfx: () => {} };
+    const env: ScriptEnv = { name: 'Wren', has: () => false, set: (f) => sets.push(f), give: () => true, gold: () => {}, heal: () => {}, sfx: () => {}, pay: () => true, rest: () => {}, save: () => true, shop: () => {} };
     const m2 = new DialogModel(new ScriptRunner([{ choice: ['Yes', 'No'], ask: 'Equip it?', yes: [{ set: 'y' }], no: [] }], env));
     for (let i = 0; i < 3; i++) m2.tick();
     m2.confirm();
@@ -242,7 +254,7 @@ describe('DialogModel choice with a question', () => {
 
   it('skipAll on a typing question answers No once', () => {
     const log: string[] = [];
-    const env: ScriptEnv = { name: 'Wren', has: () => false, set: (f) => log.push(f), give: () => true, gold: () => {}, heal: () => {}, sfx: () => {} };
+    const env: ScriptEnv = { name: 'Wren', has: () => false, set: (f) => log.push(f), give: () => true, gold: () => {}, heal: () => {}, sfx: () => {}, pay: () => true, rest: () => {}, save: () => true, shop: () => {} };
     const m = new DialogModel(new ScriptRunner([{ choice: ['Yes', 'No'], ask: 'Equip it?', yes: [{ set: 'yes' }], no: [{ set: 'no' }] }], env));
     m.tick();
     let n = 0;

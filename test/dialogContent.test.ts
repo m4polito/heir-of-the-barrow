@@ -18,6 +18,10 @@ function run(id: DialogId, flags: string[] = []) {
     gold: () => {},
     heal: () => { calls.push('heal'); },
     sfx: (s) => { calls.push(`sfx:${s}`); },
+    pay: () => true,
+    save: () => true,
+    rest: (song) => { calls.push(`rest:${song}`); },
+    shop: (id) => { calls.push(`shop:${id}`); },
   };
   const runner = new ScriptRunner(DIALOGS[id], env);
   const steps: ScriptStep[] = [];
@@ -36,7 +40,9 @@ function strings(script: DialogScript): string[] {
     for (const n of nodes as DialogNode[]) {
       if (typeof n === 'string') out.push(n);
       else if ('if' in n) { walk(n.then); if (n.else) walk(n.else); }
-      else if ('choice' in n) { out.push(...n.choice); walk(n.yes); walk(n.no); }
+      else if ('choice' in n) { if (n.ask) out.push(n.ask); out.push(...n.choice); walk(n.yes); walk(n.no); }
+      else if ('pay' in n) { walk(n.then); if (n.else) walk(n.else); }
+      else if ('save' in n) { walk(n.ok); walk(n.fail); }
     }
   };
   walk(script);

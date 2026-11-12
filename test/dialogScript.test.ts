@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ScriptRunner, type DialogScript, type ScriptEnv, type ScriptStep } from '../src/game/dialog/script';
 
-function makeEnv(opts: { flags?: string[]; giveResult?: boolean; name?: string } = {}) {
+function makeEnv(opts: { flags?: string[]; giveResult?: boolean; name?: string; payResult?: boolean; saveResult?: boolean } = {}) {
   const flags = new Set(opts.flags ?? []);
   const calls: string[] = [];
   const env: ScriptEnv = {
@@ -18,6 +18,16 @@ function makeEnv(opts: { flags?: string[]; giveResult?: boolean; name?: string }
     gold: (n) => calls.push(`gold:${n}`),
     heal: () => calls.push('heal'),
     sfx: (id) => calls.push(`sfx:${id}`),
+    pay: (n) => {
+      calls.push(`pay:${n}`);
+      return opts.payResult ?? true;
+    },
+    rest: (song) => calls.push(`rest:${song}`),
+    save: () => {
+      calls.push('save');
+      return opts.saveResult ?? true;
+    },
+    shop: (id) => calls.push(`shop:${id}`),
   };
   return { env, flags, calls };
 }
@@ -115,5 +125,35 @@ describe('ScriptRunner', () => {
     const r = new ScriptRunner(['{name}'], env);
     env.name = 'Bo';
     expect(r.next()).toEqual({ kind: 'text', text: 'Bo' });
+  });
+
+  it('pay runs then when it succeeds and else when it fails', () => {
+    const script: DialogScript = [{ pay: 6, then: ['a'], else: ['b'] }];
+    const yes = makeEnv({ payResult: true });
+    expect(texts(script, yes.env)).toEqual(['a']);
+    expect(yes.calls).toEqual(['pay:6']);
+    const no = makeEnv({ payResult: false });
+    expect(texts(script, no.env)).toEqual(['b']);
+    expect(no.calls).toEqual(['pay:6']);
+  });
+
+  it('a failed pay without else goes on to the next node', () => {
+    const { env } = makeEnv({ payResult: false });
+    expect(texts([{ pay: 6, then: ['a'] }, 'after'], env)).toEqual(['after']);
+  });
+
+  it('save runs ok or fail by the result', () => {
+    const script: DialogScript = [{ save: true, ok: ['w'], fail: ['f'] }];
+    expect(texts(script, makeEnv({ saveResult: true }).env)).toEqual(['w']);
+    expect(texts(script, makeEnv({ saveResult: false }).env)).toEqual(['f']);
+  });
+
+  it('shop and rest call the env once each, in order, silently', () => {
+    const { env, calls } = makeEnv();
+    const r = new ScriptRunner(['x', { shop: 's' }, { rest: 'r' }, 'y'], env);
+    expect(r.next()).toEqual({ kind: 'text', text: 'x' });
+    expect(calls).toEqual([]);
+    expect(r.next()).toEqual({ kind: 'text', text: 'y' });
+    expect(calls).toEqual(['shop:s', 'rest:r']);
   });
 });

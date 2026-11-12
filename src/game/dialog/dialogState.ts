@@ -7,6 +7,13 @@ import type { Game } from '../game';
 import { DialogModel } from './model';
 import { ScriptRunner, type DialogScript, type ScriptEnv } from './script';
 
+/** What the dialog hands to whoever opened it; each is optional. */
+export interface DialogServices {
+  shop(id: string): void;
+  rest(song: string): void;
+  save(): boolean;
+}
+
 /** Modal dialog box over the state beneath it. Constructing one never touches the DOM. */
 export class DialogState implements State {
   private readonly model: DialogModel;
@@ -18,10 +25,11 @@ export class DialogState implements State {
   constructor(
     private readonly game: Game,
     script: DialogScript,
-    opts: { onDone?: () => void; onChoice?: (answer: boolean) => void } = {},
+    opts: { onDone?: () => void; onChoice?: (answer: boolean) => void; services?: Partial<DialogServices> } = {},
   ) {
     this.onDone = opts.onDone;
     this.onChoice = opts.onChoice;
+    const services = opts.services ?? {};
     const env: ScriptEnv = {
       name: game.player.name,
       has: (flag) => hasFlag(game.player, flag),
@@ -41,6 +49,19 @@ export class DialogState implements State {
       },
       sfx: (id) => {
         if (!this.muted) game.audio.playSfx(id);
+      },
+      pay: (n) => {
+        if (game.player.gold < n) return false;
+        game.player = { ...game.player, gold: game.player.gold - n };
+        return true;
+      },
+      rest: (song) => {
+        game.player = { ...game.player, hp: game.player.maxHp, mp: game.player.maxMp };
+        if (!this.muted) services.rest?.(song);
+      },
+      save: () => services.save?.() ?? false,
+      shop: (id) => {
+        if (!this.muted) services.shop?.(id);
       },
     };
     this.model = new DialogModel(new ScriptRunner(script, env));
