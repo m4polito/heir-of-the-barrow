@@ -130,7 +130,11 @@ export class BattleState implements State {
         frames: outcome === 'lost' ? 30 : 12,
         onMid: () => {
           stack.remove(this);
-          this.game.player = settleBattle(this.game.player, this._battle.heroHp, this._battle.reward);
+          this.game.player = settleBattle(
+            this.game.player,
+            { hp: this._battle.heroHp, mp: this.game.player.mp, itemsUsed: [] },
+            this._battle.reward,
+          );
           this.onEnd(outcome);
         },
       }),
