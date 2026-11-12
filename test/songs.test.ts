@@ -44,4 +44,15 @@ describe('SONGS.title', () => {
     expect(song.tracks.map((t) => t.channel)).toEqual(['p1', 'p2', 'tri']);
     expect([undefined, 0]).toContain(song.loopFrom);
   });
+
+  it('pins each track channel, duty and volume', () => {
+    const [p1, p2, tri] = song.tracks;
+    expect([p1!.channel, p1!.duty, p1!.vol]).toEqual(['p1', 0.5, 11]);
+    expect([p2!.channel, p2!.duty, p2!.vol]).toEqual(['p2', 0.25, 7]);
+    expect([tri!.channel, tri!.duty, tri!.vol]).toEqual(['tri', undefined, 15]);
+  });
+
+  it('ends the drone on F2 so the last bar sounds as F', () => {
+    expect(song.tracks[2]!.rows[240]).toBe('F2');
+  });
 });

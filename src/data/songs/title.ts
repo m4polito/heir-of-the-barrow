@@ -62,18 +62,19 @@ finalCounter[14] = 'off';
 
 const counter = flat([
   pair('F3', 'A3'), pair('F4', 'D4'), pair('D4', 'Bb3'), pair('C#4', 'E4'),
-  pair('A3', 'C4'), pair('E4', 'B3'), pair('F4', 'A4'), pair('G4', 'F4'),
-  pair('F4', 'D4'), pair('C4', 'F4'), pair('A4', 'F4'), pair('G4', 'E4'),
-  pair('C4', 'E4'), pair('G4', 'B4'), pair('A4', 'Bb4'), finalCounter,
+  pair('A3', 'C4'), pair('E4', 'C4'), pair('F4', 'A4'), pair('C#5', 'A4'),
+  pair('F4', 'D4'), pair('C4', 'F4'), pair('A4', 'F4'), pair('A4', 'C#4'),
+  pair('C4', 'E4'), pair('G4', 'C5'), pair('A4', 'Bb4'), finalCounter,
 ]);
 
-/** Drone: D2 re-struck every four bars for twelve bars, then F2 and C3 in the major. */
+/** Drone: D2 re-struck every four bars for twelve bars, then F2, C3, F2 in the major. */
 const drone: Row[] = new Array<Row>(256).fill(null);
 drone[0] = 'D2';
 drone[64] = 'D2';
 drone[128] = 'D2';
 drone[192] = 'F2';
 drone[224] = 'C3';
+drone[240] = 'F2';
 drone[255] = 'off';
 
 const tracks: Track[] = [

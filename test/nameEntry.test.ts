@@ -119,6 +119,20 @@ function runTransition(stack: StateStack): void {
   for (let i = 0; i < 40 && stack.top instanceof TransitionState; i++) stack.update(keys());
 }
 
+describe('NameEntryModel spaces', () => {
+  it('a spaces-only name falls back to the default', () => {
+    const m = new NameEntryModel('Wren');
+    m.cy = 4;
+    m.cx = 10; // the space cell
+    m.confirm();
+    m.confirm();
+    expect(m.name).toBe('  ');
+    m.move(0, 1); // clamps to END
+    expect(m.confirm()).toBe('end');
+    expect(m.finalName).toBe('Wren');
+  });
+});
+
 describe('new-game flow', () => {
   it('title confirm opens name entry', () => {
     const { stack } = setup();

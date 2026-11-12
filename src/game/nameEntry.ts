@@ -69,7 +69,7 @@ export class NameEntryModel {
   }
 
   get finalName(): string {
-    return this.name.length > 0 ? this.name : this.defaultName;
+    return this.name.trim().length > 0 ? this.name : this.defaultName;
   }
 }
 
