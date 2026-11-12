@@ -36,15 +36,15 @@ export function buildFontSheet(palette: readonly string[]): HTMLCanvasElement {
 export class Font {
   constructor(private readonly sheet: HTMLCanvasElement) {}
 
-  drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number): void {
+  drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, scale = 1): void {
     const chars = Array.from(text);
     for (let i = 0; i < chars.length; i++) {
       const gi = glyphIndex(chars[i] as string);
-      ctx.drawImage(this.sheet, gi * GLYPH_W, 0, GLYPH_W, GLYPH_H, x + i * GLYPH_W, y, GLYPH_W, GLYPH_H);
+      ctx.drawImage(this.sheet, gi * GLYPH_W, 0, GLYPH_W, GLYPH_H, x + i * GLYPH_W * scale, y, GLYPH_W * scale, GLYPH_H * scale);
     }
   }
 
-  measure(text: string): number {
-    return Array.from(text).length * GLYPH_W;
+  measure(text: string, scale = 1): number {
+    return Array.from(text).length * GLYPH_W * scale;
   }
 }
