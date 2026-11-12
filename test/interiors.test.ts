@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAPS } from '../src/data/maps';
 import { DIALOGS } from '../src/data/dialog/hollowmere';
+import { NPC_SPRITES } from '../src/data/sprites/npcs';
 import { STORY } from '../src/data/story';
 import { TILE_IDS } from '../src/data/tiles';
 import { isWalkable, warpAt, type GameMap } from '../src/game/map';
@@ -8,7 +9,6 @@ import { isWalkable, warpAt, type GameMap } from '../src/game/map';
 const BY_ID: Record<string, GameMap> = MAPS;
 const ALL = Object.entries(BY_ID);
 const INTERIORS = ALL.filter(([id]) => id !== 'hollowmere');
-const SPRITES = ['elder', 'adult', 'smith', 'child', 'guard', 'squire'];
 const key = (x: number, y: number) => `${x},${y}`;
 
 function reach(map: GameMap, sx: number, sy: number): Set<string> {
@@ -93,7 +93,7 @@ describe('npc placements', () => {
     for (const [, map] of ALL)
       for (const n of map.npcs) {
         expect(Object.keys(DIALOGS)).toContain(n.dialog);
-        expect(SPRITES).toContain(n.sprite);
+        expect(Object.keys(NPC_SPRITES)).toContain(n.sprite);
       }
   });
   it('places all nine townsfolk once', () => {
