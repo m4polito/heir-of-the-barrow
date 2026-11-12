@@ -94,6 +94,35 @@ describe('sequencer', () => {
     expect(apu.calls).toHaveLength(n);
   });
 
+  it('loop: false plays once and ends without stopAll', () => {
+    const apu = new FakeApu();
+    const seq = new Sequencer(apu);
+    const rows = ['C4', 'D4', 'E4', 'off'];
+    seq.play({ id: 's', tempo: 240, loop: false, tracks: [{ channel: 'p1', rows }] }, 0);
+    seq.schedule(100);
+    expect(apu.calls.filter((c) => c.kind === 'on')).toHaveLength(3);
+    expect(apu.calls.filter((c) => c.kind === 'off')).toHaveLength(1);
+    expect(apu.calls.filter((c) => c.kind === 'stop')).toHaveLength(1);
+    expect(seq.playing).toBe(false);
+    const n = apu.calls.length;
+    seq.schedule(200);
+    expect(apu.calls).toHaveLength(n);
+  });
+
+  it('without loop the song restarts at row 0', () => {
+    const apu = new FakeApu();
+    const seq = new Sequencer(apu);
+    seq.play({ id: 's', tempo: 240, tracks: [{ channel: 'p1', rows: ['C4', 'D4', 'E4', 'off'] }] }, 0);
+    seq.schedule(1);
+    const ons = apu.calls.filter((c) => c.kind === 'on');
+    expect(ons.filter((c) => Math.abs(c.freq! - C4) < 0.1).length).toBeGreaterThan(1);
+    expect(seq.playing).toBe(true);
+  });
+
+  it('validateSong rejects loop: false with loopFrom', () => {
+    expect(() => validateSong({ id: 's', tempo: 120, loop: false, loopFrom: 0, tracks: [{ channel: 'p1', rows: ['C4', 'D4'] }] })).toThrow();
+  });
+
   it('stop calls stopAll and ends playing', () => {
     const apu = new FakeApu();
     const seq = new Sequencer(apu);

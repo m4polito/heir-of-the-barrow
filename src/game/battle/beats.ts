@@ -1,8 +1,9 @@
+import type { SfxId } from '../../data/sfx';
 import { wrapText } from '../../ui/wrap';
 
 export interface Beat {
   text: string;
-  sfx?: string;
+  sfx?: SfxId;
   fx?: 'shake' | 'flash';
   song?: string;
   /** Hero HP to display from this beat on. */
