@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readMutePref, AudioManager } from '../src/engine/audio/audio';
+import { SfxPlayer } from '../src/engine/audio/sfx';
+import { SFX } from '../src/data/sfx';
 import { Sequencer, type Song } from '../src/engine/audio/sequencer';
 
 describe('readMutePref', () => {
@@ -34,6 +36,7 @@ describe('AudioManager', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('unlocks synchronously inside the keydown handler, once', async () => {
@@ -83,5 +86,19 @@ describe('AudioManager', () => {
     audio.playSong(b);
     expect(play).toHaveBeenCalledTimes(2);
     vi.restoreAllMocks();
+  });
+
+  it('playSfx is a no-op before unlock', () => {
+    const audio = new AudioManager(null);
+    expect(() => audio.playSfx('blip')).not.toThrow();
+  });
+
+  it('playSfx plays the effect after unlock', () => {
+    const play = vi.spyOn(SfxPlayer.prototype, 'play').mockImplementation(() => {});
+    const audio = new AudioManager(null);
+    audio.unlock();
+    audio.playSfx('blip');
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(play.mock.calls[0]![0]).toBe(SFX.blip);
   });
 });
