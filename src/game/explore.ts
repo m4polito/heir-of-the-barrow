@@ -24,7 +24,7 @@ export class ExploreState implements State {
   private _hero: HeroState;
   /** Set whenever a map is entered; consumed in Task 10. */
   private enteredMap: boolean;
-  npcs: NpcState[];
+  readonly npcs: NpcState[];
 
   constructor(
     private readonly game: Game,
@@ -67,7 +67,7 @@ export class ExploreState implements State {
         onMid: () => {
           this._map = target.map;
           this._hero = target.hero;
-          this.npcs = target.map.npcs.map(createNpc);
+          this.npcs.splice(0, this.npcs.length, ...target.map.npcs.map(createNpc));
           this.playMapSong();
           this.enteredMap = true;
         },
@@ -100,14 +100,18 @@ export class ExploreState implements State {
         return true;
       },
     );
-    this.npcs = this.npcs.map((n) =>
-      updateNpc(n, this.game.rng, (x, y) =>
-        isWalkable(map, x, y) &&
-        !this.npcAt(x, y, n) &&
-        !(this._hero.x === x && this._hero.y === y) &&
-        !this.reserved(x, y),
-      ),
-    );
+    for (let i = 0; i < this.npcs.length; i++) {
+      const n = this.npcs[i]!;
+      this.npcs[i] = updateNpc(
+        n,
+        this.game.rng,
+        (x, y) =>
+          isWalkable(map, x, y) &&
+          !this.npcAt(x, y, n) &&
+          !(this._hero.x === x && this._hero.y === y) &&
+          !this.reserved(x, y),
+      );
+    }
   }
 
   render(ctx: CanvasRenderingContext2D, frame: number): void {
