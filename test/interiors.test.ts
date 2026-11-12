@@ -116,24 +116,23 @@ describe('story config', () => {
   });
 });
 
-// Task 14 cleanup list: see docs/superpowers/notes/2026-11-11-phase-2-carry-forward.md
-const EXCLUDED: string[] = [];
-
 // Vite reads the sources as raw text (the project has no Node typings, so no fs).
-const SOURCES = import.meta.glob<string>(['../src/game/**/*.ts', '../src/engine/**/*.ts'], {
+const SOURCES = import.meta.glob<string>(['../src/game/**/*.ts', '../src/engine/**/*.ts', '../src/ui/**/*.ts'], {
   query: '?raw',
   import: 'default',
   eager: true,
 });
 
 describe('story-free engine', () => {
-  it('src/game and src/engine mention no story names', () => {
-    const banned = ["'hollowmere'", "'elder_house'", "'maren", "'aldric", "'intro_done'"];
-    const files = Object.entries(SOURCES);
+  const files = Object.entries(SOURCES);
+  it('src/game, src/engine and src/ui mention no story names', () => {
+    const banned = ["'hollowmere'", "'elder_house'", "'maren", "'aldric", "'intro_done'", 'dimming'];
     expect(files.length).toBeGreaterThan(10);
-    for (const [file, text] of files) {
-      if (EXCLUDED.some((e) => file.endsWith(e))) continue;
+    for (const [file, text] of files)
       for (const b of banned) expect(text.includes(b), `${file} contains ${b}`).toBe(false);
-    }
+  });
+  it('imports no story data tables, not even as types', () => {
+    const forbidden = /(?:from|import)\s*\(?\s*['"][^'"]*data\/(items|maps|dialog|songs|story)\b/;
+    for (const [file, text] of files) expect(forbidden.test(text), `${file} imports story data`).toBe(false);
   });
 });

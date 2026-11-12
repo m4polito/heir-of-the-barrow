@@ -18,9 +18,9 @@ export class EquipState implements State {
 
   /** Rebuilds slot rows then candidate rows from the player, keeping the cursor in range. */
   private sync(): void {
-    const { slots, candidates } = equipLines(this.game.player);
+    const { slots, candidates } = equipLines(this.game.items, this.game.player);
     this.candidates = candidates;
-    const items = [...slots, ...candidates.map(itemName)];
+    const items = [...slots, ...candidates.map((id) => itemName(this.game.items, id))];
     const cursor = this.list.cursor;
     this.list = new MenuList(items);
     this.list.cursor = Math.min(cursor, items.length - 1);
@@ -39,8 +39,8 @@ export class EquipState implements State {
       const row = this.list.cursor;
       const r =
         row < SLOTS.length
-          ? unequip(this.game.player, SLOTS[row]!)
-          : equip(this.game.player, this.candidates[row - SLOTS.length] as Parameters<typeof equip>[1]);
+          ? unequip(this.game.items, this.game.player, SLOTS[row]!)
+          : equip(this.game.items, this.game.player, this.candidates[row - SLOTS.length]!);
       if (r.ok) {
         this.game.player = r.player;
         audio.playSfx('menuConfirm');

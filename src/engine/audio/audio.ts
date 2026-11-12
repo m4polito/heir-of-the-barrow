@@ -3,11 +3,10 @@ import { SfxPlayer } from './sfx';
 import { SFX, type SfxId } from '../../data/sfx';
 import { Sequencer, type Song } from './sequencer';
 
-export const MUTE_KEY = 'dimming.mute';
-
-export function readMutePref(storage: Pick<Storage, 'getItem'> | null): boolean {
+export function readMutePref(storage: Pick<Storage, 'getItem'> | null, key?: string): boolean {
+  if (key === undefined) return false;
   try {
-    return storage?.getItem(MUTE_KEY) === '1';
+    return storage?.getItem(key) === '1';
   } catch {
     return false;
   }
@@ -31,8 +30,14 @@ export class AudioManager {
   private currentSongId: string | null = null;
   private mutedPref: boolean;
 
-  constructor(private readonly storage: Storage | null) {
-    this.mutedPref = readMutePref(storage);
+  private readonly muteKey: string | undefined;
+
+  constructor(
+    private readonly storage: Storage | null,
+    opts: { muteKey?: string } = {},
+  ) {
+    this.muteKey = opts.muteKey;
+    this.mutedPref = readMutePref(storage, this.muteKey);
   }
 
   get unlocked(): boolean {
@@ -135,7 +140,7 @@ export class AudioManager {
   toggleMute(): boolean {
     this.mutedPref = !this.mutedPref;
     try {
-      this.storage?.setItem(MUTE_KEY, this.mutedPref ? '1' : '0');
+      if (this.muteKey !== undefined) this.storage?.setItem(this.muteKey, this.mutedPref ? '1' : '0');
     } catch {
       // storage unavailable; preference lives in memory only
     }

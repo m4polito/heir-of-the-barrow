@@ -1,10 +1,9 @@
 import { LEVELS } from '../data/levels';
-import type { ItemId } from '../data/items';
 
 export type EquipSlot = 'weapon' | 'armor' | 'shield';
 
 export interface InventorySlot {
-  item: ItemId;
+  item: string;
   count: number;
 }
 
@@ -19,12 +18,12 @@ export interface PlayerState {
   agi: number;
   maxHp: number;
   maxMp: number;
-  equipment: Partial<Record<EquipSlot, ItemId>>;
+  equipment: Partial<Record<EquipSlot, string>>;
   inventory: InventorySlot[];
   flags: string[];
 }
 
-export function createPlayer(name: string): PlayerState {
+export function createPlayer(name: string, startingItems: readonly { item: string; count: number }[]): PlayerState {
   const row = LEVELS[0]!;
   return {
     name,
@@ -38,7 +37,7 @@ export function createPlayer(name: string): PlayerState {
     maxHp: row.maxHp,
     maxMp: row.maxMp,
     equipment: {},
-    inventory: [{ item: 'herb', count: 1 }],
+    inventory: startingItems.map((s) => ({ item: s.item, count: s.count })),
     flags: [],
   };
 }

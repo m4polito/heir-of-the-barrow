@@ -119,7 +119,7 @@ export class NameEntryState implements State {
   private finish(): void {
     this.leaving = true;
     const game = this.game;
-    game.player = createPlayer(this.model.finalName);
+    game.player = createPlayer(this.model.finalName, game.story.startingItems);
     game.stack.push(
       new TransitionState(game.stack, {
         onMid: () =>

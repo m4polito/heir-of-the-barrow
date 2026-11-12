@@ -1,3 +1,4 @@
+import { ITEMS } from '../src/data/items';
 import { describe, expect, it } from 'vitest';
 import { NAME_GRID, NAME_MAX, NameEntryModel, NameEntryState } from '../src/game/nameEntry';
 import { TitleState } from '../src/game/title';
@@ -107,8 +108,9 @@ function setup() {
     maps: MAPS,
     dialogs: DIALOGS,
     songs: SONGS,
+    items: ITEMS,
     story: STORY,
-    player: createPlayer(STORY.defaultHeroName),
+    player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
   });
   const title = new TitleState(game);
   stack.push(title);

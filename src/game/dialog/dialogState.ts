@@ -2,7 +2,6 @@ import type { State } from '../../engine/state';
 import type { Input } from '../../engine/input';
 import { drawWindow } from '../../ui/window';
 import { addItem } from '../inventory';
-import type { ItemId } from '../../data/items';
 import { hasFlag, setFlag } from '../player';
 import type { Game } from '../game';
 import { DialogModel } from './model';
@@ -29,7 +28,7 @@ export class DialogState implements State {
         game.player = setFlag(game.player, flag);
       },
       give: (item) => {
-        const r = addItem(game.player, item as ItemId);
+        const r = addItem(game.items, game.player, item);
         if (r.ok) game.player = r.player;
         return r.ok;
       },

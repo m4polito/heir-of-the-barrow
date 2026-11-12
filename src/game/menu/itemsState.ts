@@ -10,12 +10,12 @@ export class ItemsState implements State {
   private list: MenuList;
 
   constructor(private readonly game: Game) {
-    this.list = new MenuList(itemLines(game.player));
+    this.list = new MenuList(itemLines(game.items, game.player));
   }
 
   /** Rebuilds the list from the player, keeping the cursor in range. */
   private sync(): void {
-    const items = itemLines(this.game.player);
+    const items = itemLines(this.game.items, this.game.player);
     const cursor = Math.min(this.list.cursor, items.length - 1);
     this.list = new MenuList(items);
     this.list.cursor = Math.max(0, cursor);
@@ -34,7 +34,7 @@ export class ItemsState implements State {
     if (input.pressed('confirm')) {
       const slot = player.inventory[this.list.cursor];
       if (!slot) return;
-      if (isEquipment(slot.item)) {
+      if (isEquipment(this.game.items, slot.item)) {
         audio.playSfx('menuConfirm');
         let yes = false;
         stack.push(
@@ -44,7 +44,7 @@ export class ItemsState implements State {
             },
             onDone: () => {
               if (!yes) return;
-              const r = equip(this.game.player, slot.item);
+              const r = equip(this.game.items, this.game.player, slot.item);
               if (r.ok) this.game.player = r.player;
               else this.game.audio.playSfx('error');
             },

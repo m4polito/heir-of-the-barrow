@@ -1,3 +1,5 @@
+import type { ItemDef } from '../game/items';
+
 export type ItemId =
   | 'aldric_shield'
   | 'wooden_club'
@@ -9,18 +11,6 @@ export type ItemId =
   | 'herb'
   | 'torch'
   | 'journal_page';
-
-export type ItemKind = 'weapon' | 'armor' | 'shield' | 'consumable' | 'key';
-
-export interface ItemDef {
-  id: ItemId;
-  name: string;
-  kind: ItemKind;
-  atk?: number;
-  def?: number;
-  price: number;
-  stack: number;
-}
 
 export const ITEMS: Record<ItemId, ItemDef> = {
   aldric_shield: { id: 'aldric_shield', name: "Aldric's Shield", kind: 'shield', def: 4, price: 0, stack: 1 },

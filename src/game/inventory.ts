@@ -1,5 +1,4 @@
-import { ITEMS } from '../data/items';
-import type { ItemId } from '../data/items';
+import type { ItemTable } from './items';
 import type { EquipSlot, InventorySlot, PlayerState } from './player';
 
 export const INVENTORY_SLOTS = 8;
@@ -9,8 +8,8 @@ export interface InvResult {
   ok: boolean;
 }
 
-export function addItem(p: PlayerState, id: ItemId, n = 1): InvResult {
-  const def = ITEMS[id] as (typeof ITEMS)[ItemId] | undefined;
+export function addItem(items: ItemTable, p: PlayerState, id: string, n = 1): InvResult {
+  const def = items[id];
   if (!def) return { player: p, ok: false };
   const cap = def.stack;
   const inv: InventorySlot[] = p.inventory.map((s) => ({ ...s }));
@@ -32,7 +31,7 @@ export function addItem(p: PlayerState, id: ItemId, n = 1): InvResult {
   return { player: { ...p, inventory: inv }, ok: true };
 }
 
-export function removeItem(p: PlayerState, id: ItemId, n = 1): InvResult {
+export function removeItem(p: PlayerState, id: string, n = 1): InvResult {
   const total = p.inventory.reduce((sum, s) => (s.item === id ? sum + s.count : sum), 0);
   if (total < n) return { player: p, ok: false };
   let left = n;
@@ -49,25 +48,25 @@ export function removeItem(p: PlayerState, id: ItemId, n = 1): InvResult {
   return { player: { ...p, inventory: inv }, ok: true };
 }
 
-export function equip(p: PlayerState, id: ItemId): InvResult {
-  const kind = ITEMS[id].kind;
+export function equip(items: ItemTable, p: PlayerState, id: string): InvResult {
+  const kind = items[id]?.kind;
   if (kind !== 'weapon' && kind !== 'armor' && kind !== 'shield') return { player: p, ok: false };
   const removed = removeItem(p, id);
   if (!removed.ok) return { player: p, ok: false };
   let next = removed.player;
   const old = next.equipment[kind];
   if (old) {
-    const back = addItem(next, old);
+    const back = addItem(items, next, old);
     if (!back.ok) return { player: p, ok: false };
     next = back.player;
   }
   return { player: { ...next, equipment: { ...next.equipment, [kind]: id } }, ok: true };
 }
 
-export function unequip(p: PlayerState, slot: EquipSlot): InvResult {
+export function unequip(items: ItemTable, p: PlayerState, slot: EquipSlot): InvResult {
   const id = p.equipment[slot];
   if (!id) return { player: p, ok: false };
-  const added = addItem(p, id);
+  const added = addItem(items, p, id);
   if (!added.ok) return { player: p, ok: false };
   const equipment = { ...added.player.equipment };
   delete equipment[slot];
@@ -76,30 +75,30 @@ export function unequip(p: PlayerState, slot: EquipSlot): InvResult {
 
 const EQUIP_SLOTS: EquipSlot[] = ['weapon', 'armor', 'shield'];
 
-export function itemName(id: string): string {
-  return (ITEMS as Record<string, { name: string } | undefined>)[id]?.name ?? id;
+export function itemName(items: ItemTable, id: string): string {
+  return items[id]?.name ?? id;
 }
 
-export function isEquipment(id: string): boolean {
-  const kind = (ITEMS as Record<string, { kind: string } | undefined>)[id]?.kind;
+export function isEquipment(items: ItemTable, id: string): boolean {
+  const kind = items[id]?.kind;
   return kind === 'weapon' || kind === 'armor' || kind === 'shield';
 }
 
-export function isConsumable(id: string): boolean {
-  return (ITEMS as Record<string, { kind: string } | undefined>)[id]?.kind === 'consumable';
+export function isConsumable(items: ItemTable, id: string): boolean {
+  return items[id]?.kind === 'consumable';
 }
 
-export function itemLines(p: PlayerState): string[] {
+export function itemLines(items: ItemTable, p: PlayerState): string[] {
   if (p.inventory.length === 0) return ['Nothing'];
-  return p.inventory.map((s) => (isConsumable(s.item) ? `${itemName(s.item)} x${s.count}` : itemName(s.item)));
+  return p.inventory.map((s) => (isConsumable(items, s.item) ? `${itemName(items, s.item)} x${s.count}` : itemName(items, s.item)));
 }
 
-export function equipLines(p: PlayerState): { slots: string[]; candidates: string[] } {
+export function equipLines(items: ItemTable, p: PlayerState): { slots: string[]; candidates: string[] } {
   const label = { weapon: 'WEAPON: ', armor: 'ARMOR:  ', shield: 'SHIELD: ' };
   const slots = EQUIP_SLOTS.map((s) => {
     const id = p.equipment[s];
-    return label[s] + (id ? itemName(id) : 'none');
+    return label[s] + (id ? itemName(items, id) : 'none');
   });
-  const candidates = p.inventory.filter((s) => isEquipment(s.item)).map((s) => s.item as string);
+  const candidates = p.inventory.filter((s) => isEquipment(items, s.item)).map((s) => s.item);
   return { slots, candidates };
 }

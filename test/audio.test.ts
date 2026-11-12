@@ -6,11 +6,12 @@ import { Sequencer, type Song } from '../src/engine/audio/sequencer';
 
 describe('readMutePref', () => {
   it('reads the stored flag defensively', () => {
-    expect(readMutePref({ getItem: () => '1' })).toBe(true);
-    expect(readMutePref({ getItem: () => '0' })).toBe(false);
-    expect(readMutePref({ getItem: () => null })).toBe(false);
-    expect(readMutePref({ getItem: () => { throw new Error('x'); } })).toBe(false);
-    expect(readMutePref(null)).toBe(false);
+    expect(readMutePref({ getItem: () => '1' }, 'k')).toBe(true);
+    expect(readMutePref({ getItem: () => '0' }, 'k')).toBe(false);
+    expect(readMutePref({ getItem: () => null }, 'k')).toBe(false);
+    expect(readMutePref({ getItem: () => { throw new Error('x'); } }, 'k')).toBe(false);
+    expect(readMutePref(null, 'k')).toBe(false);
+    expect(readMutePref({ getItem: () => '1' })).toBe(false);
   });
 });
 
@@ -65,11 +66,21 @@ describe('AudioManager', () => {
     const audio = new AudioManager({
       getItem: (k: string) => store.get(k) ?? null,
       setItem: (k: string, v: string) => { store.set(k, v); },
-    } as Storage);
+    } as Storage, { muteKey: 'test.mute' });
     expect(audio.muted).toBe(false);
     expect(audio.toggleMute()).toBe(true);
-    expect(store.get('dimming.mute')).toBe('1');
+    expect(store.get('test.mute')).toBe('1');
     expect(audio.toggleMute()).toBe(false);
+  });
+
+  it('toggleMute does not touch storage without a muteKey', () => {
+    const store = new Map<string, string>();
+    const audio = new AudioManager({
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => { store.set(k, v); },
+    } as Storage);
+    expect(audio.toggleMute()).toBe(true);
+    expect(store.size).toBe(0);
   });
 
   it('playSong is a no-op for the song already playing', () => {

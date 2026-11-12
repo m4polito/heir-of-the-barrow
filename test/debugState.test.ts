@@ -1,3 +1,4 @@
+import { ITEMS } from '../src/data/items';
 import { describe, expect, it } from 'vitest';
 import { StateStack } from '../src/engine/state';
 import type { Input } from '../src/engine/input';
@@ -27,8 +28,9 @@ function setup() {
     maps: MAPS,
     dialogs: DIALOGS,
     songs: SONGS,
+    items: ITEMS,
     story: STORY,
-    player: createPlayer(STORY.defaultHeroName),
+    player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
   });
   stack.push(new ExploreState(game, STORY.newGame.map, STORY.newGame.entry));
   const dbg = new DebugState(game);

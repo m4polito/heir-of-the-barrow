@@ -1,3 +1,4 @@
+import { ITEMS } from '../src/data/items';
 import { describe, expect, it } from 'vitest';
 import { StateStack } from '../src/engine/state';
 import type { Input } from '../src/engine/input';
@@ -31,8 +32,9 @@ function setup() {
     maps: MAPS,
     dialogs: DIALOGS,
     songs: SONGS,
+    items: ITEMS,
     story: STORY,
-    player: setFlag(createPlayer(STORY.defaultHeroName), STORY.opening.flag),
+    player: setFlag(createPlayer(STORY.defaultHeroName, STORY.startingItems), STORY.opening.flag),
   });
   const explore = new ExploreState(game, STORY.newGame.map, STORY.newGame.entry);
   stack.push(explore);
@@ -79,7 +81,7 @@ describe('menu from explore', () => {
 describe('items and equip', () => {
   function withShield() {
     const s = setup();
-    s.game.player = addItem(s.game.player, 'aldric_shield').player;
+    s.game.player = addItem(ITEMS, s.game.player, 'aldric_shield').player;
     return s;
   }
 
