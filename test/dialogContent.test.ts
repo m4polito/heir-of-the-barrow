@@ -108,6 +108,10 @@ describe('Hollowmere dialog content', () => {
     expect(text).toContain('Wren');
   });
 
+  it.each([['garrik', 'forge'], ['odo', 'goods']] as const)('%s opens the %s shop once', (id, shop) => {
+    expect(run(id).calls.filter((c) => c.startsWith('shop:'))).toEqual([`shop:${shop}`]);
+  });
+
   it('carries no name tags in any string', () => {
     for (const id of IDS) for (const s of strings(DIALOGS[id])) expect(s).not.toMatch(/^[A-Z][a-z]+: /);
   });

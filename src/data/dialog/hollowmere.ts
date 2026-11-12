@@ -74,13 +74,15 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
 
   garrik: [
     'Aldric was a fool. I am Garrik the smith, and I say so to anyone.',
+    'You may need what a fool needs. Look over the racks.',
+    { shop: 'forge' },
     'He left a wife and a child for a hole in the ground.',
     'I will not make that mistake. I make blades and sleep sound.',
-    'You may need what a fool needs. Look over the racks.',
   ],
 
   odo: [
     "Odo's Goods, and Odo himself. Herbs and torches, that is all I carry.",
+    { shop: 'goods' },
     'Prices climb with the Dimming. I did not set them. The cold did.',
   ],
 

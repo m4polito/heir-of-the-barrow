@@ -9,7 +9,8 @@ import { createHero, updateHero, heroPixelOffset, facingTile, opposite, heroIdle
 import { createNpc, updateNpc, npcPixelOffset, type NpcState } from './npc';
 import { cameraOrigin } from './camera';
 import { TransitionState } from './transition';
-import { DialogState } from './dialog/dialogState';
+import { DialogState, type DialogServices } from './dialog/dialogState';
+import { ShopState } from './shopState';
 import { MenuState } from './menu/menuState';
 import { setFlag, hasFlag, applyDeath } from './player';
 import { encounterStep, ENCOUNTER_GRACE } from './encounter';
@@ -18,11 +19,20 @@ import { BattleState } from './battle/battleState';
 import type { BattleOutcome } from './battle/battle';
 import type { Game } from './game';
 
-function lookup(game: Game, mapId: string, entry: string): { map: GameMap; hero: HeroState } {
+type Entry = string | { x: number; y: number; facing: Dir };
+
+function lookup(game: Game, mapId: string, entry: Entry): { map: GameMap; hero: HeroState } {
   const map = game.maps[mapId];
   if (!map) throw new Error(`Unknown map: ${mapId}`);
-  const e = map.entry[entry];
-  if (!e) throw new Error(`Unknown entry '${entry}' on map ${mapId}`);
+  let e: { x: number; y: number; facing: Dir } | undefined;
+  if (typeof entry === 'string') {
+    e = map.entry[entry];
+    if (!e) throw new Error(`Unknown entry '${entry}' on map ${mapId}`);
+  } else {
+    e = entry;
+    const inMap = e.x >= 0 && e.y >= 0 && e.x < map.width && e.y < map.height;
+    if (!inMap || !isWalkable(map, e.x, e.y)) throw new Error(`Bad position on map ${mapId}`);
+  }
   if (!game.songs[map.music]) throw new Error(`Unknown song '${map.music}' for map ${mapId}`);
   return { map, hero: createHero(e.x, e.y, e.facing) };
 }
@@ -41,7 +51,7 @@ export class ExploreState implements State {
   constructor(
     private readonly game: Game,
     mapId: string,
-    entry: string,
+    entry: Entry,
     opts: { dialog?: string } = {},
   ) {
     if (opts.dialog !== undefined && !game.dialogs[opts.dialog]) {
@@ -169,12 +179,25 @@ export class ExploreState implements State {
     return s;
   }
 
+  /** What a dialog opened on this screen may ask the screen to do. */
+  private services(): Partial<DialogServices> {
+    const { game } = this;
+    return {
+      shop: (id) => {
+        const def = game.shops[id];
+        if (!def) throw new Error(`Unknown shop: ${id}`);
+        game.stack.push(new ShopState(game, def));
+      },
+    };
+  }
+
   private runAutoTrigger(): boolean {
     for (const t of this._map.triggers) {
       if (t.kind !== 'auto' || hasFlag(this.game.player, t.flag)) continue;
       const flag = t.flag;
       this.game.stack.push(
         new DialogState(this.game, this.script(t.dialog), {
+          services: this.services(),
           onDone: () => {
             this.game.player = setFlag(this.game.player, flag);
           },
@@ -193,7 +216,7 @@ export class ExploreState implements State {
     if (this.pendingDialog !== undefined) {
       const id = this.pendingDialog;
       this.pendingDialog = undefined;
-      this.game.stack.push(new DialogState(this.game, this.script(id)));
+      this.game.stack.push(new DialogState(this.game, this.script(id), { services: this.services() }));
       return;
     }
     if (input.pressed('confirm') && heroIdle(this._hero)) {
@@ -201,7 +224,7 @@ export class ExploreState implements State {
       if (npc) {
         npc.stepFrame = 0; // snap to its tile so the turn cannot shift the sprite
         npc.facing = opposite(this._hero.facing);
-        this.game.stack.push(new DialogState(this.game, this.script(npc.def.dialog)));
+        this.game.stack.push(new DialogState(this.game, this.script(npc.def.dialog), { services: this.services() }));
         return;
       }
     }
