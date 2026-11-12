@@ -44,6 +44,18 @@ Written for the next session that resumes Phase 2. Everything here was agreed wi
 - Task 4 / sequencer (pre-existing): the sequencer never clamps scheduled times to `ctx.currentTime`; after a long main-thread stall it can emit rows in the past, which with the `.value` setters can mute a late note and blip on its release. Fix: clamp or skip past-dated rows in `Sequencer.schedule` (the Phase 1 notes already list "no catch-up policy").
 - Task 4: frequency is fixed per voice; vibrato and pitch slides (spec §12.1) will need per-voice frequency automation.
 
+## Story-free engine rule: existing violations to clean up at the end of Phase 2
+
+Rule (CLAUDE.md, added after Task 4): engine and systems code (`src/engine/`, `src/game/`, `src/ui/`) must not reference story-specific names; story content lives in `src/data/`; the starting map, entry, and opening scene come from `src/data/story.ts`. Tasks 5–13 follow it (plan updated). Do not refactor these now; a cleanup task at the end of the phase handles them:
+
+- `src/game/map.ts:4` — `export type SongId = 'hollowmere'` (Phase 1). Task 9 removes it; `GameMap.music` becomes `string`.
+- `src/game/player.ts` — imports `ItemId` from `src/data/items` and types `InventorySlot.item` and `equipment` with it. Cleanup: `string`, with validation at the inventory boundary.
+- `src/game/inventory.ts` — imports `ITEMS` and `ItemId`; `addItem`/`removeItem`/`equip` take `ItemId` and index `ITEMS`. Cleanup: take `string`; look items up through an injected item table (or keep `ITEMS` as a presentation-neutral registry if the owner rules item *data* generic — the ids themselves are story names, so the union type must go).
+- `src/game/stats.ts` — imports `ITEMS` for `attackOf`/`defenseOf`. Same cleanup as inventory.
+- `src/engine/audio/audio.ts:6` — `MUTE_KEY = 'dimming.mute'` embeds the game title in engine code. Cleanup: pass the storage key prefix in from `main.ts` or `story.ts`.
+- `src/main.ts` imports `HOLLOWMERE`, `HOLLOWMERE_SONG` directly (Phase 1). `main.ts` is wiring and is allowed to import data, but Task 9 replaces these with the `STORY` config and registries anyway.
+- Tests under `test/` are outside the rule.
+
 ## Still open from Phase 1 notes (unchanged)
 
 - Hero uses six palette colours (well 6, sign 5) against spec §13's three or four; owner said the look was good, so leave unless asked.

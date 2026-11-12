@@ -17,6 +17,7 @@ When they disagree, the design doc wins. Do not restate design details here; rea
 - **Owner checks.** Manual look-and-listen checks are the owner's. Implementers list them; they never report them as passed.
 - **Tests pass before a task is done.** `npm test` and `npm run build` must be green.
 - **One commit per task.** Commit messages end with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- **Story-free engine.** Engine and systems code (src/engine/, src/game/, src/ui/) must not reference story-specific names (characters, places, items, flags). Story content lives in src/data/; the starting map, entry, and opening scene come from a single src/data/story.ts config.
 - **Art tasks** use the `pixel-art-sprites` skill in `.claude/skills/`. The plan wins on conflicts.
 
 ## Commands
