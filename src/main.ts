@@ -44,6 +44,9 @@ const game = createGame({
   story: STORY,
   player: createPlayer(STORY.defaultHeroName),
 });
+if (import.meta.env.DEV) {
+  void import('./game/debug').then((m) => m.installDebug(game));
+}
 stack.push(
   new BootState({
     font,

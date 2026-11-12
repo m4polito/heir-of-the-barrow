@@ -148,6 +148,10 @@ export class ExploreState implements State {
       this.game.stack.push(new MenuState(this.game));
       return;
     }
+    if (input.pressed('debug') && heroIdle(this._hero) && this.game.debugOpen) {
+      this.game.debugOpen();
+      return;
+    }
     const held = (a: Dir) => input.held(a);
     const map = this._map;
     this._hero = updateHero(
@@ -224,5 +228,6 @@ export class ExploreState implements State {
     });
     items.sort((a, b) => a.y - b.y || Number(a.hero) - Number(b.hero));
     for (const it of items) it.draw();
+    if (this.game.debug.noEncounters) this.game.font.drawText(ctx, 'ENC OFF', 192, 8);
   }
 }
