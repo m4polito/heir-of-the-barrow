@@ -4,6 +4,15 @@ export function computeScale(availW: number, availH: number): number {
   return Math.max(1, Math.floor(Math.min(availW / LOGICAL_W, availH / LOGICAL_H)));
 }
 
+export function computeLayout(
+  availW: number,
+  availH: number,
+  dpr: number,
+): { scale: number; cssW: number; cssH: number } {
+  const scale = computeScale(availW * dpr, availH * dpr);
+  return { scale, cssW: (LOGICAL_W * scale) / dpr, cssH: (LOGICAL_H * scale) / dpr };
+}
+
 function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D canvas context unavailable');
@@ -34,9 +43,12 @@ export class Screen {
   resize(): void {
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
-    const scale = computeScale(w, h);
+    const dpr = window.devicePixelRatio || 1;
+    const { scale, cssW, cssH } = computeLayout(w, h, dpr);
     this.visible.width = LOGICAL_W * scale;
     this.visible.height = LOGICAL_H * scale;
+    this.visible.style.width = `${cssW}px`;
+    this.visible.style.height = `${cssH}px`;
     // Resizing a canvas resets its context state.
     this.visibleCtx.imageSmoothingEnabled = false;
   }

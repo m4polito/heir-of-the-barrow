@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { advance, STEP_MS, MAX_STEPS_PER_FRAME } from '../src/engine/loop';
+import { advance, snapElapsed, STEP_MS, MAX_STEPS_PER_FRAME } from '../src/engine/loop';
 
 describe('advance', () => {
   it('runs one step for one step of elapsed time', () => {
@@ -19,5 +19,24 @@ describe('advance', () => {
     const r = advance(0, 60000);
     expect(r.steps).toBe(MAX_STEPS_PER_FRAME);
     expect(r.remainderMs).toBe(0);
+  });
+});
+
+describe('snapElapsed', () => {
+  it('snaps near-step elapsed to exactly one step', () => {
+    expect(snapElapsed(STEP_MS + 0.4)).toBe(STEP_MS);
+    expect(snapElapsed(STEP_MS - 0.9)).toBe(STEP_MS);
+  });
+  it('leaves other values unchanged', () => {
+    expect(snapElapsed(STEP_MS + 1.5)).toBe(STEP_MS + 1.5);
+    expect(snapElapsed(5)).toBe(5);
+  });
+  it('yields one step on every frame at a jittery 60 Hz', () => {
+    let acc = 0;
+    for (let i = 0; i < 120; i++) {
+      const r = advance(acc, snapElapsed(STEP_MS + 0.3));
+      acc = r.remainderMs;
+      expect(r.steps).toBe(1);
+    }
   });
 });

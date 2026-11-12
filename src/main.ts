@@ -34,14 +34,17 @@ stack.push(new BootState({ font, onStart: () => {
 
 window.addEventListener('resize', () => screen.resize());
 
+let frame = 0;
+
 startLoop(
   () => {
     input.update();
+    frame++;
     if (input.pressed('mute')) audio.toggleMute();
     stack.update(input);
   },
   () => {
-    stack.render(screen.ctx);
+    stack.render(screen.ctx, frame);
     screen.present();
   },
 );

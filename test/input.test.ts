@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Input } from '../src/engine/input';
 
 describe('Input', () => {
@@ -72,5 +72,34 @@ describe('Input', () => {
     i.keyUp('KeyW');
     i.update();
     expect(i.held('up')).toBe(true);
+  });
+});
+
+describe('Input.attach modifier chords', () => {
+  function setup() {
+    const listeners: Record<string, (e: unknown) => void> = {};
+    const win = {
+      addEventListener: (t: string, h: (e: unknown) => void) => { listeners[t] = h; },
+      removeEventListener: () => {},
+    } as unknown as Window;
+    const i = new Input();
+    i.attach(win);
+    return { i, listeners };
+  }
+  it('ignores keydown with ctrl and does not preventDefault', () => {
+    const { i, listeners } = setup();
+    const preventDefault = vi.fn();
+    listeners.keydown!({ code: 'KeyW', ctrlKey: true, preventDefault });
+    i.update();
+    expect(i.held('up')).toBe(false);
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
+  it('handles a plain keydown', () => {
+    const { i, listeners } = setup();
+    const preventDefault = vi.fn();
+    listeners.keydown!({ code: 'KeyW', preventDefault });
+    i.update();
+    expect(i.held('up')).toBe(true);
+    expect(preventDefault).toHaveBeenCalled();
   });
 });

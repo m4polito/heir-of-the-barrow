@@ -7,7 +7,7 @@ function fake(name: string, log: string[]): State {
     enter: () => log.push(`${name}.enter`),
     exit: () => log.push(`${name}.exit`),
     update: () => log.push(`${name}.update`),
-    render: () => log.push(`${name}.render`),
+    render: (_c, frame) => log.push(`${name}.render:${frame}`),
   };
 }
 const input = {} as Input;
@@ -29,8 +29,8 @@ describe('StateStack', () => {
     s.push(fake('a', log));
     s.push(fake('b', log));
     log.length = 0;
-    s.render(ctx);
-    expect(log).toEqual(['a.render', 'b.render']);
+    s.render(ctx, 7);
+    expect(log).toEqual(['a.render:7', 'b.render:7']);
   });
   it('replace exits the top then enters the new one', () => {
     const log: string[] = [];

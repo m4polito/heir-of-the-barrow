@@ -4,7 +4,7 @@ export interface State {
   enter?(): void;
   exit?(): void;
   update(input: Input): void;
-  render(ctx: CanvasRenderingContext2D): void;
+  render(ctx: CanvasRenderingContext2D, frame: number): void;
 }
 
 export class StateStack {
@@ -32,7 +32,7 @@ export class StateStack {
     this.top?.update(input);
   }
 
-  render(ctx: CanvasRenderingContext2D): void {
-    for (const s of this.states) s.render(ctx);
+  render(ctx: CanvasRenderingContext2D, frame: number): void {
+    for (const s of this.states) s.render(ctx, frame);
   }
 }

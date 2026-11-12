@@ -14,7 +14,6 @@ export class ExploreState implements State {
   private map: GameMap;
   /** Reassigned each update; callers must not assign it. */
   hero: HeroState;
-  frame = 0;
   private cache = new Map<PixelArt, HTMLCanvasElement>();
 
   constructor(deps: { map: GameMap; hero: HeroState }) {
@@ -34,12 +33,11 @@ export class ExploreState implements State {
   }
 
   update(input: Input): void {
-    this.frame++;
     const held = (a: Dir) => input.held(a);
     this.hero = updateHero(this.hero, held, this.map);
   }
 
-  render(ctx: CanvasRenderingContext2D): void {
+  render(ctx: CanvasRenderingContext2D, frame: number): void {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
     const off = heroPixelOffset(this.hero);
@@ -54,7 +52,7 @@ export class ExploreState implements State {
       for (let tx = x0; tx <= x1; tx++) {
         const t = tileAt(this.map, tx, ty);
         if (!t) continue;
-        const art = t.frames[Math.floor(this.frame / ANIM_FRAME_LEN) % t.frames.length]!;
+        const art = t.frames[Math.floor(frame / ANIM_FRAME_LEN) % t.frames.length]!;
         ctx.drawImage(this.canvas(art), tx * TILE - ox, ty * TILE - oy);
       }
     }

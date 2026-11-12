@@ -20,6 +20,7 @@ export class AudioManager {
   private songGain: GainNode | null = null;
   private sequencer: Sequencer | null = null;
   private pending: Song | null = null;
+  private currentSongId: string | null = null;
   private mutedPref: boolean;
 
   constructor(private readonly storage: Storage | null) {
@@ -59,6 +60,7 @@ export class AudioManager {
     if (this.pending) {
       const song = this.pending;
       this.pending = null;
+      this.currentSongId = null;
       this.playSong(song);
     }
   }
@@ -82,6 +84,8 @@ export class AudioManager {
 
   playSong(song: Song): void {
     const { ctx, songGain, sequencer } = this;
+    if (this.currentSongId === song.id && (this.pending !== null || sequencer?.playing)) return;
+    this.currentSongId = song.id;
     if (!ctx || !songGain || !sequencer) {
       this.pending = song;
       return;
@@ -100,6 +104,7 @@ export class AudioManager {
 
   stopSong(): void {
     this.pending = null;
+    this.currentSongId = null;
     const { ctx, songGain, sequencer } = this;
     if (!ctx || !songGain || !sequencer) return;
     const now = ctx.currentTime;
@@ -115,7 +120,9 @@ export class AudioManager {
     } catch {
       // storage unavailable; preference lives in memory only
     }
-    if (this.master) this.master.gain.value = this.mutedPref ? 0 : 1;
+    if (this.master) {
+      this.master.gain.setTargetAtTime(this.mutedPref ? 0 : 1, this.ctx!.currentTime, 0.01);
+    }
     return this.mutedPref;
   }
 }

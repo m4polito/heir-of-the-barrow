@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readMutePref, AudioManager } from '../src/engine/audio/audio';
+import { Sequencer, type Song } from '../src/engine/audio/sequencer';
 
 describe('readMutePref', () => {
   it('reads the stored flag defensively', () => {
@@ -16,7 +17,7 @@ describe('AudioManager', () => {
   beforeEach(() => {
     constructed = 0;
     vi.useFakeTimers();
-    const param = () => ({ value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {} });
+    const param = () => ({ value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, setTargetAtTime() {} });
     vi.stubGlobal('AudioContext', class {
       currentTime = 0;
       destination = {};
@@ -66,5 +67,21 @@ describe('AudioManager', () => {
     expect(audio.toggleMute()).toBe(true);
     expect(store.get('dimming.mute')).toBe('1');
     expect(audio.toggleMute()).toBe(false);
+  });
+
+  it('playSong is a no-op for the song already playing', () => {
+    let isPlaying = false;
+    vi.spyOn(Sequencer.prototype, 'playing', 'get').mockImplementation(() => isPlaying);
+    const play = vi.spyOn(Sequencer.prototype, 'play').mockImplementation(() => { isPlaying = true; });
+    const a = { id: 'a' } as unknown as Song;
+    const b = { id: 'b' } as unknown as Song;
+    const audio = new AudioManager(null);
+    audio.unlock();
+    audio.playSong(a);
+    audio.playSong(a);
+    expect(play).toHaveBeenCalledTimes(1);
+    audio.playSong(b);
+    expect(play).toHaveBeenCalledTimes(2);
+    vi.restoreAllMocks();
   });
 });

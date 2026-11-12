@@ -63,6 +63,7 @@ export class Input {
 
   attach(target: Window): () => void {
     const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (KEY_MAP[e.code]) e.preventDefault();
       this.keyDown(e.code);
     };

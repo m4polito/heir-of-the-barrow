@@ -13,6 +13,11 @@ export function advance(
   return { steps, remainderMs: Math.max(0, total - steps * STEP_MS) };
 }
 
+/** Browser rAF timestamps are coarse; treat near-one-step frames as exactly one step. */
+export function snapElapsed(elapsedMs: number): number {
+  return Math.abs(elapsedMs - STEP_MS) < 1 ? STEP_MS : elapsedMs;
+}
+
 export function startLoop(update: () => void, render: () => void): () => void {
   let lastTime: number | null = null;
   let accumulator = 0;
@@ -21,7 +26,7 @@ export function startLoop(update: () => void, render: () => void): () => void {
   const frame = (now: number): void => {
     const elapsed = lastTime === null ? 0 : now - lastTime;
     lastTime = now;
-    const result = advance(accumulator, elapsed);
+    const result = advance(accumulator, snapElapsed(elapsed));
     accumulator = result.remainderMs;
     for (let i = 0; i < result.steps; i++) update();
     render();
