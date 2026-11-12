@@ -7,16 +7,28 @@ import { drawWindow, drawMenu } from '../../ui/window';
 import { monsterArt } from '../../data/sprites/monsters';
 import { backdropArt } from '../../data/sprites/backdrops';
 import type { Game } from '../game';
-import { settleBattle } from '../player';
+import { gainXp, settleBattle } from '../player';
+import { spellLines } from '../menu/spellsState';
 import { attackOf, defenseOf } from '../stats';
 import { TransitionState } from '../transition';
-import { Battle, type BattleOutcome } from './battle';
+import { Battle, type BattleCommand, type BattleOutcome } from './battle';
+import { battleKit } from './kit';
+import { levelUpBeats } from './levelBeats';
 import { BeatPlayer, type Beat } from './beats';
 import type { MonsterDef } from './monster';
 
 const SHAKE_FRAMES = 4;
 const FLASH_FRAMES = 8;
 const BACKDROP_TILES = 16;
+
+export type BattlePhase = 'beats' | 'command' | 'spell' | 'item' | 'ending';
+
+/** A sub-list open beside the command menu: the rows shown and the id each one stands for. */
+interface SubList {
+  kind: 'spell' | 'item';
+  menu: MenuList;
+  ids: string[];
+}
 
 export function battleStatLines(name: string, hp: number, mp: number): string[] {
   return [name, 'HP ' + String(hp).padStart(3), 'MP ' + String(mp).padStart(3)];
@@ -26,12 +38,14 @@ export function battleStatLines(name: string, hp: number, mp: number): string[] 
 export class BattleState implements State {
   private readonly _battle: Battle;
   private readonly beats = new BeatPlayer();
-  private readonly menu = new MenuList(['Fight', 'Run']);
+  private readonly menu = new MenuList(['Fight', 'Spell', 'Item', 'Run']);
   private readonly onEnd: (outcome: BattleOutcome) => void;
   private readonly monster: MonsterDef;
   private readonly backdrop: string;
-  private _phase: 'beats' | 'command' | 'ending' = 'beats';
+  private _phase: BattlePhase = 'beats';
+  private sub: SubList | null = null;
   private shownHeroHp: number;
+  private shownHeroMp: number;
   private shownMonsterHp: number;
   private shake = 0;
   private flash = 0;
@@ -50,14 +64,21 @@ export class BattleState implements State {
       game.rng,
       { hp: p.hp, maxHp: p.maxHp, mp: p.mp, atk: attackOf(game.items, p), def: defenseOf(game.items, p), agi: p.agi },
       opts.monster,
+      battleKit(p, game.spells, game.items),
     );
     this.shownHeroHp = this._battle.heroHp;
+    this.shownHeroMp = this._battle.heroMp;
     this.shownMonsterHp = this._battle.monsterHp;
     this.beats.load(this._battle.intro(), false);
   }
 
-  get phase(): 'beats' | 'command' | 'ending' {
+  get phase(): BattlePhase {
     return this._phase;
+  }
+
+  /** The message window's text as currently revealed. */
+  get text(): string[] {
+    return this.beats.lines;
   }
 
   get battle(): Battle {
@@ -74,9 +95,12 @@ export class BattleState implements State {
     if (this.songHold > 0) this.songHold--;
     if (this._phase === 'beats') this.updateBeats(input);
     else if (this._phase === 'command') this.updateCommand(input);
+    else if (this._phase === 'spell' || this._phase === 'item') this.updateSub(input);
   }
 
   private updateBeats(input: Input): void {
+    // A beat that starts a song waits for the one-shot song still playing.
+    if (this.songHold > 0 && this.beats.revealed && this.beats.next?.song) return;
     const beat = this.beats.tick(this.songHold === 0 && input.pressed('confirm'));
     if (beat) this.playBeat(beat);
     if (!this.beats.done) return;
@@ -101,6 +125,7 @@ export class BattleState implements State {
     if (beat.fx === 'shake') this.shake = SHAKE_FRAMES;
     else if (beat.fx === 'flash') this.flash = FLASH_FRAMES;
     this.shownHeroHp = beat.heroHp;
+    this.shownHeroMp = beat.heroMp;
     this.shownMonsterHp = beat.monsterHp;
   }
 
@@ -113,13 +138,82 @@ export class BattleState implements State {
       this.menu.down();
       audio.playSfx('menuMove');
     }
-    if (input.pressed('confirm')) {
+    if (!input.pressed('confirm')) return;
+    const row = this.menu.selected;
+    if (row === 'Spell') this.openSub('spell');
+    else if (row === 'Item') this.openSub('item');
+    else {
       // Run's first beat carries its own sound; a blip here would be cut off by it.
-      if (this.menu.cursor === 0) audio.playSfx('menuConfirm');
-      const beats = this._battle.act(this.menu.cursor === 0 ? 'fight' : 'run');
-      this.beats.load(beats, this._battle.outcome !== null);
-      this._phase = 'beats';
+      if (row === 'Fight') audio.playSfx('menuConfirm');
+      this.perform(row === 'Fight' ? 'fight' : 'run');
     }
+  }
+
+  private openSub(kind: 'spell' | 'item'): void {
+    const { kit } = this._battle;
+    const spell = kind === 'spell';
+    const held = kit.items.filter((i) => this._battle.itemCount(i.id) > 0);
+    const empty = spell ? kit.spells.length === 0 : held.length === 0;
+    if (empty) {
+      this.say(spell ? 'You know no spells.' : 'You carry nothing to use.');
+      return;
+    }
+    this.game.audio.playSfx('menuConfirm');
+    const ids = spell ? kit.spells.map((s) => s.id) : held.map((i) => i.id);
+    const rows = spell ? spellLines(kit.spells) : held.map((i) => `${i.name} x${this._battle.itemCount(i.id)}`);
+    this.sub = { kind, menu: new MenuList(rows), ids };
+    this._phase = kind;
+  }
+
+  private updateSub(input: Input): void {
+    const { audio } = this.game;
+    const sub = this.sub!;
+    if (input.repeat('up')) {
+      sub.menu.up();
+      audio.playSfx('menuMove');
+    } else if (input.repeat('down')) {
+      sub.menu.down();
+      audio.playSfx('menuMove');
+    }
+    if (input.pressed('cancel')) {
+      audio.playSfx('menuCancel');
+      this.closeSub();
+    } else if (input.pressed('confirm')) {
+      const id = sub.ids[sub.menu.cursor]!;
+      const cmd: BattleCommand = sub.kind === 'spell' ? { spell: id } : { item: id };
+      const why = this._battle.refusal(cmd);
+      this.closeSub();
+      if (why) this.say(why);
+      else {
+        audio.playSfx('menuConfirm');
+        this.perform(cmd);
+      }
+    }
+  }
+
+  private closeSub(): void {
+    this.sub = null;
+    this._phase = 'command';
+  }
+
+  /** Show one message that changes nothing, then return to the command menu. */
+  private say(text: string): void {
+    this.beats.load(this._battle.note(text), false);
+    this._phase = 'beats';
+  }
+
+  private perform(cmd: BattleCommand): void {
+    const beats = this._battle.act(cmd);
+    if (this._battle.outcome === 'won') {
+      const up = gainXp(this.game.player, this._battle.reward?.xp ?? 0).levelUp;
+      if (up) {
+        const name = (id: string) => this.game.spells[id]?.name ?? id;
+        const shown = { heroHp: this._battle.heroHp, heroMp: this._battle.heroMp, monsterHp: 0 };
+        beats.push(...levelUpBeats(up, name, shown));
+      }
+    }
+    this.beats.load(beats, this._battle.outcome !== null);
+    this._phase = 'beats';
   }
 
   private beginEnding(outcome: BattleOutcome): void {
@@ -132,7 +226,7 @@ export class BattleState implements State {
           stack.remove(this);
           this.game.player = settleBattle(
             this.game.player,
-            { hp: this._battle.heroHp, mp: this.game.player.mp, itemsUsed: [] },
+            { hp: this._battle.heroHp, mp: this._battle.heroMp, itemsUsed: this._battle.itemsUsed },
             this._battle.reward,
           );
           this.onEnd(outcome);
@@ -160,13 +254,17 @@ export class BattleState implements State {
     }
 
     drawWindow(ctx, 8, 8, 80, 48);
-    battleStatLines(player.name, this.shownHeroHp, player.mp).forEach((line, i) =>
+    battleStatLines(player.name, this.shownHeroHp, this.shownHeroMp).forEach((line, i) =>
       font.drawText(ctx, line, 16, 16 + 10 * i),
     );
 
-    if (this._phase === 'command') {
-      drawWindow(ctx, 8, 132, 72, 36);
-      drawMenu(ctx, font, this.menu.items, this.menu.cursor, 16, 140);
+    if (this._phase === 'command' || this.sub) {
+      drawWindow(ctx, 8, 116, 72, 56);
+      drawMenu(ctx, font, this.menu.items, this._phase === 'command' ? this.menu.cursor : -1, 16, 124);
+    }
+    if (this.sub) {
+      drawWindow(ctx, 84, 116, 164, 56);
+      drawMenu(ctx, font, this.sub.menu.items, this.sub.menu.cursor, 92, 124);
     }
 
     drawWindow(ctx, 8, 176, 240, 56);

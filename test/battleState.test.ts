@@ -9,6 +9,7 @@ import { createRng } from '../src/engine/rng';
 import { createGame } from '../src/game/game';
 import { createPlayer } from '../src/game/player';
 import { BattleState, battleStatLines } from '../src/game/battle/battleState';
+import { spellLines } from '../src/game/menu/spellsState';
 import type { BattleOutcome } from '../src/game/battle/battle';
 import type { MonsterDef } from '../src/game/battle/monster';
 import { MONSTERS } from '../src/data/monsters';
@@ -75,11 +76,11 @@ function setup(monster: Partial<MonsterDef> = {}, player: Partial<ReturnType<typ
   stack.push(under);
   const playSong = vi.spyOn(game.audio, 'playSong');
   const playSfx = vi.spyOn(game.audio, 'playSfx');
-  const ends: { outcome: BattleOutcome; hp: number }[] = [];
+  const ends: { outcome: BattleOutcome; hp: number; inventory: typeof base.inventory }[] = [];
   const state = new BattleState(game, {
     monster: { ...MONSTER, ...monster },
     backdrop: 'grass',
-    onEnd: (outcome) => ends.push({ outcome, hp: game.player.hp }),
+    onEnd: (outcome) => ends.push({ outcome, hp: game.player.hp, inventory: game.player.inventory }),
   });
   stack.push(state);
   const fi = fakeInput();
@@ -87,8 +88,46 @@ function setup(monster: Partial<MonsterDef> = {}, player: Partial<ReturnType<typ
     fi.set(...a);
     stack.update(fi.input);
   };
-  return { game, stack, under, state, playSong, playSfx, ends, tick };
+  /** Move the command cursor to a row (tracked here) and confirm it. */
+  let row = 0;
+  const choose = (target: number) => {
+    while (row !== target) {
+      tick('down');
+      row = (row + 1) % 4;
+    }
+    tick('confirm');
+  };
+  /** Every distinct text shown, in order, one entry per change. */
+  const texts: string[] = [];
+  const seen = () => {
+    const t = state.text.join(' ');
+    if (texts[texts.length - 1] !== t) texts.push(t);
+  };
+  return { game, stack, under, state, playSong, playSfx, ends, tick, choose, texts, seen };
 }
+
+type Setup = ReturnType<typeof setup>;
+
+function toCommand(t: Setup): void {
+  for (let i = 0; i < 2000 && t.state.phase !== 'command'; i++) pump(t.tick, i);
+  expect(t.state.phase).toBe('command');
+}
+
+/** No input until the beats are over (a note or a round); returns the text left on screen. */
+function settle(t: Setup): string {
+  for (let i = 0; i < 2000 && t.state.phase === 'beats'; i++) t.tick();
+  return t.state.text.join(' ');
+}
+
+/** Fight (row 0) whenever a command is asked for, mashing otherwise, until onEnd. */
+function fightToEnd(t: Setup): void {
+  for (let i = 0; i < 3000 && t.ends.length === 0; i++) {
+    if (t.state.phase === 'command') t.choose(0);
+    else pump(t.tick, i);
+  }
+}
+
+const HERO3 = { level: 3, xp: 23, str: 7, agi: 6, maxHp: 24, maxMp: 5, hp: 5, mp: 5 };
 
 /** Confirm every third tick, otherwise no input. */
 function pump(tick: (...a: Action[]) => void, i: number): void {
@@ -135,7 +174,7 @@ describe('BattleState', () => {
     const { game, stack, under, ends, playSong, tick } = setup({ atk: 100, agi: 99, hp: 999 }, { hp: 1 });
     for (let i = 0; i < 2000 && ends.length === 0; i++) pump(tick, i);
     for (let i = 0; i < 100; i++) tick();
-    expect(ends).toEqual([{ outcome: 'lost', hp: 0 }]);
+    expect(ends.map((e) => ({ outcome: e.outcome, hp: e.hp }))).toEqual([{ outcome: 'lost', hp: 0 }]);
     expect(game.player.hp).toBe(0);
     expect(playSong.mock.calls.filter((c) => c[0] === SONGS.fallen)).toHaveLength(1);
     expect(stack.states).toEqual([under]);
@@ -146,6 +185,8 @@ describe('BattleState', () => {
     const gold = game.player.gold;
     const xp = game.player.xp;
     for (let i = 0; i < 2000 && state.phase !== 'command'; i++) pump(tick, i);
+    tick('down');
+    tick('down');
     tick('down');
     tick('confirm');
     for (let i = 0; i < 2000 && ends.length === 0; i++) pump(tick, i);
@@ -159,6 +200,8 @@ describe('BattleState', () => {
   it('Run does not play the confirm blip over its own sound', () => {
     const { playSfx, state, tick } = setup({ agi: 1 }, { agi: 99 });
     for (let i = 0; i < 2000 && state.phase !== 'command'; i++) pump(tick, i);
+    tick('down');
+    tick('down');
     tick('down');
     const before = playSfx.mock.calls.length;
     tick('confirm');
@@ -208,5 +251,130 @@ describe('BattleState', () => {
       pump(b.tick, i);
     }
     expect(b.playSfx).toHaveBeenCalledWith('monsterHit');
+  });
+
+  describe('Spell and Item', () => {
+    it('spellLines pads the name to ten and the cost to two', () => {
+      expect(spellLines([SPELLS.heal, SPELLS.ember])).toEqual(['Heal       4', 'Ember      2']);
+      expect(spellLines([])).toEqual(['Nothing']);
+    });
+
+    it('Spell with no spells says so and uses no turn', () => {
+      const t = setup();
+      toCommand(t);
+      t.choose(1);
+      expect(settle(t)).toBe('You know no spells.');
+      expect(t.playSfx).toHaveBeenCalledWith('error');
+      expect(t.state.phase).toBe('command');
+      expect(t.state.battle.monsterHp).toBe(20);
+    });
+
+    it('Cast Heal plays the spell and heal sounds and spends the MP', () => {
+      const t = setup({ hp: 1, atk: 0, xp: 2 }, HERO3);
+      toCommand(t);
+      t.choose(1);
+      expect(t.state.phase).toBe('spell');
+      t.tick('confirm');
+      expect(t.state.phase).toBe('beats');
+      const played = (id: string) => t.playSfx.mock.calls.some((c) => c[0] === id);
+      for (let i = 0; i < 400 && !played('heal'); i++) t.tick();
+      expect(t.playSfx).toHaveBeenCalledWith('spell');
+      expect(t.playSfx).toHaveBeenCalledWith('heal');
+      fightToEnd(t);
+      expect(t.ends[0]?.outcome).toBe('won');
+      expect(t.game.player.mp).toBe(1);
+    });
+
+    it('a refused spell uses no turn and no MP', () => {
+      const full = setup({ atk: 0 }, { ...HERO3, hp: 24 });
+      toCommand(full);
+      full.choose(1);
+      full.tick('confirm');
+      expect(settle(full)).toBe('You are not hurt.');
+      expect(full.state.phase).toBe('command');
+      expect(full.state.battle.heroMp).toBe(5);
+      expect(full.state.battle.monsterHp).toBe(20);
+
+      const dry = setup({ atk: 0 }, { ...HERO3, mp: 3 });
+      toCommand(dry);
+      dry.choose(1);
+      dry.tick('confirm');
+      expect(settle(dry)).toBe('Not enough MP.');
+      expect(dry.state.phase).toBe('command');
+      expect(dry.state.battle.heroMp).toBe(3);
+    });
+
+    it('cancel leaves the spell list without acting', () => {
+      const t = setup({ atk: 0 }, HERO3);
+      const act = vi.spyOn(t.state.battle, 'act');
+      toCommand(t);
+      t.choose(1);
+      expect(t.state.phase).toBe('spell');
+      t.tick('cancel');
+      expect(t.state.phase).toBe('command');
+      expect(t.playSfx).toHaveBeenCalledWith('menuCancel');
+      expect(act).not.toHaveBeenCalled();
+    });
+
+    it('a Herb used in a won fight is gone afterwards', () => {
+      const t = setup({ hp: 1, atk: 0 }, { hp: 3, str: 50, inventory: [{ item: 'herb', count: 1 }] });
+      toCommand(t);
+      t.choose(2);
+      expect(t.state.phase).toBe('item');
+      t.tick('confirm');
+      fightToEnd(t);
+      expect(t.ends[0]?.outcome).toBe('won');
+      expect(t.game.player.inventory.some((s) => s.item === 'herb')).toBe(false);
+    });
+
+    it('a Herb used in a lost fight is gone by the time onEnd runs', () => {
+      // agi 0: the monster never moves first, so the Herb is used before the killing blow
+      const t = setup({ atk: 100, agi: 0, hp: 999 }, { hp: 3, inventory: [{ item: 'herb', count: 1 }] });
+      toCommand(t);
+      t.choose(2);
+      t.tick('confirm');
+      for (let i = 0; i < 3000 && t.ends.length === 0; i++) pump(t.tick, i);
+      expect(t.ends[0]?.outcome).toBe('lost');
+      expect(t.ends[0]?.inventory.some((s) => s.item === 'herb')).toBe(false);
+    });
+
+    it('Item with nothing usable says so', () => {
+      const t = setup({ atk: 0 }, { inventory: [{ item: 'torch', count: 1 }] });
+      toCommand(t);
+      t.choose(2);
+      expect(settle(t)).toBe('You carry nothing to use.');
+      expect(t.state.phase).toBe('command');
+    });
+
+    it('level-up: the jingle waits for the fanfare, then the stat lines show', () => {
+      const t = setup({ hp: 1, atk: 0, agi: 0, xp: 2 }, { xp: 5, hp: 9 });
+      let victory = -1;
+      let jingle = -1;
+      for (let i = 0; i < 3000 && t.ends.length === 0; i++) {
+        t.tick('confirm');
+        t.seen();
+        if (victory < 0 && t.playSong.mock.calls.some((c) => c[0] === SONGS.victory)) victory = i;
+        if (jingle < 0 && t.playSong.mock.calls.some((c) => c[0] === SONGS.levelup)) jingle = i;
+      }
+      expect(t.ends[0]?.outcome).toBe('won');
+      expect(t.playSong.mock.calls.filter((c) => c[0] === SONGS.victory)).toHaveLength(1);
+      expect(t.playSong.mock.calls.filter((c) => c[0] === SONGS.levelup)).toHaveLength(1);
+      expect(victory).toBeGreaterThanOrEqual(0);
+      expect(jingle - victory).toBeGreaterThanOrEqual(144);
+      const order = ['You reach level 2.', 'Strength +1.', 'Max HP +7.'].map((x) => t.texts.indexOf(x));
+      expect(order.every((i) => i >= 0)).toBe(true);
+      expect([...order].sort((a, b) => a - b)).toEqual(order);
+      expect(t.game.player).toMatchObject({ level: 2, hp: 16, xp: 7 });
+    });
+
+    it('learning a spell is announced', () => {
+      const t = setup({ hp: 1, atk: 0, xp: 2 }, { level: 2, xp: 22, str: 5, maxHp: 22, hp: 22 });
+      for (let i = 0; i < 3000 && t.ends.length === 0; i++) {
+        t.tick('confirm');
+        t.seen();
+      }
+      expect(t.texts).toContain('You learned Heal!');
+      expect(t.game.player).toMatchObject({ level: 3, mp: 5 });
+    });
   });
 });
