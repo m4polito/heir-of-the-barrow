@@ -13,12 +13,12 @@ describe('battleKit', () => {
     expect(k.items).toEqual([{ id: 'herb', name: 'Herb', count: 1, effect: ITEMS.herb.use!.effect }]);
   });
 
-  it('level 5 knows heal then ember', () => {
-    expect(battleKit(at(5, []), SPELLS, ITEMS).spells.map((s) => s.id)).toEqual(['heal', 'ember']);
+  it('level 6 knows heal then ember', () => {
+    expect(battleKit(at(6, []), SPELLS, ITEMS).spells.map((s) => s.id)).toEqual(['heal', 'ember']);
   });
 
-  it('level 8 still two, Homeward is field-only', () => {
-    expect(battleKit(at(8, []), SPELLS, ITEMS).spells.map((s) => s.id)).toEqual(['heal', 'ember']);
+  it('level 9 still two, Homeward is field-only', () => {
+    expect(battleKit(at(9, []), SPELLS, ITEMS).spells.map((s) => s.id)).toEqual(['heal', 'ember']);
   });
 
   it('sums Herbs across slots', () => {

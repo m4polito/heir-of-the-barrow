@@ -281,7 +281,7 @@ actions: [
 - HP 70, ATK 20, DEF 14, AGI 12 (starting values; tune in play-test).
 - Actions: attack (6), **Rot Breath** 7–12 fixed damage ignoring defense (3), **Mend** heals 15–25 when below half HP (2, cooldown 2 turns).
 - Cannot be run from. Victory plays the fanfare, awards ~300 XP and 0 gold, sets `warden_defeated`, drops the journal page into inventory.
-- Intended win condition: level 6–7 with the Bronze Sword and Leather Armor, two or three Herbs, Heal spell. Beatable at 5 with luck; not at 4. **The intent governs the numbers**: with the §9.5 formulas and §10 tables, a level 6 hero (ATK 26, DEF 13) does 5–9 per hit and takes about 5 per round, so the fight runs roughly 10–13 rounds. A unit test simulates the fight at levels 4, 5, 6 and 7 with the intended gear and asserts the win rates are near 0%, under 50%, over 70%, and over 90% respectively; if tuning moves the tables, the test moves with them.
+- Intended win condition: level 6–7 with the Bronze Sword and Leather Armor, two or three Herbs, Heal spell. Beatable at 5 with luck; not at 4. **The intent governs the numbers**: with the §9.5 formulas and §10 tables, a level 6 hero (ATK 27, DEF 14) has a long fight: about 19 rounds in simulation, a Phase 6 tuning target (the aim is 10–13). A unit test simulates the fight at levels 4, 5, 6 and 7 with the intended gear and asserts the win rates are near 0%, under 50%, over 70%, and over 90% respectively; if tuning moves the tables, the test moves with them.
 
 ### 9.9 Death
 "You have fallen." Fade to black. Respawn in Maren's house facing her at full HP/MP, gold halved (floor), XP and items kept. Maren speaks a death-specific line. No game over screen.
@@ -296,25 +296,25 @@ Message sequence: "The Mireling is defeated." → "You gain N experience and N g
 ### 10.1 Hero stat table (levels 1–10; slice targets reaching ~7)
 | Lv | XP to reach | STR | AGI | MaxHP | MaxMP | Learns |
 |---|---|---|---|---|---|---|
-| 1 | 0 | 4 | 4 | 15 | 0 | — |
-| 2 | 7 | 5 | 4 | 22 | 0 | — |
-| 3 | 23 | 7 | 6 | 24 | 5 | Heal |
-| 4 | 47 | 7 | 8 | 31 | 16 | — |
-| 5 | 110 | 12 | 10 | 35 | 20 | Ember |
-| 6 | 220 | 16 | 10 | 38 | 24 | — |
-| 7 | 450 | 18 | 17 | 40 | 26 | — |
-| 8 | 800 | 22 | 20 | 46 | 29 | Homeward |
-| 9 | 1300 | 30 | 22 | 50 | 36 | — |
-| 10 | 2000 | 35 | 31 | 54 | 40 | — |
+| 1 | 0 | 4 | 5 | 16 | 0 | — |
+| 2 | 8 | 5 | 5 | 19 | 4 | Heal |
+| 3 | 22 | 7 | 7 | 25 | 6 | — |
+| 4 | 50 | 9 | 9 | 29 | 12 | — |
+| 5 | 105 | 13 | 11 | 33 | 17 | — |
+| 6 | 210 | 17 | 12 | 36 | 23 | Ember |
+| 7 | 420 | 19 | 15 | 41 | 27 | — |
+| 8 | 780 | 23 | 19 | 45 | 31 | — |
+| 9 | 1250 | 28 | 23 | 50 | 35 | Homeward |
+| 10 | 1900 | 34 | 28 | 55 | 40 | — |
 
-Gains are the delta between rows. Numbers are a starting point in the classic's proportions; tune in play-test.
+Gains are the delta between rows. Numbers are original to this game; tune in play-test.
 
 ### 10.2 Spells
 | Spell | MP | Effect | In slice? |
 |---|---|---|---|
 | Heal | 4 | Restore 10–17 HP. Usable in and out of battle. | Yes |
 | Ember | 2 | 5–12 damage ignoring defense. Battle only. | Yes |
-| Homeward | 8 | Warp to Hollowmere. Field only. | Learned at 8; defined now, reachable later |
+| Homeward | 8 | Warp to Hollowmere. Field only. | Learned at 9; defined now, reachable later |
 
 ### 10.3 Equipment
 | Item | Slot | Stat | Price | Where |
@@ -345,7 +345,7 @@ Inventory: 8 slots; consumables stack up to 6 per slot; unequipped equipment occ
 | Barrow Mireling | 24 | 20 | 14 | 10 | 18 | 12–18 | 1/16 | Barrow |
 | Barrow Warden | 70 | 20 | 14 | 12 | 300 | 0 | 1/32 | boss |
 
-Tuned 2026-11-12 after the Phase 3 play-test; pinned by `test/balance.test.ts`.
+Tuned 2026-11-12 after the Phase 3 play-test; pinned by `test/balance.test.ts`. Level table replaced 2026-11-12 with an original curve.
 
 ---
 

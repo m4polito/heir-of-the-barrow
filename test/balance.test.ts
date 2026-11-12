@@ -42,8 +42,8 @@ describe('Barrow Warden win-rate bands', () => {
 
   it('a level 6 hero has the stats the spec states', () => {
     const p = heroAt(6, gear, 3);
-    expect(attackOf(ITEMS, p)).toBe(26);
-    expect(defenseOf(ITEMS, p)).toBe(13);
+    expect(attackOf(ITEMS, p)).toBe(27);
+    expect(defenseOf(ITEMS, p)).toBe(14);
   });
 
   it('level 4 almost never wins', () => {

@@ -119,7 +119,7 @@ describe('items and equip', () => {
     const items = new ItemsState(game);
     stack.push(items);
     items.update(keys('confirm'));
-    expect(game.player.hp).toBe(15);
+    expect(game.player.hp).toBe(16);
     expect(game.player.inventory).toEqual([]);
     items.update(keys());
     expect((items as unknown as { list: { items: string[] } }).list.items).toEqual(['Nothing']);
@@ -275,7 +275,7 @@ describe('spells', () => {
   });
 
   it('a battle-only spell cannot be cast in the field', () => {
-    const { spells, playSfx, game } = at(5, { hp: 5, mp: 20 });
+    const { spells, playSfx, game } = at(6, { hp: 5, mp: 20 });
     expect(listOf(spells)).toEqual(['Heal       4', 'Ember      2']);
     spells.update(keys('down'));
     spells.update(keys('confirm'));
@@ -285,7 +285,7 @@ describe('spells', () => {
 
   it('Homeward fades to the home map and entry', () => {
     const s = setup();
-    s.game.player = { ...applyLevel(s.game.player, 8), mp: 29 };
+    s.game.player = { ...applyLevel(s.game.player, 9), mp: 35 };
     s.stack.reset(new ExploreState(s.game, 'marsh', 'town'));
     s.stack.update(keys('cancel'));
     s.stack.update(keys('down'));
@@ -310,6 +310,6 @@ describe('spells', () => {
     const e = MAPS[STORY.home.map]!.entry[STORY.home.entry]!;
     expect(ex.hero.x).toBe(e.x);
     expect(ex.hero.y).toBe(e.y);
-    expect(s.game.player.mp).toBe(21);
+    expect(s.game.player.mp).toBe(27);
   });
 });
