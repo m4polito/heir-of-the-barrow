@@ -16,22 +16,6 @@ export interface ApuLike {
 type Pitched = Exclude<Channel, 'noise'>;
 
 const RAMP_SEC = 0.003;
-
-interface Segment { start: number; end: number; from: number; to: number }
-
-/** Value of a linear ramp segment at `time` (holds `from` before, `to` after). */
-export function lerpSegment(seg: Segment, time: number): number {
-  if (time <= seg.start) return seg.from;
-  if (time >= seg.end) return seg.to;
-  return seg.from + ((seg.to - seg.from) * (time - seg.start)) / (seg.end - seg.start);
-}
-
-/** Value of a noise hit's exponential decay (peak -> 0.0001) at `time`, after its attack. */
-export function noiseGainAt(peak: number, attackEnd: number, decayEnd: number, time: number): number {
-  if (time >= decayEnd) return 0;
-  if (time <= attackEnd) return peak;
-  return peak * Math.pow(0.0001 / peak, (time - attackEnd) / (decayEnd - attackEnd));
-}
 /** Peak gain per channel at vol 15. Kept low: NES-style square waves are perceptually loud. */
 const MAX_GAIN = 0.12;
 const DUTIES: Duty[] = [0.125, 0.25, 0.5];
@@ -43,23 +27,24 @@ const NOISE_PRESETS: Record<NoisePreset, { type: BiquadFilterType; freq: number;
   h: { type: 'highpass', freq: 7000, decay: 0.035 },
 };
 
+/**
+ * One sounding note or noise hit. `env` shapes the note; `kill` is 1 until stopAll fades it,
+ * so its anchor is always exact. Automation is never rewritten.
+ */
+interface Voice {
+  src: OscillatorNode | AudioBufferSourceNode;
+  env: GainNode;
+  kill: GainNode;
+  attackEnd: number;
+  level: number;
+}
+
 export class Apu implements ApuLike {
-  private readonly osc = {} as Record<Pitched, OscillatorNode>;
-  private readonly gain = {} as Record<Pitched, GainNode>;
-  private readonly lastGain: Record<Pitched, number> = { p1: 0, p2: 0, tri: 0 };
+  private readonly current: Partial<Record<Pitched, Voice>> = {};
+  private readonly live = new Set<Voice>();
   private readonly rampEnd: Record<Pitched, number> = { p1: 0, p2: 0, tri: 0 };
-  private readonly duty: Record<'p1' | 'p2', Duty> = { p1: 0.5, p2: 0.5 };
   private readonly waves = new Map<Duty, PeriodicWave>();
   private readonly noiseBuffer: AudioBuffer;
-  private readonly liveNoise = new Map<
-    AudioBufferSourceNode,
-    { gain: GainNode; peak: number; attackEnd: number; decayEnd: number }
-  >();
-  private readonly seg: Record<Pitched, Segment> = {
-    p1: { start: 0, end: 0, from: 0, to: 0 },
-    p2: { start: 0, end: 0, from: 0, to: 0 },
-    tri: { start: 0, end: 0, from: 0, to: 0 },
-  };
 
   constructor(
     private readonly ctx: AudioContext,
@@ -75,38 +60,43 @@ export class Apu implements ApuLike {
       this.waves.set(d, ctx.createPeriodicWave(real, imag, { disableNormalization: false }));
     }
 
-    for (const ch of PITCHED) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      gain.gain.value = 0;
-      if (ch === 'tri') osc.type = 'triangle';
-      else osc.setPeriodicWave(this.waves.get(0.5)!);
-      osc.connect(gain);
-      gain.connect(destination);
-      osc.start();
-      this.osc[ch] = osc;
-      this.gain[ch] = gain;
-    }
-
     this.noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const data = this.noiseBuffer.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
   }
 
   noteOn(ch: Pitched, freq: number, time: number, opts: { duty?: Duty; vol: number }): void {
-    if (ch !== 'tri') {
-      const duty = opts.duty ?? this.duty[ch];
-      if (duty !== this.duty[ch]) {
-        this.osc[ch].setPeriodicWave(this.waves.get(duty)!);
-        this.duty[ch] = duty;
-      }
-    }
-    const s = this.ramp(ch, (opts.vol / 15) * MAX_GAIN, time);
-    this.osc[ch].frequency.setValueAtTime(freq, s);
+    const s = Math.max(time, this.rampEnd[ch]);
+    const prev = this.current[ch];
+    if (prev) this.release(prev, s);
+    const osc = this.ctx.createOscillator();
+    if (ch === 'tri') osc.type = 'triangle';
+    else osc.setPeriodicWave(this.waves.get(opts.duty ?? 0.5)!);
+    osc.frequency.value = freq;
+    const level = (opts.vol / 15) * MAX_GAIN;
+    const env = this.ctx.createGain();
+    env.gain.value = 0;
+    env.gain.setValueAtTime(0, s);
+    env.gain.linearRampToValueAtTime(level, s + RAMP_SEC);
+    const kill = this.ctx.createGain();
+    kill.gain.value = 1;
+    osc.connect(env);
+    env.connect(kill);
+    kill.connect(this.destination);
+    osc.start(s);
+    const voice: Voice = { src: osc, env, kill, attackEnd: s + RAMP_SEC, level };
+    osc.onended = () => { this.live.delete(voice); };
+    this.current[ch] = voice;
+    this.live.add(voice);
+    this.rampEnd[ch] = s + RAMP_SEC;
   }
 
   noteOff(ch: Pitched, time: number): void {
-    this.ramp(ch, 0, time);
+    const v = this.current[ch];
+    if (!v) return;
+    this.release(v, time);
+    this.current[ch] = undefined;
+    this.rampEnd[ch] = Math.max(this.rampEnd[ch], Math.max(time, v.attackEnd) + RAMP_SEC);
   }
 
   noiseHit(preset: NoisePreset, time: number, vol: number): void {
@@ -117,64 +107,53 @@ export class Apu implements ApuLike {
     const filter = this.ctx.createBiquadFilter();
     filter.type = p.type;
     filter.frequency.value = p.freq;
-    const gain = this.ctx.createGain();
+    const env = this.ctx.createGain();
+    env.gain.value = 0;
+    const kill = this.ctx.createGain();
+    kill.gain.value = 1;
     src.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.destination);
-    const g = gain.gain;
+    filter.connect(env);
+    env.connect(kill);
+    kill.connect(this.destination);
+    const level = (vol / 15) * MAX_GAIN;
+    const g = env.gain;
     g.setValueAtTime(0, time);
-    g.linearRampToValueAtTime((vol / 15) * MAX_GAIN, time + RAMP_SEC);
+    g.linearRampToValueAtTime(level, time + RAMP_SEC);
     g.exponentialRampToValueAtTime(0.0001, time + p.decay);
-    g.setValueAtTime(0, time + p.decay + 0.001);
-    this.liveNoise.set(src, { gain, peak: (vol / 15) * MAX_GAIN, attackEnd: time + RAMP_SEC, decayEnd: time + p.decay });
-    src.onended = () => { this.liveNoise.delete(src); };
+    const voice: Voice = { src, env, kill, attackEnd: time + RAMP_SEC, level };
+    this.live.add(voice);
+    src.onended = () => { this.live.delete(voice); };
     src.start(time);
     src.stop(time + p.decay + 0.01);
   }
 
-  /** Only place cancelScheduledValues is allowed: silences notes queued after `time`. */
+  /** Fades every sounding or queued voice out from `time` via its kill gain. */
   stopAll(time: number): void {
-    for (const [src, hit] of this.liveNoise) {
-      const v = time < hit.attackEnd
-        ? hit.peak * Math.max(0, time - (hit.attackEnd - RAMP_SEC)) / RAMP_SEC
-        : noiseGainAt(hit.peak, hit.attackEnd, hit.decayEnd, time);
-      const g = hit.gain.gain;
-      g.cancelScheduledValues(time);
-      g.setValueAtTime(v, time);
-      g.linearRampToValueAtTime(0, time + RAMP_SEC);
+    for (const v of this.live) {
+      v.kill.gain.setValueAtTime(1, time);
+      v.kill.gain.linearRampToValueAtTime(0, time + RAMP_SEC);
       try {
-        src.stop(time + RAMP_SEC + 0.001);
+        v.src.stop(time + RAMP_SEC + 0.001);
       } catch {
         // already stopped
       }
     }
-    this.liveNoise.clear();
+    this.live.clear();
     for (const ch of PITCHED) {
-      const g = this.gain[ch].gain;
-      g.cancelScheduledValues(time);
-      this.osc[ch].frequency.cancelScheduledValues(time);
-      const v = this.gainAt(ch, time);
-      g.setValueAtTime(v, time);
-      g.linearRampToValueAtTime(0, time + RAMP_SEC);
-      this.seg[ch] = { start: time, end: time + RAMP_SEC, from: v, to: 0 };
-      this.lastGain[ch] = 0;
+      this.current[ch] = undefined;
       this.rampEnd[ch] = time + RAMP_SEC;
     }
   }
 
-  private gainAt(ch: Pitched, time: number): number {
-    return lerpSegment(this.seg[ch], time);
-  }
-
-  /** Schedules a gain ramp starting no earlier than the previous ramp's end; returns its start time. */
-  private ramp(ch: Pitched, target: number, time: number): number {
-    const g = this.gain[ch].gain;
-    const s = Math.max(time, this.rampEnd[ch]);
-    g.setValueAtTime(this.lastGain[ch], s);
-    g.linearRampToValueAtTime(target, s + RAMP_SEC);
-    this.seg[ch] = { start: s, end: s + RAMP_SEC, from: this.lastGain[ch], to: target };
-    this.lastGain[ch] = target;
-    this.rampEnd[ch] = s + RAMP_SEC;
-    return s;
+  /** Anchoring at or after the attack's end means the anchor equals the curve value: no step. */
+  private release(v: Voice, t: number): void {
+    const t0 = Math.max(t, v.attackEnd);
+    v.env.gain.setValueAtTime(v.level, t0);
+    v.env.gain.linearRampToValueAtTime(0, t0 + RAMP_SEC);
+    try {
+      v.src.stop(t0 + RAMP_SEC + 0.001);
+    } catch {
+      // already stopped
+    }
   }
 }
