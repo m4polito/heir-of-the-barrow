@@ -13,6 +13,7 @@ import type { BattleOutcome } from '../src/game/battle/battle';
 import type { MonsterDef } from '../src/game/battle/monster';
 import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
+import { SPELLS } from '../src/data/spells';
 import { MAPS } from '../src/data/maps';
 import { DIALOGS } from '../src/data/dialog/hollowmere';
 import { SONGS } from '../src/data/songs';
@@ -65,6 +66,7 @@ function setup(monster: Partial<MonsterDef> = {}, player: Partial<ReturnType<typ
     dialogs: DIALOGS,
     songs: SONGS,
     items: ITEMS,
+    spells: SPELLS,
     monsters: MONSTERS,
     story: STORY,
     player: { ...base, ...player },

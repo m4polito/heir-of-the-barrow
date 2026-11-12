@@ -15,6 +15,7 @@ import { DIALOGS } from './data/dialog/hollowmere';
 import { SONGS } from './data/songs';
 import { ITEMS } from './data/items';
 import { MONSTERS } from './data/monsters';
+import { SPELLS } from './data/spells';
 import { STORY } from './data/story';
 import { AudioManager } from './engine/audio/audio';
 
@@ -45,6 +46,7 @@ const game = createGame({
   songs: SONGS,
   items: ITEMS,
   monsters: MONSTERS,
+  spells: SPELLS,
   story: STORY,
   player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
 });

@@ -13,7 +13,9 @@ export type SfxId =
   | 'miss'
   | 'critical'
   | 'runOk'
-  | 'runFail';
+  | 'runFail'
+  | 'spell'
+  | 'heal';
 
 /** `frames` are 60 fps frames; a step lasts frames / 60 seconds. */
 export interface SfxStep {
@@ -73,4 +75,7 @@ export const SFX: Record<SfxId, SfxStep[]> = {
     p1('C5', 2, 8, 0.5), p1('E5', 2, 8, 0.5), p1('G5', 2, 8, 0.5), p1('C6', 2, 8, 0.5), p1('E6', 3, 8, 0.5),
   ],
   runFail: [p1('E4', 3, 9, 0.125), p1('C4', 3, 9, 0.125), p1('G#3', 6, 9, 0.125)],
+  // Placeholders; Task 5 gives these their real sound.
+  spell: [p1('C5', 3, 8, 0.5)],
+  heal: [p1('G5', 3, 8, 0.5)],
 };

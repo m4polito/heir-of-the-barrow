@@ -9,6 +9,7 @@ import type { DialogScript } from './dialog/script';
 import type { GameMap } from './map';
 import type { ItemDef } from './items';
 import type { MonsterTable } from './battle/monster';
+import type { SpellTable } from './effects';
 import type { PlayerState } from './player';
 
 export interface StoryConfig {
@@ -36,6 +37,7 @@ export interface Game {
   readonly songs: Record<string, Song>;
   readonly items: Record<string, ItemDef>;
   readonly monsters: MonsterTable;
+  readonly spells: SpellTable;
   readonly story: StoryConfig;
   player: PlayerState;
   debug: { noEncounters: boolean };

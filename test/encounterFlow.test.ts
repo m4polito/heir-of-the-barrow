@@ -20,6 +20,7 @@ import { DIALOGS } from '../src/data/dialog/hollowmere';
 import { SONGS } from '../src/data/songs';
 import { STORY } from '../src/data/story';
 import { ITEMS } from '../src/data/items';
+import { SPELLS } from '../src/data/spells';
 import { PALETTE } from '../src/data/palette';
 
 function fieldMap(id: string, warp: boolean): GameMap {
@@ -70,6 +71,7 @@ function setup(mapId: 'field' | 'field2', player: Partial<PlayerState> = {},
     dialogs: DIALOGS,
     songs: SONGS,
     items: ITEMS,
+    spells: SPELLS,
     monsters,
     story: STORY,
     player: { ...basePlayer, ...player },
