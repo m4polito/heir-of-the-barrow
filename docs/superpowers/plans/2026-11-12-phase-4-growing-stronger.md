@@ -10,6 +10,11 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md` (§8, §9.2, §9.7, §9.8, §9.10, §10.1–10.5, §12.3–12.4, §14 Phase 4, §15). Carry-forward: `docs/superpowers/notes/2026-11-12-phase-3-carry-forward.md` (the balance requirements at its top are mandatory here).
 
+## Execution status (updated 2026-11-12, phase stop)
+
+- **All 10 tasks complete and reviewed; the whole-branch review and its one fix wave are done (head `4ea93f9` plus this docs commit). Stopped for the owner's play-test; not merged.** Measured balance numbers, rulings, questions for the owner, deferred minors and the play-test list are in `docs/superpowers/notes/2026-11-12-phase-4-carry-forward.md`.
+- Where the delivered code differs from the task text below: the heal sound is E6 C6 G5 C6 at duty 0.25, not the rising figure in Task 5; the "Herb in a lost fight" tests use a monster with agility 0 (Task 6); the battle confirm blip plays unless the first resulting message has its own sound (Task 6); the battle windows are `(8, 120, 72, 52)` and `(84, 120, 164, 52)` with menus at y 128 (Task 6); Spells and Items share `src/game/menu/fieldResult.ts` (Task 7); the "Tuned" note sits under the design doc's §10.5 table only (Task 8); Tobin's narration is "He keeps his eyes on his cup." (Task 9); Task 10's code and docs are two commits.
+
 ## Execution
 
 - Branch `phase-4` from `master` (`aafdd4a`). Subagent-driven, as in Phase 3: Sonnet 5.5 implements and reviews ordinary tasks; Opus reviews audio (Task 5), integration (Tasks 6, 7) and the whole branch; the orchestrator (Fable) reviews the balance numbers (Task 8), the level-up jingle's written harmony (Task 5) and the dialog copy (Task 9).
@@ -119,7 +124,7 @@ test/balance.test.ts             early curve and Warden bands
   - `settleBattle(p, end: { hp: number; mp: number; itemsUsed: readonly string[] }, reward: { xp: number; gold: number } | null): PlayerState` — in this order: `hp` clamped to `0..maxHp` and `mp` to `0..maxMp`; one `removeItem` per entry of `itemsUsed`, throwing `Error('Used item not held: <id>')` if one fails; then, if there is a reward, gold added with its cap and `gainXp(…).player`.
   - `BattleState` passes `{ hp: battle.heroHp, mp: game.player.mp, itemsUsed: [] }` for now (Task 6 replaces it).
 
-- [ ] **Step 1: Write failing tests** in `test/player.test.ts` (and rewrite the existing `settleBattle` cases to the new second argument):
+- [x] **Step 1: Write failing tests** in `test/player.test.ts` (and rewrite the existing `settleBattle` cases to the new second argument):
   - `spellsKnown(1)` → `[]`; `(3)` → `['heal']`; `(5)` → `['heal', 'ember']`; `(10)` → `['heal', 'ember', 'homeward']`.
   - `LEVELS` never decreases in `xp`, `str`, `agi`, `maxHp` or `maxMp` from one row to the next.
   - Level 1 hero with `xp 5`, `hp 9`: `gainXp(p, 2)` → level 2, `str 5`, `maxHp 22`, `hp 16`, `xp 7`; `levelUp` equals `{ from: 1, to: 2, str: 1, agi: 0, maxHp: 7, maxMp: 0, learned: [] }`; `p` itself unchanged.
@@ -132,17 +137,17 @@ test/balance.test.ts             early curve and Warden bands
   - A level 1 player at full HP: `settleBattle(p, { hp: 9, mp: 0, itemsUsed: [] }, { xp: 7, gold: 4 })` → level 2, hp 16, gold +4.
   - The existing clamp and cap cases still hold with the new argument shape.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/player.test.ts`
 Expected: FAIL (exports missing).
 
-- [ ] **Step 3: Implement** per Interfaces; update the one call in `battleState.ts`.
+- [x] **Step 3: Implement** per Interfaces; update the one call in `battleState.ts`.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/player.ts src/game/battle/battleState.ts test/player.test.ts
 git commit -m "feat: levelling from experience, known spells, battle settlement with mp and items"
@@ -183,7 +188,7 @@ git commit -m "feat: levelling from experience, known spells, battle settlement 
     - Success: heal restores `n = min(roll, maxHp − hp)`, text `You recover {n} HP.`, sfx `'heal'`; warp gives text `You are carried home.`, sfx `'spell'`, `warp: true`. A spell's MP is deducted; an item is removed (one).
   - Story-free guard in `test/interiors.test.ts`: the forbidden-import group becomes `(items|maps|dialog|songs|story|monsters|spells)`; the banned strings gain `"'ember'"`, `"'homeward'"` and `"'herb'"`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/effects.test.ts`: `rollEffect(seqRng([0]), heal 10–17)` → 10, with `[0.99]` → 17; warp with `seqRng([])` → 0. `usableIn('both', 'field')`, `('battle', 'battle')` true; `('battle', 'field')`, `('field', 'battle')` false. Every row of the table above matches `SPELLS`; every `learns` in `LEVELS` is a key of `SPELLS`; `SPELLS[id].id === id`. `ITEMS.herb.use` equals the value above; `ITEMS.torch.use` is undefined.
   - `test/fieldUse.test.ts`, with a level 3 player (`gainXp(createPlayer('Wren', [{ item: 'herb', count: 2 }]), 23).player`) and the real `SPELLS` and `ITEMS`:
     - hp 5: `castInField(seqRng([0]), …, 'heal')` → ok, hp 15, mp 1, text `You recover 10 HP.`, sfx `'heal'`.
@@ -193,17 +198,17 @@ git commit -m "feat: levelling from experience, known spells, battle settlement 
     - `castInField(…, 'ember')` at level 3 throws; `castInField(…, 'nope')` throws.
     - `useItemInField(seqRng([0]), …, 'herb')` at hp 1 → hp 21, one Herb left, `You recover 20 HP.`; at full HP → `You are not hurt.` and two Herbs left; `'torch'` held → `You cannot use that now.`; an item not held throws.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/effects.test.ts test/fieldUse.test.ts test/interiors.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces; add `spells: SPELLS` wherever a test builds a `Game`.
+- [x] **Step 3: Implement** per Interfaces; add `spells: SPELLS` wherever a test builds a `Game`.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/effects.ts src/game/fieldUse.ts src/game/items.ts src/game/game.ts src/data/spells.ts src/data/items.ts src/data/sfx.ts src/main.ts test
 git commit -m "feat: effects, the spell table, field use of spells and items"
@@ -229,24 +234,24 @@ git commit -m "feat: effects, the spell table, field use of spells and items"
   - `validateActions(actions: readonly MonsterAction[]): void` — throws if a weight is not a finite number above 0, if `min > max` or `min < 0`, if a cooldown is negative, or if no action is free of both `if` and `cooldown`.
   - `MonsterDef` gains `actions?: MonsterAction[]`.
 
-- [ ] **Step 1: Write failing tests** in `test/ai.test.ts`, with `A = [{ do: 'attack', weight: 6 }, { do: 'blast', name: 'Rot Breath', min: 8, max: 14, weight: 3 }, { do: 'mend', name: 'Mend', min: 15, max: 25, weight: 2, if: 'hpBelowHalf', cooldown: 2 }]`:
+- [x] **Step 1: Write failing tests** in `test/ai.test.ts`, with `A = [{ do: 'attack', weight: 6 }, { do: 'blast', name: 'Rot Breath', min: 8, max: 14, weight: 3 }, { do: 'mend', name: 'Mend', min: 15, max: 25, weight: 2, if: 'hpBelowHalf', cooldown: 2 }]`:
   - `new MonsterBrain().choose(seqRng([]), { hp: 6, maxHp: 6 })` is `ATTACK`; a brain with one action also draws nothing.
   - At 70 of 70: `seqRng([0])` → attack; `seqRng([0.7])` → blast (0.7 × 9 = 6.3). At 35 of 70 the mend is not eligible (`seqRng([0.99])` → blast).
   - At 34 of 70 one brain, four calls: `[0.9]` → mend; `[0.99]` → blast; `[0.99]` → blast; `[0.99]` → mend.
   - `validateActions(A)` passes. It throws for: a weight of 0; a weight of `NaN`; `min: 9, max: 8`; `cooldown: -1`; a list holding only the mend above (Review Focus 5).
   - `test/monsters.test.ts`: every monster in `MONSTERS` either has no `actions` or passes `validateActions`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/ai.test.ts test/monsters.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 Run: `npx vitest run test/ai.test.ts test/monsters.test.ts && npx tsc --noEmit`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/battle/ai.ts src/game/battle/monster.ts test/ai.test.ts test/monsters.test.ts
 git commit -m "feat: weighted monster actions with conditions and cooldowns"
@@ -292,7 +297,7 @@ git commit -m "feat: weighted monster actions with conditions and cooldowns"
     4. one `You learned {name}!` per entry of `learned`
   - `BattleState` passes `maxHp: p.maxHp, mp: p.mp` in the hero stats (the kit arrives in Task 6).
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/battle.test.ts`, reusing its fixture `M` (hp 6, atk 5, def 3, agi 3, no actions) and these: `HEAL = { id: 'heal', name: 'Heal', mp: 4, where: 'both', effect: { kind: 'heal', min: 10, max: 17 } }`, `EMBER = { id: 'ember', name: 'Ember', mp: 2, where: 'battle', effect: { kind: 'damage', min: 5, max: 12 } }`, `HERB = { id: 'herb', name: 'Herb', count: 1, effect: { kind: 'heal', min: 20, max: 30 } }`. Hero base `{ atk: 4, def: 6, agi: 4 }` plus what each case states.
     - Every existing case still passes with `heroMp` added where whole beats are compared and `maxHp`, `mp` added to the hero.
     - **Heal:** hero hp 5, maxHp 24, mp 5; `seqRng([0, 0.99, 0, 0.5, 0])`; `act({ spell: 'heal' })` texts are `['You cast Heal.', 'You recover 10 HP.', 'The Mireling attacks!', 'You take 1 damage.']`; beat 0 has `sfx: 'spell'`, `heroHp: 5`, `heroMp: 1`; beat 1 has `sfx: 'heal'`, `heroHp: 15`; afterwards `heroHp 14`, `heroMp 1`.
@@ -307,17 +312,17 @@ git commit -m "feat: weighted monster actions with conditions and cooldowns"
   - `test/battleKit.test.ts` (real `SPELLS`, `ITEMS`): level 1 with one Herb → no spells, items `[{ id: 'herb', name: 'Herb', count: 1, … }]`; level 5 → spells `heal`, `ember` in that order; level 8 → still two (Homeward is field-only); Herbs split across two slots (6 and 2) → one entry with `count 8`; a held Torch is not listed; a table missing `heal` at level 3 throws `Unknown spell: heal`.
   - `test/levelBeats.test.ts`: for `{ from: 1, to: 2, str: 1, agi: 0, maxHp: 7, maxMp: 0, learned: [] }` and `shown { heroHp: 9, heroMp: 0, monsterHp: 0 }` → texts `['You reach level 2.', 'Strength +1.', 'Max HP +7.']`, the first with `song: 'levelup'`, all with `heroHp: 16`. For `{ from: 2, to: 3, str: 2, agi: 2, maxHp: 2, maxMp: 5, learned: ['heal'] }` → `['You reach level 3.', 'Strength +2. Agility +2.', 'Max HP +2. Max MP +5.', 'You learned Heal!']`. Every text wraps to at most 2 lines at 28 columns.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/battle.test.ts test/beats.test.ts test/battleKit.test.ts test/levelBeats.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src/game/battle test/battle.test.ts test/beats.test.ts test/battleKit.test.ts test/levelBeats.test.ts
 git commit -m "feat: spells, items and monster actions in the battle resolver; level-up beats"
@@ -338,23 +343,23 @@ git commit -m "feat: spells, items and monster actions in the battle resolver; l
   - `SFX.heal`, 14 frames, soft and settling: `p1` duty 0.5 vol 7: `G5` 4f, `C6` 4f, `E6` 6f.
   - `SONGS.levelup`: tempo 150, 10 rows (1.0 s), `loop: false`, D major. `p1` duty 0.5 vol 11; `p2` duty 0.25 vol 8; `tri` vol 14; no noise. A quick rising run that lands on a held D major chord. It must not reuse the victory fanfare's figure (G C E G) transposed. The file opens with a comment giving the key and the chord per row group, and the notes must sound as the comment says. Every pitched track's last non-null row is `'off'`, at or before row 9.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/sfx.test.ts`: `spell` totals 12 frames and `heal` 14; the existing "every id has steps and every note parses" loop covers both.
   - `test/songs.test.ts`, `describe('levelup')`: `validateSong` passes; 10 rows; tempo 150; `loop === false`; channels `p1`, `p2`, `tri` with the duties and volumes above; each track's last non-null row is `'off'`; the `p1` notes in order are not the victory `p1` notes shifted by one constant interval.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/sfx.test.ts test/songs.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Compose the jingle**, write the two effects, register the song.
+- [x] **Step 3: Compose the jingle**, write the two effects, register the song.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform): first heard in Task 6; listed there.
+- [x] **Step 5: List owner checks** (do not perform): first heard in Task 6; listed there.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/data/sfx.ts src/data/songs test/sfx.test.ts test/songs.test.ts
 git commit -m "feat: spell and heal sounds, level-up jingle"
@@ -384,7 +389,7 @@ git commit -m "feat: spell and heal sounds, level-up jingle"
     - **Song gate (Review Focus 3).** While `songHold > 0`, the current beat is fully revealed and `beats.next?.song` is set, do not tick the beat player. A one-shot song started by a beat sets `songHold` as today, so the last beat's confirm stays held until the jingle ends.
     - Settlement: `settleBattle(game.player, { hp: battle.heroHp, mp: battle.heroMp, itemsUsed: battle.itemsUsed }, battle.reward)`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/battleState.test.ts` (same harness as the existing cases; the game has the real `SPELLS`, `ITEMS` and `SONGS`):
     - Existing cases adjusted: Run is now the fourth row.
     - `spellLines([HEAL, EMBER])` → `['Heal       4', 'Ember      2']`; `spellLines([])` → `['Nothing']`.
@@ -399,17 +404,17 @@ git commit -m "feat: spell and heal sounds, level-up jingle"
     - **Learning:** a hero at level 2 with `xp 22` beating a monster worth 2 XP sees `You learned Heal!` and ends at level 3 with mp 5.
   - `test/encounterFlow.test.ts`: in the existing **Lost** case give the player one Herb, use it in the fight before dying, and assert after the respawn that hp and mp are at max and the inventory has no Herb.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/battleState.test.ts test/encounterFlow.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform):
+- [x] **Step 5: List owner checks** (do not perform):
   - The battle menu shows Fight / Spell / Item / Run and does not cover the monster or the message window.
   - At level 1, Spell says "You know no spells." and the Mireling does not get a free hit.
   - Item → Herb: "You use the Herb.", a soft rising sound, HP climbs in the top-left window, then the Mireling takes its turn. The Herb is gone from Items afterwards.
@@ -419,7 +424,7 @@ Expected: all green.
   - At level 5 (debug Level +1 is fine): Ember hurts the Mireling and never misses.
   - Listen: the spell, heal and level-up sounds are distinct from each other and from the victory fanfare; no clicks.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/battle/battleState.ts src/game/menu/spellsState.ts test/battleState.test.ts test/encounterFlow.test.ts
 git commit -m "feat: Spell and Item in battle, level-ups after a win"
@@ -444,7 +449,7 @@ git commit -m "feat: Spell and Item in battle, level-ups after a win"
     - Confirm on `Nothing` plays `error`. Cancel pops with `menuCancel`.
   - `ItemsState`: confirm on a consumable calls `useItemInField` and handles the result the same way (the existing "You cannot use that now." path is now that function's answer). Equipment is unchanged. The list is rebuilt after use, as today.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `test/menuLines.test.ts`: `statusLines` has 11 lines; the last is `NEXT 7` for a new player and `NEXT -` at level 10.
   - `test/menuState.test.ts`:
     - The menu rows are `Status`, `Items`, `Spells`, `Equip`; confirm on row 2 pushes a `SpellsState`, on row 3 an `EquipState`.
@@ -454,24 +459,24 @@ git commit -m "feat: Spell and Item in battle, level-ups after a win"
     - Homeward: a level 8 hero on the `marsh` map with mp 29; open the menu, Spells, confirm on Homeward, dismiss the dialog, run 30 updates → the stack is exactly one `ExploreState` on `STORY.home.map` at the `STORY.home.entry` point; mp 21.
   - `test/interiors.test.ts`: `MAPS[STORY.home.map].entry[STORY.home.entry]` exists.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/menuState.test.ts test/menuLines.test.ts test/interiors.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform):
+- [x] **Step 5: List owner checks** (do not perform):
   - The menu reads Status / Items / Spells / Equip; Status shows NEXT and nothing is cut off at the bottom of its window.
   - Hurt, outside battle: Items → Herb restores HP with the heal sound and the Herb count drops; at full HP it says "You are not hurt." and the Herb stays.
   - At level 3 or above: Spells shows MP and Heal with its cost; casting it restores HP and lowers MP.
   - At level 5: choosing Ember in the field says "You cannot use that now."
   - With the debug overlay at level 8, out on the marsh: Homeward fades you to Hollowmere's gate with the town theme.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/menu src/game/stats.ts src/game/game.ts src/data/story.ts test/menuState.test.ts test/menuLines.test.ts test/interiors.test.ts
 git commit -m "feat: Spells in the field menu, usable Herb, XP to next level"
@@ -497,34 +502,34 @@ git commit -m "feat: Spells in the field menu, usable Herb, XP to next level"
     - `simulate(rng: Rng, p: PlayerState, monster: MonsterDef, policy: Policy, n: number): { winRate: number; meanRounds: number; meanHpLost: number }` — `n` fresh battles from `p`; a battle still running after 300 rounds counts as a loss; the two means are over wins.
   - Design doc: §10.5 Mireling row `HP 4`, `DEF 1`; Bog Mireling row `DEF 6`; Barrow Warden row `ATK 20`. §9.8: `ATK 20`, `Rot Breath 7–12`, and "takes about 5 per round". Add one line under each table: "Tuned 2026-11-12 after the Phase 3 play-test; pinned by `test/balance.test.ts`."
 
-- [ ] **Step 1: Write failing tests** in `test/balance.test.ts`, each with its own `createRng(seed)` and `n = 4000`:
+- [x] **Step 1: Write failing tests** in `test/balance.test.ts`, each with its own `createRng(seed)` and `n = 4000`:
   - **Road, unarmed (owner requirement 1):** `heroAt(1, ['aldric_shield'], 0)` against `MONSTERS.mireling`, `fightOnly` → `winRate ≥ 0.99`, `meanHpLost ≤ 3.0`, `meanRounds ≤ 4`.
   - **Marsh at level 3 with Heal (owner requirement 2):** `heroAt(3, ['aldric_shield'], 0)` against `MONSTERS.bog_mireling`, `healer(8, null)` → `winRate > 0.6`. The same hero with `fightOnly` wins at least 0.2 less often (Heal is what makes the difference).
   - **Marsh at level 1 stays deadly:** `heroAt(1, ['aldric_shield'], 0)` against `bog_mireling`, `fightOnly` → `winRate < 0.05`.
   - **Warden bands (owner requirement 3, spec §9.8):** `validateActions(WARDEN.actions)` passes. `heroAt(L, ['bronze_sword', 'leather_armor', 'aldric_shield'], 3)` against `WARDEN`, `healer(18, 8)`: level 4 `< 0.03`; level 5 `< 0.5`; level 6 `> 0.7`; level 7 `> 0.9`. Also assert the level 6 hero's `attackOf` is 26 and `defenseOf` is 13, as the spec states.
   - `test/monsters.test.ts`: the "matches the spec" rows use the new numbers. The existing club-and-shield pacing test must still pass unchanged.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/balance.test.ts test/monsters.test.ts`
 Expected: FAIL (helpers missing; then the road and marsh cases fail on the old numbers).
 
-- [ ] **Step 3: Write the helpers and the fixture, change the three monster numbers, update the design doc.**
+- [x] **Step 3: Write the helpers and the fixture, change the three monster numbers, update the design doc.**
 
-- [ ] **Step 4: Run the balance tests and report the measured numbers**
+- [x] **Step 4: Run the balance tests and report the measured numbers**
 Run: `npx vitest run test/balance.test.ts test/monsters.test.ts`
 Expected: PASS. Report every measured `winRate`, `meanRounds` and `meanHpLost` in the task report. Expected from the planning simulation: road 2.3 HP and 3.1 rounds; marsh 0.83 with Heal and 0.29 without; Warden 0.00 / 0.30 / 0.75 / 0.95.
 **If any assertion fails, stop and report the numbers. Do not change monster numbers, thresholds, seeds or the policy to make it pass; retuning is the orchestrator's decision.**
 
-- [ ] **Step 5: Run everything**
+- [x] **Step 5: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 6: List owner checks** (do not perform):
+- [x] **Step 6: List owner checks** (do not perform):
   - At level 1 with only the shield, road fights take about three rounds and cost two or three HP; several can be won before a rest at Hesta's.
   - At level 1 or 2 the marsh still kills you.
   - At level 3, with Heal, a marsh fight is hard but usually won; without casting Heal it is usually lost.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 ```bash
 git add src/data/monsters.ts test/helpers test/balance.test.ts test/monsters.test.ts docs/superpowers/specs
 git commit -m "feat: early-game balance pass with simulation tests; Warden win-rate bands"
@@ -556,25 +561,25 @@ git commit -m "feat: early-game balance pass with simulation tests; Warden win-r
 
   `maren_fallen`, `villager_a` and `villager_b` are unchanged. Only Maren and Tobin speak of themselves in the third person (owner, 2026-11-12); Hesta, Garrik and Bram name themselves in the first person or through someone else's words.
 
-- [ ] **Step 1: Write failing tests** in `test/dialogContent.test.ts`:
+- [x] **Step 1: Write failing tests** in `test/dialogContent.test.ts`:
   - For each of `['maren', 'Maren']`, `['hesta', 'Hesta']`, `['garrik', 'Garrik']`, `['odo', 'Odo']`, `['pip', 'Pip']`, `['bram', 'Bram']`, `['tobin', 'Tobin']`, and for both flag sets (`[]` and `['warden_defeated']`): the first text step contains the name.
   - `maren_intro`'s first text step contains `Maren` and `Wren`.
   - No string in any script matches `/^[A-Z][a-z]+: /` (no name tags).
   - The existing checks (terminates, at most 8 wrapped lines, banned words, Hesta's one rest, changes after the Warden) still pass.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 Run: `npx vitest run test/dialogContent.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Replace the lines** exactly as in the table.
+- [x] **Step 3: Replace the lines** exactly as in the table.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: all green.
 
-- [ ] **Step 5: List owner checks** (do not perform): start a new game and talk to all seven; each says their own name in their first line and it sounds like something that person would say; no line carries a "Name:" tag; Tobin still will not meet your eyes.
+- [x] **Step 5: List owner checks** (do not perform): start a new game and talk to all seven; each says their own name in their first line and it sounds like something that person would say; no line carries a "Name:" tag; Tobin still will not meet your eyes.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/data/dialog/hollowmere.ts test/dialogContent.test.ts
 git commit -m "feat: each named villager says their own name"
@@ -592,26 +597,26 @@ git commit -m "feat: each named villager says their own name"
 - Consumes: `addItem`, `game.items`.
 - Produces: `DebugState` lists one `Give: <id>` row per key of `game.items`, after the `Fight:` rows and before `Close`. Activating one adds one of that item with `addItem`; if it does not fit, `playSfx('error')` and nothing changes. The overlay stays open.
 
-- [ ] **Step 1: Write the failing test** in `test/debugState.test.ts`: the labels contain `Give: herb` between the last `Fight:` row and `Close`; activating it twice on a new player gives `Herb x3`; with eight full slots it plays `error` and the inventory is unchanged; "every row, including the last, is reachable" still passes.
+- [x] **Step 1: Write the failing test** in `test/debugState.test.ts`: the labels contain `Give: herb` between the last `Fight:` row and `Close`; activating it twice on a new player gives `Herb x3`; with eight full slots it plays `error` and the inventory is unchanged; "every row, including the last, is reachable" still passes.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 Run: `npx vitest run test/debugState.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** the rows.
+- [x] **Step 3: Implement** the rows.
 
-- [ ] **Step 4: Verify the suite and that production excludes debug code**
+- [x] **Step 4: Verify the suite and that production excludes debug code**
 Run: `npm test && npx tsc --noEmit && npm run build && grep -l "Give: " dist/assets/*.js | wc -l`
 Expected: all green; the count is `0`.
 
-- [ ] **Step 5: Write the carry-forward note**: where execution stands (branch, head, suite counts); the measured balance numbers from Task 8; every ruling made while executing, each with its cost if wrong; deferred minors from the reviews; questions for the owner; and the play-test list below, marked as not performed by anyone.
+- [x] **Step 5: Write the carry-forward note**: where execution stands (branch, head, suite counts); the measured balance numbers from Task 8; every ruling made while executing, each with its cost if wrong; deferred minors from the reviews; questions for the owner; and the play-test list below, marked as not performed by anyone.
 
   **Owner play-test for Phase 4** (spec §14): grind from 1 to 5; learn Heal and Ember; use both; use an Herb mid-fight. Then the look-and-listen checks listed in Tasks 6, 7, 8 and 9, plus: use `Give: herb` in the debug overlay when you run out; say whether road fights now feel fair unarmed, whether the marsh at level 3 feels hard but possible, and whether the climb from 3 to 5 without a weapon is too slow (Garrik opens in Phase 5; `Give: wooden_club` is there to compare).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 ```bash
 git add src/game/debug.ts test/debugState.test.ts docs/superpowers
 git commit -m "feat: debug give rows; docs: Phase 4 complete, owner play-test list"
 ```
 
-- [ ] **Step 7: Stop.** Phase 4 is complete. Report the owner checks and wait for feedback before Phase 5.
+- [x] **Step 7: Stop.** Phase 4 is complete. Report the owner checks and wait for feedback before Phase 5.
