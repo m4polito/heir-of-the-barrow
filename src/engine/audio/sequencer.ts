@@ -12,6 +12,8 @@ export interface Song {
   id: string;
   tempo: number;
   loopFrom?: number;
+  /** Default true. When false the song plays once and ends without cutting the last notes. */
+  loop?: boolean;
   tracks: Track[];
 }
 
@@ -49,6 +51,18 @@ export function validateSong(song: Song): void {
       }
     });
   });
+  if (song.loop === false) {
+    song.tracks.forEach((track, ti) => {
+      if (track.channel === 'noise') return;
+      const last = [...track.rows].reverse().find((row) => row !== null);
+      if (last !== undefined && last !== 'off') {
+        throw new Error(`song ${song.id}: track ${ti} must end with 'off' (non-looping)`);
+      }
+    });
+  }
+  if (song.loop === false && song.loopFrom !== undefined) {
+    throw new Error(`song ${song.id}: loopFrom is meaningless when loop is false`);
+  }
   if (song.loopFrom !== undefined && !(song.loopFrom >= 0 && song.loopFrom < count)) {
     throw new Error(`song ${song.id}: loopFrom ${song.loopFrom} out of range 0..${count - 1}`);
   }
@@ -87,7 +101,13 @@ export class Sequencer {
       this.emitRow(song, this.cursorRow, this.cursorTime);
       this.cursorRow++;
       this.cursorTime += rowDur;
-      if (this.cursorRow >= rowCount) this.cursorRow = song.loopFrom ?? 0;
+      if (this.cursorRow >= rowCount) {
+        if (song.loop === false) {
+          this.song = null;
+          return;
+        }
+        this.cursorRow = song.loopFrom ?? 0;
+      }
     }
   }
 

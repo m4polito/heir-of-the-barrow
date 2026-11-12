@@ -19,7 +19,31 @@ describe('transitionAlpha', () => {
   });
 });
 
+describe('transitionAlpha with unequal halves', () => {
+  it('fades out over `out` and in over `inn`', () => {
+    expect(transitionAlpha(15, 30, 10)).toBe(0.5);
+    expect(transitionAlpha(30, 30, 10)).toBe(1);
+    expect(transitionAlpha(35, 30, 10)).toBe(0.5);
+    expect(transitionAlpha(40, 30, 10)).toBe(0);
+  });
+});
+
 describe('TransitionState', () => {
+  it('honours a separate inFrames', () => {
+    const stack = new StateStack();
+    const onMid = vi.fn();
+    const t = new TransitionState(stack, { frames: 30, inFrames: 10, onMid });
+    stack.push(t);
+    for (let i = 1; i <= 45; i++) {
+      stack.update(input);
+      if (i === 29) expect(onMid).not.toHaveBeenCalled();
+      if (i === 30) expect(onMid).toHaveBeenCalledTimes(1);
+      if (i === 39) expect(stack.states).toContain(t);
+      if (i === 40) expect(stack.states).not.toContain(t);
+    }
+    expect(onMid).toHaveBeenCalledTimes(1);
+  });
+
   it('calls onMid once and removes itself by update 24', () => {
     const stack = new StateStack();
     const onMid = vi.fn();

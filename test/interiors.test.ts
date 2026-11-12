@@ -8,7 +8,7 @@ import { isWalkable, warpAt, type GameMap } from '../src/game/map';
 
 const BY_ID: Record<string, GameMap> = MAPS;
 const ALL = Object.entries(BY_ID);
-const INTERIORS = ALL.filter(([id]) => id !== 'hollowmere');
+const INTERIORS = ALL.filter(([id]) => id !== 'hollowmere' && id !== 'marsh');
 const key = (x: number, y: number) => `${x},${y}`;
 
 function reach(map: GameMap, sx: number, sy: number): Set<string> {
@@ -28,8 +28,8 @@ function reach(map: GameMap, sx: number, sy: number): Set<string> {
 }
 
 describe('map registry', () => {
-  it('has all five maps keyed by id', () => {
-    expect(Object.keys(MAPS).sort()).toEqual(['elder_house', 'forge', 'hollowmere', 'inn', 'shop']);
+  it('has all six maps keyed by id', () => {
+    expect(Object.keys(MAPS).sort()).toEqual(['elder_house', 'forge', 'hollowmere', 'inn', 'marsh', 'shop']);
     for (const [id, map] of ALL) expect(map.id).toBe(id);
   });
   it('every warp targets an existing map and entry', () => {
@@ -56,7 +56,8 @@ describe('interiors', () => {
     expect(reached.size).toBe(walkable);
     for (const e of Object.values(map.entry)) expect(reached.has(key(e.x, e.y))).toBe(true);
   });
-  it('every warp sits on a walkable door tile and every door tile has a warp', () => {
+  it('every door-tile warp is walkable, every door tile has a warp, and only gate and town warps are off doors', () => {
+    const offDoor: string[] = [];
     for (const [id, map] of ALL) {
       const doors = new Set<string>();
       map.tiles.forEach((t, i) => {
@@ -67,16 +68,21 @@ describe('interiors', () => {
         if (t.kind !== 'warp') continue;
         warps.add(key(t.x, t.y));
         expect(isWalkable(map, t.x, t.y), `${id} warp ${t.x},${t.y} walkable`).toBe(true);
-        expect(doors.has(key(t.x, t.y)), `${id} warp ${t.x},${t.y} on door`).toBe(true);
+        if (!doors.has(key(t.x, t.y))) offDoor.push(`${id}@${t.x},${t.y}`);
       }
       for (const d of doors) expect(warps.has(d), `${id} door ${d} has warp`).toBe(true);
     }
+    expect(offDoor.sort()).toEqual(['hollowmere@11,19', 'hollowmere@12,19', 'marsh@12,20']);
+  });
+  it('hollowmere has six warps: four doors and the two-tile south gate', () => {
+    expect(MAPS.hollowmere.triggers.filter((t) => t.kind === 'warp').length).toBe(6);
   });
   it('doors round-trip through hollowmere', () => {
     const outside = MAPS.hollowmere;
     let visited = 0;
+    const isDoor = (x: number, y: number) => outside.tiles[y * outside.width + x] === TILE_IDS.door;
     for (const t of outside.triggers) {
-      if (t.kind !== 'warp') continue;
+      if (t.kind !== 'warp' || !isDoor(t.x, t.y)) continue;
       visited++;
       const inside = BY_ID[t.to]!;
       const door = inside.entry[t.entry]!;
@@ -133,6 +139,10 @@ describe('story config', () => {
     });
     expect(Object.keys(DIALOGS)).toContain(STORY.opening.dialog);
   });
+  it('respawn entry and dialog exist', () => {
+    expect(BY_ID[STORY.respawn.map]!.entry[STORY.respawn.entry]).toBeDefined();
+    expect(Object.keys(DIALOGS)).toContain(STORY.respawn.dialog);
+  });
 });
 
 // Vite reads the sources as raw text (the project has no Node typings, so no fs).
@@ -145,13 +155,13 @@ const SOURCES = import.meta.glob<string>(['../src/game/**/*.ts', '../src/engine/
 describe('story-free engine', () => {
   const files = Object.entries(SOURCES);
   it('src/game, src/engine and src/ui mention no story names', () => {
-    const banned = ["'hollowmere'", "'elder_house'", "'maren", "'aldric", "'intro_done'", 'dimming'];
+    const banned = ["'hollowmere'", "'elder_house'", "'maren", "'aldric", "'mireling", "'marsh'", "'intro_done'", 'dimming'];
     expect(files.length).toBeGreaterThan(10);
     for (const [file, text] of files)
       for (const b of banned) expect(text.includes(b), `${file} contains ${b}`).toBe(false);
   });
   it('imports no story data tables, not even as types', () => {
-    const forbidden = /(?:from|import)\s*\(?\s*['"][^'"]*data\/(items|maps|dialog|songs|story)\b/;
+    const forbidden = /(?:from|import)\s*\(?\s*['"][^'"]*data\/(items|maps|dialog|songs|story|monsters)\b/;
     for (const [file, text] of files) expect(forbidden.test(text), `${file} imports story data`).toBe(false);
   });
 });

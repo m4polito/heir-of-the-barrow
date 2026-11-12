@@ -2,7 +2,7 @@ import { ITEMS } from '../src/data/items';
 import { STORY } from '../src/data/story';
 import { describe, it, expect } from 'vitest';
 import { LEVELS, levelForXp } from '../src/data/levels';
-import { createPlayer, hasFlag, setFlag, applyLevel } from '../src/game/player';
+import { createPlayer, hasFlag, setFlag, applyLevel, applyDeath, settleBattle } from '../src/game/player';
 import { attackOf, defenseOf } from '../src/game/stats';
 import { equip } from '../src/game/inventory';
 
@@ -66,5 +66,31 @@ describe('player', () => {
   it('items', () => {
     expect(ITEMS.bronze_sword.price).toBe(180);
     expect(ITEMS.herb.stack).toBe(6);
+  });
+});
+
+describe('applyDeath and settleBattle', () => {
+  const base = () => ({ ...createPlayer('x', STORY.startingItems), level: 3, xp: 30, flags: ['a'] });
+  it('applyDeath halves gold, restores hp and mp, keeps the rest', () => {
+    expect(applyDeath({ ...base(), gold: 41 }).gold).toBe(20);
+    expect(applyDeath({ ...base(), gold: 1 }).gold).toBe(0);
+    expect(applyDeath({ ...base(), gold: 0 }).gold).toBe(0);
+    const p = { ...base(), hp: 0, mp: 0, maxHp: 15, maxMp: 5, equipment: { weapon: 'w' } };
+    const before = structuredClone(p);
+    const q = applyDeath(p);
+    expect(q.hp).toBe(15);
+    expect(q.mp).toBe(5);
+    expect(q).toMatchObject({ xp: p.xp, level: p.level, inventory: p.inventory, equipment: p.equipment, flags: p.flags });
+    expect(p).toEqual(before);
+  });
+  it('settleBattle applies hp and reward', () => {
+    const p = { ...base(), gold: 10, xp: 5 };
+    expect(settleBattle(p, 9, { xp: 2, gold: 4 })).toMatchObject({ hp: 9, gold: 14, xp: 7 });
+    expect(settleBattle(p, -3, null)).toMatchObject({ hp: 0, gold: 10, xp: 5 });
+    expect(settleBattle(p, 999, null).hp).toBe(p.maxHp);
+  });
+  it('settleBattle caps gold and xp', () => {
+    expect(settleBattle({ ...base(), gold: 65530 }, 1, { xp: 0, gold: 18 }).gold).toBe(65535);
+    expect(settleBattle({ ...base(), xp: 65534 }, 1, { xp: 18, gold: 0 }).xp).toBe(65535);
   });
 });

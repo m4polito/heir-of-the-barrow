@@ -1,7 +1,7 @@
 import { LOGICAL_W, LOGICAL_H, TILE, DIR_VECTORS, type Dir } from '../engine/constants';
 import type { State } from '../engine/state';
 import type { Input } from '../engine/input';
-import { TILE_IDS, ANIM_FRAME_LEN } from '../data/tiles';
+import { TILE_IDS, TILES, ANIM_FRAME_LEN } from '../data/tiles';
 import { HERO_SPRITES } from '../data/sprites/hero';
 import { npcArt } from '../data/sprites/npcs';
 import { isWalkable, tileAt, warpAt, type GameMap } from './map';
@@ -11,7 +11,11 @@ import { cameraOrigin } from './camera';
 import { TransitionState } from './transition';
 import { DialogState } from './dialog/dialogState';
 import { MenuState } from './menu/menuState';
-import { setFlag, hasFlag } from './player';
+import { setFlag, hasFlag, applyDeath } from './player';
+import { encounterStep, ENCOUNTER_GRACE } from './encounter';
+import { backdropArt } from '../data/sprites/backdrops';
+import { BattleState } from './battle/battleState';
+import type { BattleOutcome } from './battle/battle';
 import type { Game } from './game';
 
 function lookup(game: Game, mapId: string, entry: string): { map: GameMap; hero: HeroState } {
@@ -28,13 +32,22 @@ export class ExploreState implements State {
   private _hero: HeroState;
   /** Set whenever a map is entered; consumed by the first update() as the top state. */
   private enteredMap: boolean;
+  /** Dialog shown once, from the first update as the top state with no auto trigger firing. */
+  private pendingDialog: string | undefined;
+  /** Steps left before an encounter can start. */
+  private grace = ENCOUNTER_GRACE;
   readonly npcs: NpcState[];
 
   constructor(
     private readonly game: Game,
     mapId: string,
     entry: string,
+    opts: { dialog?: string } = {},
   ) {
+    if (opts.dialog !== undefined && !game.dialogs[opts.dialog]) {
+      throw new Error(`Unknown dialog: ${opts.dialog}`);
+    }
+    this.pendingDialog = opts.dialog;
     const { map, hero } = lookup(game, mapId, entry);
     this._map = map;
     this._hero = hero;
@@ -72,10 +85,53 @@ export class ExploreState implements State {
           this._hero = target.hero;
           this.npcs.splice(0, this.npcs.length, ...target.map.npcs.map(createNpc));
           this.playMapSong();
+          this.grace = ENCOUNTER_GRACE;
           this.enteredMap = true;
         },
       }),
     );
+  }
+
+  /** Fade out, fight `monsterId` on `backdrop`, and handle the outcome. */
+  startBattle(monsterId: string, backdrop: string): void {
+    const { game } = this;
+    const monster = game.monsters[monsterId];
+    if (!monster) throw new Error(`Unknown monster: ${monsterId}`);
+    backdropArt(backdrop); // throws now, not from render, if the backdrop is unknown
+    const { stack } = game;
+    game.audio.stopSong();
+    game.audio.playSfx('encounter');
+    stack.push(
+      new TransitionState(stack, {
+        frames: 30,
+        inFrames: 10,
+        onMid: () => stack.push(new BattleState(game, { monster, backdrop, onEnd: (o) => this.endBattle(o) })),
+      }),
+    );
+  }
+
+  private endBattle(outcome: BattleOutcome): void {
+    const { game } = this;
+    if (outcome === 'lost') {
+      game.player = applyDeath(game.player);
+      const r = game.story.respawn;
+      game.stack.reset(new ExploreState(game, r.map, r.entry, { dialog: r.dialog }));
+      return;
+    }
+    this.grace = ENCOUNTER_GRACE;
+    this.playMapSong();
+  }
+
+  private rollEncounter(x: number, y: number): boolean {
+    const { game } = this;
+    const table = this._map.encounters;
+    const tile = tileAt(this._map, x, y);
+    if (!table || !tile || game.debug.noEncounters) return false;
+    const r = encounterStep(game.rng, table, tile, this.grace);
+    this.grace = r.grace;
+    if (!r.hit) return false;
+    this.startBattle(r.hit.monster, r.hit.backdrop);
+    return true;
   }
 
   private npcAt(x: number, y: number, except?: NpcState): boolean {
@@ -134,6 +190,12 @@ export class ExploreState implements State {
       this.enteredMap = false;
       if (this.runAutoTrigger()) return;
     }
+    if (this.pendingDialog !== undefined) {
+      const id = this.pendingDialog;
+      this.pendingDialog = undefined;
+      this.game.stack.push(new DialogState(this.game, this.script(id)));
+      return;
+    }
     if (input.pressed('confirm') && heroIdle(this._hero)) {
       const npc = this.talkTarget();
       if (npc) {
@@ -162,9 +224,11 @@ export class ExploreState implements State {
       (x, y) => isWalkable(map, x, y) && !this.npcAt(x, y),
       (x, y) => {
         const w = warpAt(map, x, y);
-        if (!w) return false;
-        this.warpTo(w.to, w.entry);
-        return true;
+        if (w) {
+          this.warpTo(w.to, w.entry);
+          return true;
+        }
+        return this.rollEncounter(x, y);
       },
     );
     for (let i = 0; i < this.npcs.length; i++) {
@@ -196,7 +260,7 @@ export class ExploreState implements State {
     const y1 = Math.floor((oy + LOGICAL_H - 1) / TILE);
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
-        const t = tileAt(map, tx, ty);
+        const t = tileAt(map, tx, ty) ?? (map.border === undefined ? undefined : TILES[map.border]);
         if (!t) continue;
         const art = t.frames[Math.floor(frame / ANIM_FRAME_LEN) % t.frames.length]!;
         ctx.drawImage(sprites.get(art), tx * TILE - ox, ty * TILE - oy);

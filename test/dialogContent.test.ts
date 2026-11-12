@@ -4,7 +4,7 @@ import { ScriptRunner, type DialogNode, type DialogScript, type ScriptEnv, type 
 import { wrapText } from '../src/ui/wrap';
 
 const IDS: DialogId[] = [
-  'maren_intro', 'maren', 'hesta', 'garrik', 'odo', 'pip', 'bram', 'tobin', 'villager_a', 'villager_b',
+  'maren_intro', 'maren_fallen', 'maren', 'hesta', 'garrik', 'odo', 'pip', 'bram', 'tobin', 'villager_a', 'villager_b',
 ];
 
 function run(id: DialogId, flags: string[] = []) {
@@ -16,7 +16,7 @@ function run(id: DialogId, flags: string[] = []) {
     set: (f) => { set.add(f); calls.push(`set:${f}`); },
     give: (i) => { calls.push(`give:${i}`); return true; },
     gold: () => {},
-    heal: () => {},
+    heal: () => { calls.push('heal'); },
     sfx: (s) => { calls.push(`sfx:${s}`); },
   };
   const runner = new ScriptRunner(DIALOGS[id], env);
@@ -79,6 +79,10 @@ describe('Hollowmere dialog content', () => {
     const after = first(['warden_defeated']);
     if (id === 'tobin') expect(after).not.toEqual(before);
     else expect(run(id, ['warden_defeated']).steps).not.toEqual(run(id).steps);
+  });
+
+  it.each([[], ['warden_defeated']])('hesta gives one free rest per talk (flags: %s)', (...flags) => {
+    expect(run('hesta', flags).calls.filter((c) => c === 'heal')).toHaveLength(1);
   });
 
   it('contains no banned words in any branch', () => {

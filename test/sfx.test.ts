@@ -51,6 +51,34 @@ describe('SfxPlayer', () => {
     expect(ons[1]!.freq).toBeCloseTo(ons[0]!.freq!, 3);
   });
 
+  it('plays heroHit', () => {
+    const c = run(SFX.heroHit);
+    expect(c[1]).toMatchObject({ kind: 'noiseHit', preset: 's', vol: 12 });
+    expect(c[1]!.time).toBeCloseTo(10, 3);
+    const ons = c.filter((x) => x.kind === 'noteOn');
+    const offs = c.filter((x) => x.kind === 'noteOff');
+    expect(ons).toHaveLength(2);
+    expect(ons[0]).toMatchObject({ ch: 'tri' });
+    expect(ons[0]!.freq).toBeCloseTo(110.0, 1);
+    expect(ons[0]!.time).toBeCloseTo(10.0167, 3);
+    expect(ons[1]).toMatchObject({ ch: 'tri' });
+    expect(ons[1]!.freq).toBeCloseTo(82.41, 2);
+    expect(ons[1]!.time).toBeCloseTo(10.0833, 3);
+    expect(offs.at(-1)).toMatchObject({ ch: 'tri' });
+    expect(offs.at(-1)!.time).toBeCloseTo(10.1667, 3);
+  });
+
+  it('battle effects are every id with steps and the right lengths', () => {
+    for (const [id, steps] of Object.entries(SFX)) {
+      expect(steps.length, id).toBeGreaterThan(0);
+    }
+    const total = (id: keyof typeof SFX) => SFX[id].reduce((n, s) => n + s.frames, 0);
+    expect(total('encounter')).toBe(32);
+    for (const id of ['heroHit', 'monsterHit', 'miss', 'critical', 'runOk', 'runFail'] as const) {
+      expect(total(id), id).toBeLessThanOrEqual(16);
+    }
+  });
+
   it('validates every entry', () => {
     for (const steps of Object.values(SFX)) {
       for (const s of steps) {

@@ -68,3 +68,25 @@ export function applyLevel(p: PlayerState, level: number): PlayerState {
     mp: scale(row.maxMp, p.mp, p.maxMp),
   };
 }
+
+export const GOLD_MAX = 65535;
+export const XP_MAX = 65535;
+
+/** Death penalty: half the gold, full hp and mp; nothing else changes. */
+export function applyDeath(p: PlayerState): PlayerState {
+  return { ...p, gold: Math.floor(p.gold / 2), hp: p.maxHp, mp: p.maxMp };
+}
+
+/** Fold a finished battle back into the player: remaining hp and an optional capped reward. */
+export function settleBattle(
+  p: PlayerState,
+  heroHp: number,
+  reward: { xp: number; gold: number } | null,
+): PlayerState {
+  return {
+    ...p,
+    hp: Math.min(p.maxHp, Math.max(0, heroHp)),
+    xp: reward ? Math.min(XP_MAX, p.xp + reward.xp) : p.xp,
+    gold: reward ? Math.min(GOLD_MAX, p.gold + reward.gold) : p.gold,
+  };
+}

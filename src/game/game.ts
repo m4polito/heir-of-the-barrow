@@ -8,6 +8,7 @@ import type { Song } from '../engine/audio/sequencer';
 import type { DialogScript } from './dialog/script';
 import type { GameMap } from './map';
 import type { ItemDef } from './items';
+import type { MonsterTable } from './battle/monster';
 import type { PlayerState } from './player';
 
 export interface StoryConfig {
@@ -16,6 +17,8 @@ export interface StoryConfig {
   defaultHeroName: string;
   newGame: { map: string; entry: string };
   opening: { map: string; flag: string; dialog: string };
+  /** Where the hero wakes after a lost battle, and what is said. */
+  respawn: { map: string; entry: string; dialog: string };
   startingItems: { item: string; count: number }[];
   /** Prefix for browser storage keys (for example `<prefix>.mute`). */
   storagePrefix: string;
@@ -32,6 +35,7 @@ export interface Game {
   readonly dialogs: Record<string, DialogScript>;
   readonly songs: Record<string, Song>;
   readonly items: Record<string, ItemDef>;
+  readonly monsters: MonsterTable;
   readonly story: StoryConfig;
   player: PlayerState;
   debug: { noEncounters: boolean };

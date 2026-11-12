@@ -1,3 +1,4 @@
+import { MONSTERS } from '../src/data/monsters';
 import { ITEMS } from '../src/data/items';
 import { describe, it, expect } from 'vitest';
 import { StateStack, type State } from '../src/engine/state';
@@ -120,6 +121,7 @@ function makeGame(overrides: Partial<Parameters<typeof createGame>[0]> = {}) {
     dialogs: DIALOGS,
     songs: SONGS,
     items: ITEMS,
+    monsters: MONSTERS,
     story: STORY,
     player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
     ...overrides,
