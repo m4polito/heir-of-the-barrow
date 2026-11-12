@@ -21,6 +21,7 @@ describe('AudioManager', () => {
       currentTime = 0;
       destination = {};
       sampleRate = 44100;
+      state = 'running';
       constructor() { constructed++; }
       resume() { return Promise.resolve(); }
       createGain() { return { gain: param(), connect() {} }; }
@@ -34,7 +35,7 @@ describe('AudioManager', () => {
     vi.unstubAllGlobals();
   });
 
-  it('unlocks synchronously inside the keydown handler, once', () => {
+  it('unlocks synchronously inside the keydown handler, once', async () => {
     const handlers: Record<string, () => void> = {};
     const removed: string[] = [];
     const win = {
@@ -43,12 +44,14 @@ describe('AudioManager', () => {
     } as unknown as Window;
     const audio = new AudioManager(null);
     audio.installUnlockListener(win);
-    expect(Object.keys(handlers).sort()).toEqual(['keydown', 'pointerdown']);
+    expect(Object.keys(handlers).sort()).toEqual(['keydown', 'pointerdown', 'pointerup']);
     expect(audio.unlocked).toBe(false);
     handlers.keydown!();
     expect(audio.unlocked).toBe(true);
     expect(constructed).toBe(1);
-    expect(removed).toContain('pointerdown');
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(removed.sort()).toEqual(['keydown', 'pointerdown', 'pointerup']);
     handlers.keydown!();
     expect(constructed).toBe(1);
   });

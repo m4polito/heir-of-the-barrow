@@ -38,7 +38,7 @@ export class AudioManager {
   unlock(): void {
     if (this.ctx) return;
     const ctx = new AudioContext();
-    void ctx.resume();
+    void ctx.resume().catch(() => {});
     const master = ctx.createGain();
     master.gain.value = this.mutedPref ? 0 : 1;
     master.connect(ctx.destination);
@@ -53,7 +53,7 @@ export class AudioManager {
     setInterval(() => sequencer.schedule(ctx.currentTime + 0.1), 25);
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') void ctx.resume();
+        if (document.visibilityState === 'visible') void ctx.resume().catch(() => {});
       });
     }
     if (this.pending) {
@@ -64,16 +64,20 @@ export class AudioManager {
   }
 
   installUnlockListener(target: Window): void {
-    const onKey = () => {
-      this.unlock();
-      target.removeEventListener('pointerdown', onPtr);
+    const removeAll = () => {
+      target.removeEventListener('keydown', onGesture);
+      target.removeEventListener('pointerdown', onGesture);
+      target.removeEventListener('pointerup', onGesture);
     };
-    const onPtr = () => {
+    const onGesture = () => {
       this.unlock();
-      target.removeEventListener('keydown', onKey);
+      void this.ctx?.resume().then(() => {
+        if (this.ctx?.state === 'running') removeAll();
+      }).catch(() => {});
     };
-    target.addEventListener('keydown', onKey, { once: true });
-    target.addEventListener('pointerdown', onPtr, { once: true });
+    target.addEventListener('keydown', onGesture);
+    target.addEventListener('pointerdown', onGesture);
+    target.addEventListener('pointerup', onGesture);
   }
 
   playSong(song: Song): void {
@@ -89,8 +93,8 @@ export class AudioManager {
       songGain.gain.linearRampToValueAtTime(0, now + FADE_SEC);
       sequencer.stop(now + FADE_SEC);
       songGain.gain.setValueAtTime(0, start - 0.001);
-      songGain.gain.setValueAtTime(1, start);
     }
+    songGain.gain.setValueAtTime(1, start);
     sequencer.play(song, start);
   }
 
@@ -102,7 +106,6 @@ export class AudioManager {
     songGain.gain.setValueAtTime(1, now);
     songGain.gain.linearRampToValueAtTime(0, now + FADE_SEC);
     sequencer.stop(now + FADE_SEC);
-    songGain.gain.setValueAtTime(1, now + FADE_SEC + 0.001);
   }
 
   toggleMute(): boolean {

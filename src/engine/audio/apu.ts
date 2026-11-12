@@ -34,6 +34,7 @@ export class Apu implements ApuLike {
   private readonly duty: Record<'p1' | 'p2', Duty> = { p1: 0.5, p2: 0.5 };
   private readonly waves = new Map<Duty, PeriodicWave>();
   private readonly noiseBuffer: AudioBuffer;
+  private readonly liveNoise = new Set<AudioBufferSourceNode>();
 
   constructor(
     private readonly ctx: AudioContext,
@@ -100,12 +101,22 @@ export class Apu implements ApuLike {
     g.linearRampToValueAtTime((vol / 15) * MAX_GAIN, time + RAMP_SEC);
     g.exponentialRampToValueAtTime(0.0001, time + p.decay);
     g.setValueAtTime(0, time + p.decay + 0.001);
+    this.liveNoise.add(src);
+    src.onended = () => { this.liveNoise.delete(src); };
     src.start(time);
     src.stop(time + p.decay + 0.01);
   }
 
   /** Only place cancelScheduledValues is allowed: silences notes queued after `time`. */
   stopAll(time: number): void {
+    for (const src of this.liveNoise) {
+      try {
+        src.stop(time);
+      } catch {
+        // already stopped
+      }
+    }
+    this.liveNoise.clear();
     for (const ch of PITCHED) {
       const g = this.gain[ch].gain;
       g.cancelScheduledValues(time);
