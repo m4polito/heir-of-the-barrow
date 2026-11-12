@@ -4,6 +4,8 @@ import { PALETTE } from '../src/data/palette';
 import { TILES } from '../src/data/tiles';
 import { HERO_SPRITES } from '../src/data/sprites/hero';
 import { NPC_SPRITES, adultPalette } from '../src/data/sprites/npcs';
+import { monsterArt } from '../src/data/sprites/monsters';
+import { BACKDROPS } from '../src/data/sprites/backdrops';
 
 describe('art compiles', () => {
   for (const t of TILES) {
@@ -43,6 +45,20 @@ describe('art compiles', () => {
           const out = compilePixelArt({ ...f, colors: adultPalette(i) }, PALETTE);
           expect(out.w).toBe(16);
         }
+    });
+  }
+  for (const i of [0, 1, 2]) {
+    it(`mireling palette ${i} compiles to 24x24`, () => {
+      const out = compilePixelArt(monsterArt('mireling', i), PALETTE);
+      expect(out.w).toBe(24);
+      expect(out.h).toBe(24);
+    });
+  }
+  for (const [id, art] of Object.entries(BACKDROPS)) {
+    it(`backdrop ${id} compiles to 16x24`, () => {
+      const out = compilePixelArt(art, PALETTE);
+      expect(out.w).toBe(16);
+      expect(out.h).toBe(24);
     });
   }
 });

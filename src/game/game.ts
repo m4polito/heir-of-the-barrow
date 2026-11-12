@@ -8,6 +8,7 @@ import type { Song } from '../engine/audio/sequencer';
 import type { DialogScript } from './dialog/script';
 import type { GameMap } from './map';
 import type { ItemDef } from './items';
+import type { MonsterTable } from './battle/monster';
 import type { PlayerState } from './player';
 
 export interface StoryConfig {
@@ -32,6 +33,7 @@ export interface Game {
   readonly dialogs: Record<string, DialogScript>;
   readonly songs: Record<string, Song>;
   readonly items: Record<string, ItemDef>;
+  readonly monsters: MonsterTable;
   readonly story: StoryConfig;
   player: PlayerState;
   debug: { noEncounters: boolean };

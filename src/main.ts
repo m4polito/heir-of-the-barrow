@@ -14,6 +14,7 @@ import { MAPS } from './data/maps';
 import { DIALOGS } from './data/dialog/hollowmere';
 import { SONGS } from './data/songs';
 import { ITEMS } from './data/items';
+import { MONSTERS } from './data/monsters';
 import { STORY } from './data/story';
 import { AudioManager } from './engine/audio/audio';
 
@@ -43,6 +44,7 @@ const game = createGame({
   dialogs: DIALOGS,
   songs: SONGS,
   items: ITEMS,
+  monsters: MONSTERS,
   story: STORY,
   player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
 });
