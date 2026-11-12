@@ -72,7 +72,6 @@ describe('save round trip', () => {
 });
 
 describe('parseSave rejects damage', () => {
-  const lv = LEVELS[3]!;
   const cases: [string, Record<string, unknown>][] = [
     ['version 2', { version: 2 }],
     ['version missing', { version: undefined }],
@@ -90,9 +89,9 @@ describe('parseSave rejects damage', () => {
     ['gold 65536', { gold: 65536 }],
     ['gold 1.5', { gold: 1.5 }],
     ['hp 0', { hp: 0 }],
-    ['hp over max', { hp: lv.maxHp + 1 }],
+    ['hp 65536', { hp: 65536 }],
     ['mp -1', { mp: -1 }],
-    ['mp over max', { mp: lv.maxMp + 1 }],
+    ['mp 65536', { mp: 65536 }],
     ['herb as weapon', { equipment: { weapon: 'herb' } }],
     ['unknown weapon', { equipment: { weapon: 'nope' } }],
     ['unknown slot', { equipment: { hat: 'wooden_club' } }],
@@ -117,10 +116,37 @@ describe('parseSave rejects damage', () => {
     ['facing north', { facing: 'north' }],
     ['torchSteps -1', { torchSteps: -1 }],
     ['torchSteps 65536', { torchSteps: 65536 }],
+    ['inventory with null', { inventory: [null] }],
+    ['inventory with a string', { inventory: ['herb'] }],
+    ['equipment null', { equipment: null }],
+    ['inventory item constructor', { inventory: [{ item: 'constructor', count: 1 }] }],
+    ['inventory item __proto__', { inventory: [{ item: '__proto__', count: 1 }] }],
+    ['equipment toString', { equipment: { weapon: 'toString' } }],
+    ['map toString', { map: 'toString' }],
+    ['map constructor', { map: 'constructor' }],
+    ['x null', { x: null }],
   ];
   it.each(cases)('%s', (_label, change) => {
     const text = JSON.stringify({ ...goodSave(), ...change });
     expect(parseSave(text, ctx)).toBeNull();
+  });
+
+  it('rejects an x that is not a finite number', () => {
+    const text = goodText().replace(/"x":\d+/, '"x":1e999');
+    expect(text).toContain('1e999');
+    expect(parseSave(text, ctx)).toBeNull();
+  });
+
+  it('keeps a save whose hp or mp now exceeds the level table, and clamps on load', () => {
+    const lv = LEVELS[3]!;
+    for (const [field, over, max] of [
+      ['hp', lv.maxHp + 1, lv.maxHp],
+      ['mp', lv.maxMp + 1, lv.maxMp],
+    ] as const) {
+      const parsed = parseSave(JSON.stringify({ ...goodSave(), [field]: over }), ctx);
+      expect(parsed, field).not.toBeNull();
+      expect(fromSave(parsed!)[field]).toBe(max);
+    }
   });
 
   it('accepts the good save', () => {

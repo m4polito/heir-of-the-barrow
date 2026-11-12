@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { StateStack } from '../src/engine/state';
-import type { Input } from '../src/engine/input';
+import { Input } from '../src/engine/input';
 import type { Font } from '../src/engine/font';
 import { AudioManager } from '../src/engine/audio/audio';
 import { SpriteCache } from '../src/engine/spriteCache';
@@ -158,6 +158,22 @@ describe('opening the shop', () => {
   });
 });
 
+describe('held keys', () => {
+  it('a key held while the shop opens does not scroll the menu', () => {
+    const t = forge();
+    const input = new Input();
+    input.keyDown('ArrowUp');
+    t.sounds.length = 0;
+    for (let i = 0; i < 30; i++) {
+      input.update();
+      t.stack.update(input);
+    }
+    expect(t.shop().phase).toBe('menu');
+    expect((t.shop() as unknown as { menu: { cursor: number } }).menu.cursor).toBe(0);
+    expect(t.sounds).not.toContain('menuMove');
+  });
+});
+
 describe('buying', () => {
   it('the Buy list is the stock list', () => {
     const t = forge();
@@ -239,6 +255,8 @@ describe('buying', () => {
     const t = forge({ inventory: [{ item: 'wooden_club', count: 1 }] });
     pickRow(t, 0);
     expect(t.shown()).toBe('You already carry one.');
+    expect(t.game.player.gold).toBe(40);
+    expect(t.sounds).toContain('error');
   });
 
   const fullPack = (): Partial<PlayerState> => ({
@@ -278,6 +296,8 @@ describe('buying', () => {
     t.press('confirm'); // No
     expect(t.game.player.equipment.weapon).toBe('wooden_club');
     expect(t.game.player.gold).toBe(100);
+    expect(t.game.player.inventory).toEqual(fullPack().inventory);
+    expect(t.sounds).not.toContain('buy');
   });
 });
 
@@ -309,6 +329,27 @@ describe('selling', () => {
     expect(t.shop().rows).toHaveLength(1);
     expect(t.shop().rows[0]).toContain("Aldric's Shield");
     expect(t.sounds.filter((s) => s === 'buy')).toHaveLength(2);
+    t.press('confirm'); // the shield row
+    t.idle();
+    expect(t.shown()).toBe('I cannot buy that.');
+  });
+
+  it('selling the last row keeps the cursor on a real row', () => {
+    const t = sellList({
+      inventory: [
+        { item: 'herb', count: 1 },
+        { item: 'torch', count: 1 },
+      ],
+    });
+    t.press('down');
+    t.press('confirm');
+    t.idle();
+    expect(t.shown()).toContain('The Torch?');
+    t.press('confirm');
+    expect(t.shop().rows).toHaveLength(1);
+    t.press('confirm');
+    t.idle();
+    expect(t.shown()).toContain('The Herb? I can give you 5 gold.');
   });
 
   it('will not buy the shield', () => {

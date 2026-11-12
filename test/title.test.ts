@@ -6,11 +6,11 @@ import { createPlayer } from '../src/game/player';
 import { toSave } from '../src/game/save';
 import { ITEMS } from '../src/data/items';
 import { MAPS } from '../src/data/maps';
-
-const ctx = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
 import { LOGICAL_W } from '../src/engine/constants';
 import { GLYPH_W } from '../src/engine/font';
 import { STORY } from '../src/data/story';
+
+const ctx = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
 
 const drawnAt: { t: string; x: number; y: number }[] = [];
 const textFont = {
@@ -30,7 +30,7 @@ function titleGame(stored: string | null) {
   } as unknown as Game;
 }
 
-const width =(text: string, scale: number) => Array.from(text).length * GLYPH_W * scale;
+const width = (text: string, scale: number) => Array.from(text).length * GLYPH_W * scale;
 
 describe('titleLayout', () => {
   it('wraps a long title at scale 2, centres every line, subtitle below at scale 1', () => {

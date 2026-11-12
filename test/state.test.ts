@@ -402,6 +402,11 @@ describe('dialog services', () => {
     expect(stack.states).toContain(d);
   });
 
+  it('gold is clamped to 0..65535', () => {
+    expect(setup([{ gold: 100 }], {}, 65500).game.player.gold).toBe(65535);
+    expect(setup([{ gold: -100 }], {}, 40).game.player.gold).toBe(0);
+  });
+
   it('pay changes nothing and skips then when gold is short', () => {
     let done = 0;
     const { game, stack, d } = setup([{ pay: 6, then: ['ok'] }], { onDone: () => done++ }, 5);

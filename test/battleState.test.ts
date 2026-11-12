@@ -443,6 +443,7 @@ describe('BattleState', () => {
       expect(ended - jingle).toBeGreaterThanOrEqual(60); // the jingle's hold: 10 rows at tempo 150
       const order = ['You reach level 2.', 'Strength +1.', 'Max HP +3. Max MP +4.'].map((x) => t.texts.indexOf(x));
       expect(order.every((i) => i >= 0)).toBe(true);
+      expect(t.texts).toContain('You learned Heal!');
       expect([...order].sort((a, b) => a - b)).toEqual(order);
       // whatever the draws, the level-up adds 3 to the hp the battle ended with
       expect(t.game.player).toMatchObject({ level: 2, xp: 8 });

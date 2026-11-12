@@ -167,4 +167,8 @@ describe('story-free engine', () => {
     const forbidden = /(?:from|import)\s*\(?\s*['"][^'"]*data\/(items|maps|dialog|songs|story|monsters|spells|shops)\b/;
     for (const [file, text] of files) expect(forbidden.test(text), `${file} imports story data`).toBe(false);
   });
+  it('save.ts does not import nameEntry (the name grid lives in a leaf module)', () => {
+    const [, text] = files.find(([f]) => f.endsWith('/game/save.ts'))!;
+    expect(/from\s*['"]\.\/nameEntry['"]/.test(text)).toBe(false);
+  });
 });

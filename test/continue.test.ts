@@ -211,13 +211,16 @@ describe('Continue on the title', () => {
   });
 
   it('Continue fades into Explore at the saved tile with the saved player', () => {
-    const { store } = saved({ gold: 77 });
+    const { store, data } = saved({ gold: 77 });
     const t = title(store);
     t.stack.push(t.state);
     const before = t.game.player;
+    t.sounds.length = 0;
     t.stack.update(keys('confirm'));
     expect(t.stack.top).toBeInstanceOf(TransitionState);
     t.stack.update(keys('confirm')); // presses during the fade do nothing
+    expect(t.stack.states.filter((s) => s instanceof TransitionState)).toHaveLength(1);
+    expect(t.sounds.filter((s) => s === 'menuConfirm')).toHaveLength(1);
     let dialogs = 0;
     for (let i = 0; i < 200 && t.stack.states.some((s) => s instanceof TransitionState); i++) {
       t.stack.update(keys('confirm'));
@@ -232,6 +235,7 @@ describe('Continue on the title', () => {
     expect(ex.mapId).toBe('elder_house');
     expect({ x: ex.hero.x, y: ex.hero.y, facing: ex.hero.facing }).toEqual({ x: 6, y: 4, facing: 'up' });
     expect(t.game.player.gold).toBe(77);
+    expect(t.game.player).toEqual(fromSave(data));
     expect(t.game.player).not.toBe(before);
     expect(dialogs).toBe(0);
   });
@@ -257,14 +261,16 @@ describe('Continue on the title', () => {
   });
 
   it('a throwing getItem shows New Game only', () => {
+    let sets = 0;
     const t = title({
       getItem: () => {
         throw new Error('blocked');
       },
-      setItem: () => {},
+      setItem: () => void (sets += 1),
     });
     expect(() => t.stack.push(t.state)).not.toThrow();
     expect(t.state.rows).toEqual(['New Game']);
+    expect(sets).toBe(0);
   });
 
   it('down then confirm starts New Game and leaves the save untouched', () => {

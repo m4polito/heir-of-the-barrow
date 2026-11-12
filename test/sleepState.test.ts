@@ -8,7 +8,7 @@ import { SpriteCache } from '../src/engine/spriteCache';
 import { createRng } from '../src/engine/rng';
 import { ExploreState } from '../src/game/explore';
 import { createGame } from '../src/game/game';
-import { createPlayer, type PlayerState } from '../src/game/player';
+import { applyLevel, createPlayer, type PlayerState } from '../src/game/player';
 import { DialogState } from '../src/game/dialog/dialogState';
 import { SleepState, SLEEP_FADE } from '../src/game/sleepState';
 import { MAPS } from '../src/data/maps';
@@ -121,7 +121,7 @@ describe('SleepState', () => {
 
 describe('the inn', () => {
   const talk = (patch: Partial<PlayerState>) => {
-    const t = setup({ hp: 3, gold: 10, ...patch });
+    const t = setup({ ...applyLevel(createPlayer(STORY.defaultHeroName, []), 3), hp: 3, mp: 0, gold: 10, ...patch });
     t.press('confirm'); // talk to Hesta
     return t;
   };
@@ -143,6 +143,7 @@ describe('the inn', () => {
     toQuestion(t);
     t.press('confirm'); // Yes
     expect(t.game.player.gold).toBe(4);
+    expect(t.game.player.maxMp).toBeGreaterThan(0);
     expect(t.game.player.hp).toBe(t.game.player.maxHp);
     expect(t.game.player.mp).toBe(t.game.player.maxMp);
     expect(t.stack.top).toBeInstanceOf(SleepState);
@@ -153,6 +154,7 @@ describe('the inn', () => {
     expect(t.songs).toEqual(['stop', 'inn', SONGS.hollowmere.id]);
     next(t);
     expect(t.stack.top).toBe(t.explore);
+    expect(t.game.player.gold).toBe(4);
   });
 
   it('exactly six gold is enough', () => {
@@ -161,6 +163,11 @@ describe('the inn', () => {
     t.press('confirm');
     expect(t.game.player.gold).toBe(0);
     expect(t.stack.top).toBeInstanceOf(SleepState);
+    t.idle(SLEPT);
+    t.idle();
+    expect(t.shown()).toContain('Morning. You slept like a stone. He never could.');
+    expect(t.game.player.hp).toBe(t.game.player.maxHp);
+    expect(t.game.player.mp).toBe(t.game.player.maxMp);
   });
 
   it('five gold is refused', () => {

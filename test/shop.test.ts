@@ -73,6 +73,9 @@ describe('buyCheck and buy', () => {
     expect(() => buy(ITEMS, full, 'iron_knife')).toThrow('Cannot buy');
     expect(() => buy(ITEMS, fresh({ gold: 0 }), 'wooden_club')).toThrow('Cannot buy: wooden_club');
     expect(() => buyAndWear(ITEMS, fresh(), 'wooden_club')).toThrow('Cannot buy');
+    const poorFull = fresh({ gold: 0, inventory: fullPack({ item: 'herb', count: 1 }) });
+    expect(buyCheck(ITEMS, poorFull, 'iron_knife')).toEqual({ ok: false, why: 'gold' });
+    expect(() => buyAndWear(ITEMS, poorFull, 'iron_knife')).toThrow('Cannot buy');
   });
 });
 
@@ -130,7 +133,9 @@ describe('sell', () => {
 
   it('refuses key gear, empty slots and bad slots', () => {
     const p = fresh({ inventory: [{ item: 'aldric_shield', count: 1 }] });
+    const before = structuredClone(p);
     expect(sell(ITEMS, p, 0)).toBeNull();
+    expect(p).toEqual(before);
     expect(sell(ITEMS, p, 1)).toBeNull();
     expect(sell(ITEMS, p, 9)).toBeNull();
   });

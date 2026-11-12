@@ -17,6 +17,7 @@ const REFUSALS = {
 } as const;
 
 export class ShopState implements State {
+  private armed = false;
   private _phase: Phase = 'menu';
   private menu = new MenuList(['Buy', 'Sell', 'Leave']);
   private list = new MenuList([]);
@@ -134,6 +135,10 @@ export class ShopState implements State {
 
   update(input: Input): void {
     const { audio, stack, player } = this.game;
+    if (!this.armed) {
+      this.armed = true;
+      input.rearm();
+    }
     const list = this._phase === 'menu' ? this.menu : this.list;
     if (input.repeat('up')) {
       list.up();

@@ -6,7 +6,7 @@ import { INVENTORY_SLOTS } from './inventory';
 import type { ItemTable } from './items';
 import { isWalkable } from './map';
 import type { GameMap } from './map';
-import { NAME_GRID, NAME_MAX } from './nameEntry';
+import { NAME_GRID, NAME_MAX } from './nameGrid';
 
 export const SAVE_VERSION = 1;
 
@@ -15,8 +15,8 @@ const FLAG_LEN_MAX = 32;
 const TORCH_STEPS_MAX = 65535;
 const DIRS: readonly Dir[] = ['up', 'down', 'left', 'right'];
 const EQUIP_SLOTS: readonly EquipSlot[] = ['weapon', 'armor', 'shield'];
-/** The grid's character rows; the last row holds the BACK and END actions. Read lazily: nameEntry and explore import each other. */
-const nameChars = () => NAME_GRID.slice(0, -1).join('');
+/** The grid's character rows; the last row holds the BACK and END actions. */
+const NAME_CHARS = NAME_GRID.slice(0, -1).join('');
 
 export interface SaveData {
   version: 1;
@@ -70,8 +70,8 @@ export function fromSave(s: SaveData): PlayerState {
     name: s.name,
     level: s.level,
     xp: s.xp,
-    hp: s.hp,
-    mp: s.mp,
+    hp: Math.min(s.hp, row.maxHp),
+    mp: Math.min(s.mp, row.maxMp),
     gold: s.gold,
     str: row.str,
     agi: row.agi,
@@ -109,12 +109,12 @@ function validate(raw: unknown, ctx: SaveContext): SaveData | null {
 
   const { name, level, xp, hp, mp, gold, torchSteps } = raw;
   if (typeof name !== 'string' || name.length < 1 || name.length > NAME_MAX) return null;
-  const allowed = nameChars();
+  const allowed = NAME_CHARS;
   for (const ch of name) if (!allowed.includes(ch)) return null;
   if (!isInt(level, 1, LEVELS.length)) return null;
   const row = LEVELS[level - 1]!;
   if (!isInt(xp, 0, XP_MAX) || !isInt(gold, 0, GOLD_MAX)) return null;
-  if (!isInt(hp, 1, row.maxHp) || !isInt(mp, 0, row.maxMp)) return null;
+  if (!isInt(hp, 1, 65535) || !isInt(mp, 0, 65535)) return null;
   if (!isInt(torchSteps, 0, TORCH_STEPS_MAX)) return null;
 
   const equipment: Partial<Record<EquipSlot, string>> = {};

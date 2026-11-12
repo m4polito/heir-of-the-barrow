@@ -2,7 +2,7 @@ import type { State } from '../../engine/state';
 import type { Input } from '../../engine/input';
 import { drawWindow } from '../../ui/window';
 import { addItem } from '../inventory';
-import { hasFlag, setFlag } from '../player';
+import { GOLD_MAX, hasFlag, setFlag } from '../player';
 import type { Game } from '../game';
 import { DialogModel } from './model';
 import { ScriptRunner, type DialogScript, type ScriptEnv } from './script';
@@ -42,7 +42,7 @@ export class DialogState implements State {
         return r.ok;
       },
       gold: (n) => {
-        game.player = { ...game.player, gold: game.player.gold + n };
+        game.player = { ...game.player, gold: Math.max(0, Math.min(GOLD_MAX, game.player.gold + n)) };
       },
       heal: () => {
         game.player = { ...game.player, hp: game.player.maxHp, mp: game.player.maxMp };

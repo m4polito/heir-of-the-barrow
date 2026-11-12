@@ -6,7 +6,7 @@ import type { Song, Track } from '../../engine/audio/sequencer';
 //   rows 4-7:   B flat major  (B flat, D, F)
 //   rows 8-11:  C major       (C, E, G)
 //   rows 12-15: F major       (F, A, C)
-// p1 sings a slow tune over it, p2 holds the chord's root or fifth, tri walks the bass.
+// p1 sings a slow tune over it, p2 holds a chord tone (F, F, E, F), the E leading back to F, tri walks the bass.
 // Everything is released at row 15.
 
 type Row = string | null;

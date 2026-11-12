@@ -101,9 +101,25 @@ describe('Hollowmere dialog content', () => {
       expect(calls.some((c) => c.startsWith('rest:'))).toBe(false);
     });
     it('No neither pays nor rests', () => {
-      const { calls } = run('hesta', flags, false);
+      const { calls, steps } = run('hesta', flags, false);
       expect(calls.some((c) => c.startsWith('pay:') || c.startsWith('rest:'))).toBe(false);
+      const texts = steps.flatMap((s) => (s.kind === 'text' ? [s.text] : []));
+      expect(texts).toContain(flags.length ? 'Then sit a while anyway.' : 'Then mind the road. The bed will keep.');
     });
+  });
+
+  it('no script opens straight into a shop, rest, pay or save step', () => {
+    const service = (n: DialogNode | undefined) =>
+      n !== undefined && typeof n !== 'string' && ('shop' in n || 'rest' in n || 'pay' in n || 'save' in n);
+    const check = (id: string, nodes: DialogScript) => {
+      expect(service((nodes as DialogNode[])[0]), `${id} starts with a service step`).toBe(false);
+      const first = (nodes as DialogNode[])[0];
+      if (first !== undefined && typeof first !== 'string' && 'if' in first) {
+        check(id, first.then);
+        if (first.else) check(id, first.else);
+      }
+    };
+    for (const [id, script] of Object.entries(DIALOGS)) check(id, script);
   });
 
   it('every ask fits three lines, every rest is a one-shot song, every hesta price is 6', () => {
