@@ -7,7 +7,7 @@ export const CENTER_COL = 7;
 export const CENTER_ROW = 7;
 
 export type Dir = 'up' | 'down' | 'left' | 'right';
-export type Action = Dir | 'confirm' | 'cancel' | 'mute';
+export type Action = Dir | 'confirm' | 'cancel' | 'mute' | 'debug';
 
 export const DIR_VECTORS: Record<Dir, { dx: number; dy: number }> = {
   up: { dx: 0, dy: -1 },

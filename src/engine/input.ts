@@ -1,5 +1,8 @@
 import type { Action } from './constants';
 
+export const REPEAT_DELAY = 16;
+export const REPEAT_INTERVAL = 5;
+
 export const KEY_MAP: Record<string, Action> = {
   ArrowUp: 'up',
   KeyW: 'up',
@@ -15,6 +18,7 @@ export const KEY_MAP: Record<string, Action> = {
   KeyX: 'cancel',
   Escape: 'cancel',
   KeyM: 'mute',
+  Backquote: 'debug',
 };
 
 export class Input {
@@ -23,6 +27,7 @@ export class Input {
   private prevDown = new Set<Action>();
   private anyDownFlag = false;
   private anyThisTick = false;
+  private heldTicks = new Map<Action, number>();
 
   keyDown(code: string): void {
     if (!this.codes.has(code)) this.anyDownFlag = true;
@@ -35,6 +40,7 @@ export class Input {
 
   clear(): void {
     this.codes.clear();
+    this.heldTicks.clear();
   }
 
   /** Call exactly once per tick, before any state reads input. */
@@ -45,6 +51,10 @@ export class Input {
       const action = KEY_MAP[code];
       if (action) this.down.add(action);
     }
+    for (const a of [...this.heldTicks.keys()]) {
+      if (!this.down.has(a)) this.heldTicks.delete(a);
+    }
+    for (const a of this.down) this.heldTicks.set(a, (this.heldTicks.get(a) ?? 0) + 1);
     this.anyThisTick = this.anyDownFlag;
     this.anyDownFlag = false;
   }
@@ -55,6 +65,12 @@ export class Input {
 
   pressed(a: Action): boolean {
     return this.down.has(a) && !this.prevDown.has(a);
+  }
+
+  repeat(a: Action): boolean {
+    const ticks = this.heldTicks.get(a) ?? 0;
+    if (ticks === 1) return true;
+    return ticks > REPEAT_DELAY && (ticks - REPEAT_DELAY - 1) % REPEAT_INTERVAL === 0;
   }
 
   anyPressed(): boolean {
