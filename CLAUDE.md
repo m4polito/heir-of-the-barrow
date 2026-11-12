@@ -5,7 +5,7 @@ A browser JRPG in the style of 8-bit NES-era Dragon Warrior: TypeScript, Vite, H
 ## Source of truth
 
 - Design: `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md`
-- Current plan: `docs/superpowers/plans/2026-11-11-phase-1-walking-skeleton.md`
+- Current plan: `docs/superpowers/plans/2026-11-11-phase-2-town-that-talks.md`
 
 When they disagree, the design doc wins. Do not restate design details here; read them there.
 
