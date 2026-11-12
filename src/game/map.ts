@@ -1,16 +1,44 @@
 import type { Dir } from '../engine/constants';
 import { TILES, type TileDef } from '../data/tiles';
 
-export type SongId = 'hollowmere';
+export interface NpcPlacement {
+  id: string;
+  sprite: string;
+  /** Palette swap index for the adult body: 0 default, 1, 2. */
+  palette?: number;
+  x: number;
+  y: number;
+  facing: Dir;
+  wander: boolean;
+  dialog: string;
+}
+
+export interface WarpTrigger {
+  kind: 'warp';
+  x: number;
+  y: number;
+  to: string;
+  entry: string;
+}
+
+export interface AutoTrigger {
+  kind: 'auto';
+  flag: string;
+  dialog: string;
+}
+
+export type Trigger = WarpTrigger | AutoTrigger;
 
 export interface GameMap {
   id: string;
   width: number;
   height: number;
   tiles: number[];
-  music: SongId;
+  music: string;
   dark?: boolean;
   entry: Record<string, { x: number; y: number; facing: Dir }>;
+  npcs: NpcPlacement[];
+  triggers: Trigger[];
 }
 
 export function parseAsciiMap(
@@ -41,4 +69,11 @@ export function tileAt(map: GameMap, x: number, y: number): TileDef | undefined 
 
 export function isWalkable(map: GameMap, x: number, y: number): boolean {
   return tileAt(map, x, y)?.walkable ?? false;
+}
+
+export function warpAt(map: GameMap, x: number, y: number): WarpTrigger | undefined {
+  for (const t of map.triggers) {
+    if (t.kind === 'warp' && t.x === x && t.y === y) return t;
+  }
+  return undefined;
 }

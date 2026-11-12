@@ -1,16 +1,19 @@
 import { Apu } from './apu';
+import { SfxPlayer } from './sfx';
+import { SFX, type SfxId } from '../../data/sfx';
 import { Sequencer, type Song } from './sequencer';
 
-export const MUTE_KEY = 'dimming.mute';
-
-export function readMutePref(storage: Pick<Storage, 'getItem'> | null): boolean {
+export function readMutePref(storage: Pick<Storage, 'getItem'> | null, key?: string): boolean {
+  if (key === undefined) return false;
   try {
-    return storage?.getItem(MUTE_KEY) === '1';
+    return storage?.getItem(key) === '1';
   } catch {
     return false;
   }
 }
 
+/** Music sits about 6 dB under effects. */
+export const SONG_LEVEL = 0.5;
 const FADE_SEC = 0.02;
 const LEAD_SEC = 0.05;
 
@@ -21,12 +24,22 @@ export class AudioManager {
   static readonly MASTER_LEVEL = 0.25;
   private songGain: GainNode | null = null;
   private sequencer: Sequencer | null = null;
+  private sfxApu: Apu | null = null;
+  private sfx: SfxPlayer | null = null;
   private pending: Song | null = null;
   private currentSongId: string | null = null;
   private mutedPref: boolean;
+  /** Audio-clock time until which a non-blip effect is still sounding. */
+  private sfxBusyUntil = 0;
 
-  constructor(private readonly storage: Storage | null) {
-    this.mutedPref = readMutePref(storage);
+  private readonly muteKey: string | undefined;
+
+  constructor(
+    private readonly storage: Storage | null,
+    opts: { muteKey?: string } = {},
+  ) {
+    this.muteKey = opts.muteKey;
+    this.mutedPref = readMutePref(storage, this.muteKey);
   }
 
   get unlocked(): boolean {
@@ -46,9 +59,15 @@ export class AudioManager {
     master.gain.value = this.mutedPref ? 0 : AudioManager.MASTER_LEVEL;
     master.connect(ctx.destination);
     const songGain = ctx.createGain();
+    songGain.gain.value = SONG_LEVEL;
     songGain.connect(master);
     const apu = new Apu(ctx, songGain);
     const sequencer = new Sequencer(apu);
+    const sfxGain = ctx.createGain();
+    sfxGain.gain.value = 1;
+    sfxGain.connect(master);
+    this.sfxApu = new Apu(ctx, sfxGain);
+    this.sfx = new SfxPlayer(this.sfxApu);
     this.ctx = ctx;
     this.master = master;
     this.songGain = songGain;
@@ -95,13 +114,23 @@ export class AudioManager {
     const now = ctx.currentTime;
     let start = now + LEAD_SEC;
     if (sequencer.playing) {
-      songGain.gain.setValueAtTime(1, now);
+      songGain.gain.setValueAtTime(SONG_LEVEL, now);
       songGain.gain.linearRampToValueAtTime(0, now + FADE_SEC);
       sequencer.stop(now + FADE_SEC);
       songGain.gain.setValueAtTime(0, start - 0.001);
     }
-    songGain.gain.setValueAtTime(1, start);
+    songGain.gain.setValueAtTime(SONG_LEVEL, start);
     sequencer.play(song, start);
+  }
+
+  playSfx(id: SfxId): void {
+    if (!this.ctx || !this.sfx) return;
+    const t = this.ctx.currentTime + 0.005;
+    // A text blip must not cut off a longer effect that is still sounding.
+    if (id === 'blip' && t < this.sfxBusyUntil) return;
+    const steps = SFX[id];
+    this.sfx.play(steps, t);
+    this.sfxBusyUntil = id === 'blip' ? 0 : t + steps.reduce((n, s) => n + s.frames, 0) / 60;
   }
 
   stopSong(): void {
@@ -110,7 +139,7 @@ export class AudioManager {
     const { ctx, songGain, sequencer } = this;
     if (!ctx || !songGain || !sequencer) return;
     const now = ctx.currentTime;
-    songGain.gain.setValueAtTime(1, now);
+    songGain.gain.setValueAtTime(SONG_LEVEL, now);
     songGain.gain.linearRampToValueAtTime(0, now + FADE_SEC);
     sequencer.stop(now + FADE_SEC);
   }
@@ -118,7 +147,7 @@ export class AudioManager {
   toggleMute(): boolean {
     this.mutedPref = !this.mutedPref;
     try {
-      this.storage?.setItem(MUTE_KEY, this.mutedPref ? '1' : '0');
+      if (this.muteKey !== undefined) this.storage?.setItem(this.muteKey, this.mutedPref ? '1' : '0');
     } catch {
       // storage unavailable; preference lives in memory only
     }

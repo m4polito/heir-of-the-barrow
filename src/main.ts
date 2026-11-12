@@ -5,11 +5,17 @@ import { StateStack } from './engine/state';
 import { startLoop } from './engine/loop';
 import { PALETTE } from './data/palette';
 import { BootState } from './game/boot';
-import { ExploreState } from './game/explore';
-import { createHero } from './game/hero';
-import { HOLLOWMERE } from './data/maps/hollowmere';
+import { TitleState } from './game/title';
+import { createGame } from './game/game';
+import { createPlayer } from './game/player';
+import { createRng } from './engine/rng';
+import { SpriteCache } from './engine/spriteCache';
+import { MAPS } from './data/maps';
+import { DIALOGS } from './data/dialog/hollowmere';
+import { SONGS } from './data/songs';
+import { ITEMS } from './data/items';
+import { STORY } from './data/story';
 import { AudioManager } from './engine/audio/audio';
-import { HOLLOWMERE_SONG } from './data/songs/hollowmere';
 
 function safeLocalStorage(): Storage | null {
   try {
@@ -23,14 +29,32 @@ const screen = new Screen(document.getElementById('game')!);
 const input = new Input();
 input.attach(window);
 const font = new Font(buildFontSheet(PALETTE));
-const audio = new AudioManager(safeLocalStorage());
+const audio = new AudioManager(safeLocalStorage(), { muteKey: STORY.storagePrefix + '.mute' });
 audio.installUnlockListener(window);
 const stack = new StateStack();
-stack.push(new BootState({ font, onStart: () => {
-    audio.playSong(HOLLOWMERE_SONG);
-    const s = HOLLOWMERE.entry.start!;
-    stack.replace(new ExploreState({ map: HOLLOWMERE, hero: createHero(s.x, s.y, s.facing) }));
-  } }));
+const game = createGame({
+  stack,
+  input,
+  font,
+  audio,
+  sprites: new SpriteCache(PALETTE),
+  rng: createRng(Date.now()),
+  maps: MAPS,
+  dialogs: DIALOGS,
+  songs: SONGS,
+  items: ITEMS,
+  story: STORY,
+  player: createPlayer(STORY.defaultHeroName, STORY.startingItems),
+});
+if (import.meta.env.DEV) {
+  void import('./game/debug').then((m) => m.installDebug(game));
+}
+stack.push(
+  new BootState({
+    font,
+    onStart: () => stack.reset(new TitleState(game)),
+  }),
+);
 
 window.addEventListener('resize', () => screen.resize());
 

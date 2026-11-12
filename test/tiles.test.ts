@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { TILES, TILE_IDS } from '../src/data/tiles';
 
 describe('tiles', () => {
-  it('has ten tiles indexed by id', () => {
-    expect(TILES.length).toBe(10);
+  it('has fourteen tiles indexed by id', () => {
+    expect(TILES.length).toBe(14);
     TILES.forEach((t, i) => expect(t.id).toBe(i));
   });
 
@@ -25,5 +25,7 @@ describe('tiles', () => {
   it('walkability', () => {
     expect(TILES[TILE_IDS.grass]!.walkable).toBe(true);
     expect(TILES[TILE_IDS.wall]!.walkable).toBe(false);
+    expect(TILES[TILE_IDS.floorWood]!.walkable).toBe(true);
+    for (const id of [TILE_IDS.counter, TILE_IDS.bed, TILE_IDS.table]) expect(TILES[id]!.walkable).toBe(false);
   });
 });

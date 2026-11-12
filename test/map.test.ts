@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isWalkable, parseAsciiMap, tileAt } from '../src/game/map';
+import { isWalkable, parseAsciiMap, tileAt, warpAt } from '../src/game/map';
 import { HOLLOWMERE } from '../src/data/maps/hollowmere';
 import { TILE_IDS } from '../src/data/tiles';
 
@@ -51,5 +51,14 @@ describe('HOLLOWMERE', () => {
     for (let y = 0; y < HOLLOWMERE.height; y++)
       for (let x = 0; x < HOLLOWMERE.width; x++) if (isWalkable(HOLLOWMERE, x, y)) walkable++;
     expect(seen.size).toBe(walkable);
+  });
+});
+
+describe('warpAt', () => {
+  it('finds the elder-house warp', () => {
+    expect(warpAt(HOLLOWMERE, 12, 4)).toEqual({ kind: 'warp', x: 12, y: 4, to: 'elder_house', entry: 'door' });
+  });
+  it('returns undefined off a warp', () => {
+    expect(warpAt(HOLLOWMERE, 0, 0)).toBeUndefined();
   });
 });

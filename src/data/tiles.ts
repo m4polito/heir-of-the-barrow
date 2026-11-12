@@ -11,6 +11,10 @@ export const TILE_IDS = {
   well: 7,
   sign: 8,
   roof: 9,
+  floorWood: 10,
+  counter: 11,
+  bed: 12,
+  table: 13,
 } as const;
 
 export interface TileDef {
@@ -233,6 +237,86 @@ const ROOF = art({ k: 0, d: 12, r: 13 }, [
   'dddddddddddddddd',
 ]);
 
+// Wood floor: ochre 10 planks, brown 9 seams and staggered joints, sand 11 highlights.
+const FLOOR_WOOD = art({ o: 10, b: 9, h: 11 }, [
+  'ooohoooboooooooo',
+  'oooooooboooohooo',
+  'oooooooboooooooo',
+  'bbbbbbbbbbbbbbbb',
+  'oohoooooooooooob',
+  'ooooooooohooooob',
+  'ooooooooooooooob',
+  'bbbbbbbbbbbbbbbb',
+  'oooooooooboooooo',
+  'ooohooooobooooho',
+  'oooooooooboooooo',
+  'bbbbbbbbbbbbbbbb',
+  'oboooooooooooooo',
+  'obooohoooooooooo',
+  'oboooooooooooooo',
+  'bbbbbbbbbbbbbbbb',
+]);
+
+// Counter: ochre 10 top highlight, brown 9 top, black 0 dark front.
+const COUNTER = art({ k: 0, b: 9, o: 10 }, [
+  'oooooooooooooooo',
+  'bbbbbbbbbbbbbbbb',
+  'bbbbbbbbbbbbbbbb',
+  'bbbbbbbbbbbbbbbb',
+  'bbbbbbbbbbbbbbbb',
+  'bbbbbbbbbbbbbbbb',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kbbbbbbbbbbbbbbk',
+  'kkkkkkkkkkkkkkkk',
+]);
+
+// Bed: brown 9 frame, white 1 sheet and pillow, red 13 blanket, on wood floor 10.
+const BED = art({ o: 10, b: 9, w: 1, r: 13 }, [
+  'oooooooooooooooo',
+  'obbbbbbbbbbbbbbo',
+  'obwwwwwwwwwwwwbo',
+  'obwwwwwwwwwwwwbo',
+  'obwwwwwwwwwwwwbo',
+  'obrrrrrrrrrrrrbo',
+  'obrrrrrrrrrrrrbo',
+  'obrrrrrrrrrrrrbo',
+  'obrrrrrrrrrrrrbo',
+  'obrrrrrrrrrrrrbo',
+  'obrrrrrrrrrrrrbo',
+  'obrrrrrrrrrrrrbo',
+  'obrrrrrrrrrrrrbo',
+  'obbbbbbbbbbbbbbo',
+  'obbooooooooobbbo',
+  'oooooooooooooooo',
+]);
+
+// Table: brown 9 top, ochre 10 highlight and floor, black 0 edge shadow.
+const TABLE = art({ o: 10, b: 9, k: 0 }, [
+  'oooooooooooooooo',
+  'oooooooooooooooo',
+  'obbbbbbbbbbbbbbo',
+  'obooooooooooooko',
+  'obbbbbbbbbbbbbko',
+  'obbbbbbbbbbbbbko',
+  'obbbbbbbbbbbbbko',
+  'obbbbbbbbbbbbbko',
+  'obbbbbbbbbbbbbko',
+  'obbbbbbbbbbbbbko',
+  'okkkkkkkkkkkkkko',
+  'okboooooooooobko',
+  'okboooooooooobko',
+  'oooooooooooooooo',
+  'oooooooooooooooo',
+  'oooooooooooooooo',
+]);
+
 export const TILES: readonly TileDef[] = [
   { id: TILE_IDS.grass, name: 'grass', walkable: true, encounterRate: 1, frames: [GRASS] },
   { id: TILE_IDS.road, name: 'road', walkable: true, encounterRate: 0.5, frames: [ROAD] },
@@ -244,4 +328,8 @@ export const TILES: readonly TileDef[] = [
   { id: TILE_IDS.well, name: 'well', walkable: false, encounterRate: 0, frames: [WELL] },
   { id: TILE_IDS.sign, name: 'sign', walkable: false, encounterRate: 0, frames: [SIGN] },
   { id: TILE_IDS.roof, name: 'roof', walkable: false, encounterRate: 0, frames: [ROOF] },
+  { id: TILE_IDS.floorWood, name: 'floorWood', walkable: true, encounterRate: 0, frames: [FLOOR_WOOD] },
+  { id: TILE_IDS.counter, name: 'counter', walkable: false, encounterRate: 0, frames: [COUNTER] },
+  { id: TILE_IDS.bed, name: 'bed', walkable: false, encounterRate: 0, frames: [BED] },
+  { id: TILE_IDS.table, name: 'table', walkable: false, encounterRate: 0, frames: [TABLE] },
 ];

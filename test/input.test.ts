@@ -103,3 +103,56 @@ describe('Input.attach modifier chords', () => {
     expect(preventDefault).toHaveBeenCalled();
   });
 });
+
+describe('Input.repeat', () => {
+  it('fires on ticks 1, 17, 22, 27 while held', () => {
+    const i = new Input();
+    i.keyDown('KeyS');
+    const fired: number[] = [];
+    for (let t = 1; t <= 30; t++) {
+      i.update();
+      if (i.repeat('down')) fired.push(t);
+    }
+    expect(fired).toEqual([1, 17, 22, 27]);
+  });
+
+  it('fires immediately again after release and re-press', () => {
+    const i = new Input();
+    i.keyDown('KeyS');
+    for (let t = 0; t < 5; t++) i.update();
+    expect(i.repeat('down')).toBe(false);
+    i.keyUp('KeyS');
+    i.update();
+    i.keyDown('KeyS');
+    i.update();
+    expect(i.repeat('down')).toBe(true);
+  });
+
+  it('rearm silences repeat for held actions until release and re-press', () => {
+    const i = new Input();
+    i.keyDown('KeyS');
+    for (let t = 0; t < 30; t++) i.update();
+    i.rearm();
+    for (let t = 0; t < 30; t++) {
+      i.update();
+      expect(i.repeat('down')).toBe(false);
+      expect(i.held('down')).toBe(true);
+    }
+    i.keyUp('KeyS');
+    i.update();
+    i.keyDown('KeyS');
+    const fired: number[] = [];
+    for (let t = 1; t <= 30; t++) {
+      i.update();
+      if (i.repeat('down')) fired.push(t);
+    }
+    expect(fired).toEqual([1, 17, 22, 27]);
+  });
+
+  it('maps Backquote to debug', () => {
+    const i = new Input();
+    i.keyDown('Backquote');
+    i.update();
+    expect(i.pressed('debug')).toBe(true);
+  });
+});
