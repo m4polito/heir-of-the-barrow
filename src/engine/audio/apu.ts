@@ -16,6 +16,7 @@ export interface ApuLike {
 type Pitched = Exclude<Channel, 'noise'>;
 
 const RAMP_SEC = 0.003;
+/** Peak gain per channel at vol 15. Kept low: NES-style square waves are perceptually loud. */
 const MAX_GAIN = 0.12;
 const DUTIES: Duty[] = [0.125, 0.25, 0.5];
 const PITCHED: Pitched[] = ['p1', 'p2', 'tri'];

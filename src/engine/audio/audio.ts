@@ -17,6 +17,8 @@ const LEAD_SEC = 0.05;
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  /** Overall output level when unmuted (about -12 dB). Owner found 1.0 painfully loud. */
+  static readonly MASTER_LEVEL = 0.25;
   private songGain: GainNode | null = null;
   private sequencer: Sequencer | null = null;
   private pending: Song | null = null;
@@ -41,7 +43,7 @@ export class AudioManager {
     const ctx = new AudioContext();
     void ctx.resume().catch(() => {});
     const master = ctx.createGain();
-    master.gain.value = this.mutedPref ? 0 : 1;
+    master.gain.value = this.mutedPref ? 0 : AudioManager.MASTER_LEVEL;
     master.connect(ctx.destination);
     const songGain = ctx.createGain();
     songGain.connect(master);
@@ -121,7 +123,7 @@ export class AudioManager {
       // storage unavailable; preference lives in memory only
     }
     if (this.master) {
-      this.master.gain.setTargetAtTime(this.mutedPref ? 0 : 1, this.ctx!.currentTime, 0.01);
+      this.master.gain.setTargetAtTime(this.mutedPref ? 0 : AudioManager.MASTER_LEVEL, this.ctx!.currentTime, 0.01);
     }
     return this.mutedPref;
   }
