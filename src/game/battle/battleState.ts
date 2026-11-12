@@ -1,6 +1,7 @@
 import type { State } from '../../engine/state';
 import type { Input } from '../../engine/input';
 import { LOGICAL_W } from '../../engine/constants';
+import { rowDurationSec } from '../../engine/audio/sequencer';
 import { MenuList } from '../../ui/menuList';
 import { drawWindow, drawMenu } from '../../ui/window';
 import { monsterArt } from '../../data/sprites/monsters';
@@ -34,6 +35,8 @@ export class BattleState implements State {
   private shownMonsterHp: number;
   private shake = 0;
   private flash = 0;
+  /** Frames to ignore confirm while a one-shot song (fanfare, fallen phrase) plays out. */
+  private songHold = 0;
 
   constructor(
     private readonly game: Game,
@@ -68,12 +71,13 @@ export class BattleState implements State {
   update(input: Input): void {
     if (this.shake > 0) this.shake--;
     if (this.flash > 0) this.flash--;
+    if (this.songHold > 0) this.songHold--;
     if (this._phase === 'beats') this.updateBeats(input);
     else if (this._phase === 'command') this.updateCommand(input);
   }
 
   private updateBeats(input: Input): void {
-    const beat = this.beats.tick(input.pressed('confirm'));
+    const beat = this.beats.tick(this.songHold === 0 && input.pressed('confirm'));
     if (beat) this.playBeat(beat);
     if (!this.beats.done) return;
     if (this._battle.outcome === null) {
@@ -88,7 +92,12 @@ export class BattleState implements State {
     const { audio, songs } = this.game;
     if (beat.sfx) audio.playSfx(beat.sfx);
     const song = beat.song ? songs[beat.song] : undefined;
-    if (song) audio.playSong(song);
+    if (song) {
+      audio.playSong(song);
+      if (song.loop === false) {
+        this.songHold = Math.ceil(song.tracks[0]!.rows.length * rowDurationSec(song.tempo) * 60);
+      }
+    }
     if (beat.fx === 'shake') this.shake = SHAKE_FRAMES;
     else if (beat.fx === 'flash') this.flash = FLASH_FRAMES;
     this.shownHeroHp = beat.heroHp;
@@ -105,7 +114,8 @@ export class BattleState implements State {
       audio.playSfx('menuMove');
     }
     if (input.pressed('confirm')) {
-      audio.playSfx('menuConfirm');
+      // Run's first beat carries its own sound; a blip here would be cut off by it.
+      if (this.menu.cursor === 0) audio.playSfx('menuConfirm');
       const beats = this._battle.act(this.menu.cursor === 0 ? 'fight' : 'run');
       this.beats.load(beats, this._battle.outcome !== null);
       this._phase = 'beats';
@@ -140,7 +150,7 @@ export class BattleState implements State {
     for (let i = 0; i < BACKDROP_TILES; i++) ctx.drawImage(bgImg, i * bg.w, 96);
 
     const flashHidden = this.flash > 0 && Math.floor(frame / 2) % 2 === 0;
-    if (this.shownMonsterHp > 0 && !flashHidden) {
+    if ((this.shownMonsterHp > 0 || this.flash > 0) && !flashHidden) {
       const art = monsterArt(this.monster.sprite, this.monster.palette);
       ctx.drawImage(sprites.get(art), Math.floor((LOGICAL_W - art.w) / 2), 104 - art.h);
     }
@@ -157,7 +167,7 @@ export class BattleState implements State {
 
     drawWindow(ctx, 8, 176, 240, 56);
     this.beats.lines.forEach((line, i) => font.drawText(ctx, line, 16, 184 + 10 * i));
-    if (this.beats.waiting && Math.floor(frame / 16) % 2 === 0) font.drawText(ctx, '▼', 232, 220);
+    if (this.beats.waiting && this.songHold === 0 && Math.floor(frame / 16) % 2 === 0) font.drawText(ctx, '▼', 232, 220);
     ctx.restore();
   }
 }

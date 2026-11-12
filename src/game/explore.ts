@@ -13,6 +13,7 @@ import { DialogState } from './dialog/dialogState';
 import { MenuState } from './menu/menuState';
 import { setFlag, hasFlag, applyDeath } from './player';
 import { encounterStep, ENCOUNTER_GRACE } from './encounter';
+import { backdropArt } from '../data/sprites/backdrops';
 import { BattleState } from './battle/battleState';
 import type { BattleOutcome } from './battle/battle';
 import type { Game } from './game';
@@ -96,6 +97,7 @@ export class ExploreState implements State {
     const { game } = this;
     const monster = game.monsters[monsterId];
     if (!monster) throw new Error(`Unknown monster: ${monsterId}`);
+    backdropArt(backdrop); // throws now, not from render, if the backdrop is unknown
     const { stack } = game;
     game.audio.stopSong();
     game.audio.playSfx('encounter');

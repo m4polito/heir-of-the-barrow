@@ -23,6 +23,9 @@ export class BeatPlayer {
   private finished = true;
   private waitOnLast = false;
   private lastBeat: Beat | null = null;
+  /** The current beat's text wrapped once, when the beat starts, so typing never re-flows it. */
+  private wrapped: string[] = [''];
+  private total = 0;
 
   constructor(private readonly cols = 28) {}
 
@@ -34,6 +37,7 @@ export class BeatPlayer {
     this.hold = 0;
     this.finished = beats.length === 0;
     this.lastBeat = null;
+    this.setWrapped(null);
   }
 
   get current(): Beat | null {
@@ -41,13 +45,20 @@ export class BeatPlayer {
   }
 
   get lines(): string[] {
-    const c = this.current;
-    return c ? wrapText(c.text.slice(0, this.shown), this.cols) : [];
+    if (!this.current) return [];
+    const out: string[] = [];
+    let left = this.shown;
+    for (const line of this.wrapped) {
+      if (left <= 0) break;
+      out.push(line.slice(0, left));
+      left -= line.length;
+    }
+    return out.length > 0 ? out : [''];
   }
 
   get revealed(): boolean {
     const c = this.current;
-    return c !== null && this.shown >= c.text.length;
+    return c !== null && this.shown >= this.total;
   }
 
   get waiting(): boolean {
@@ -61,9 +72,8 @@ export class BeatPlayer {
   tick(confirm: boolean): Beat | null {
     if (this.finished) return null;
     if (this.index < 0) return this.start(0);
-    const cur = this.beats[this.index]!;
-    if (this.shown < cur.text.length) {
-      if (confirm) this.shown = cur.text.length;
+    if (this.shown < this.total) {
+      if (confirm) this.shown = this.total;
       else this.shown++;
       return null;
     }
@@ -88,7 +98,13 @@ export class BeatPlayer {
     this.index = i;
     this.shown = 0;
     this.hold = 0;
+    this.setWrapped(this.beats[i]!);
     return this.beats[i]!;
+  }
+
+  private setWrapped(beat: Beat | null): void {
+    this.wrapped = beat ? wrapText(beat.text, this.cols) : [''];
+    this.total = this.wrapped.reduce((n, l) => n + l.length, 0);
   }
 
   private finish(): void {

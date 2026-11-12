@@ -51,6 +51,15 @@ export function validateSong(song: Song): void {
       }
     });
   });
+  if (song.loop === false) {
+    song.tracks.forEach((track, ti) => {
+      if (track.channel === 'noise') return;
+      const last = [...track.rows].reverse().find((row) => row !== null);
+      if (last !== undefined && last !== 'off') {
+        throw new Error(`song ${song.id}: track ${ti} must end with 'off' (non-looping)`);
+      }
+    });
+  }
   if (song.loop === false && song.loopFrom !== undefined) {
     throw new Error(`song ${song.id}: loopFrom is meaningless when loop is false`);
   }

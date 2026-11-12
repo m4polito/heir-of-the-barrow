@@ -4,7 +4,7 @@ import { MenuList } from '../ui/menuList';
 import { drawWindow, drawMenu } from '../ui/window';
 import type { Game } from './game';
 import type { GameMap } from './map';
-import { applyLevel } from './player';
+import { applyLevel, GOLD_MAX } from './player';
 import { ExploreState } from './explore';
 
 const VISIBLE_ROWS = 10;
@@ -45,8 +45,8 @@ export class DebugState implements State {
     const fightStart = warpStart + this.mapIds.length;
     if (index === 0) game.player = applyLevel(game.player, game.player.level + 1);
     else if (index === 1) game.player = applyLevel(game.player, game.player.level - 1);
-    else if (index === 2) game.player = { ...game.player, gold: game.player.gold + 100 };
-    else if (index === 3) game.player = { ...game.player, gold: game.player.gold + 1000 };
+    else if (index === 2) game.player = { ...game.player, gold: Math.min(GOLD_MAX, game.player.gold + 100) };
+    else if (index === 3) game.player = { ...game.player, gold: Math.min(GOLD_MAX, game.player.gold + 1000) };
     else if (index === 4) game.debug.noEncounters = !game.debug.noEncounters;
     else if (index === 5) game.player = { ...game.player, hp: game.player.maxHp, mp: game.player.maxMp };
     else if (index < warpStart + this.mapIds.length) {

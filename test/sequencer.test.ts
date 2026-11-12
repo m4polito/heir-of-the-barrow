@@ -123,6 +123,14 @@ describe('sequencer', () => {
     expect(() => validateSong({ id: 's', tempo: 120, loop: false, loopFrom: 0, tracks: [{ channel: 'p1', rows: ['C4', 'D4'] }] })).toThrow();
   });
 
+  it('validateSong requires non-looping tonal tracks to end with off', () => {
+    const song = (rows: (string | null)[]) => ({ id: 's', tempo: 120, loop: false, tracks: [{ channel: 'p1' as const, rows }] });
+    expect(() => validateSong(song(['C4', 'D4', 'off', null]))).not.toThrow();
+    expect(() => validateSong(song(['C4', 'D4']))).toThrow("song s: track 0 must end with 'off' (non-looping)");
+    expect(() => validateSong({ id: 's', tempo: 120, loop: false, tracks: [{ channel: 'noise', rows: ['k', 's'] }] })).not.toThrow();
+    expect(() => validateSong({ id: 's', tempo: 120, tracks: [{ channel: 'p1', rows: ['C4', 'D4'] }] })).not.toThrow();
+  });
+
   it('stop calls stopAll and ends playing', () => {
     const apu = new FakeApu();
     const seq = new Sequencer(apu);

@@ -55,6 +55,35 @@ describe('BeatPlayer', () => {
     expect(p.lines.every((l) => l.length <= 28)).toBe(true);
   });
 
+  it('never moves a typed word to another line while revealing', () => {
+    const text = 'The Bog Mireling takes 12 damage.';
+    const full = new BeatPlayer();
+    full.load([beat(text)], false);
+    full.tick(false);
+    full.tick(true);
+    const final = full.lines;
+    expect(final.length).toBe(2);
+    const p = new BeatPlayer();
+    p.load([beat(text)], false);
+    for (let t = 0; t < text.length + 5; t++) {
+      p.tick(false);
+      p.lines.forEach((line, i) => expect(final[i]!.startsWith(line)).toBe(true));
+    }
+    expect(p.lines).toEqual(final);
+    expect(p.revealed).toBe(true);
+  });
+
+  it('is not waiting once done, and has no current beat right after load', () => {
+    const p = new BeatPlayer();
+    p.load([beat('Hi')], true);
+    expect(p.current).toBeNull();
+    for (let i = 0; i < 5; i++) p.tick(false);
+    expect(p.waiting).toBe(true);
+    p.tick(true);
+    expect(p.done).toBe(true);
+    expect(p.waiting).toBe(false);
+  });
+
   it('empty load is done', () => {
     const p = new BeatPlayer();
     p.load([], false);

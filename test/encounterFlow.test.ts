@@ -234,6 +234,12 @@ describe('guards', () => {
     expect(() => explore.startBattle('nope', 'grass')).toThrow('Unknown monster: nope');
   });
 
+  it('startBattle rejects an unknown backdrop and pushes nothing', () => {
+    const { stack, explore } = setup('field2');
+    expect(() => explore.startBattle('weak', 'nope')).toThrow('Unknown backdrop: nope');
+    expect(stack.states).toEqual([explore]);
+  });
+
   it('the constructor rejects an unknown dialog', () => {
     const { game } = setup('field2');
     expect(() => new ExploreState(game, 'field', 'start', { dialog: 'nope' })).toThrow('Unknown dialog: nope');

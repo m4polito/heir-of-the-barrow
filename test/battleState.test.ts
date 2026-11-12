@@ -123,19 +123,20 @@ describe('BattleState', () => {
     for (let i = 0; i < 2000 && ends.length === 0; i++) pump(tick, i);
     for (let i = 0; i < 100; i++) tick();
     expect(ends.map((e) => e.outcome)).toEqual(['won']);
-    expect(playSong).toHaveBeenCalledWith(SONGS.victory);
+    expect(playSong.mock.calls.filter((c) => c[0] === SONGS.victory)).toHaveLength(1);
     expect(game.player.gold).toBe(gold + 3);
     expect(game.player.xp).toBe(xp + MONSTER.xp);
     expect(stack.states).toEqual([under]);
   });
 
   it('lost: hp is settled to 0 before onEnd and the fallen song plays', () => {
-    const { game, ends, playSong, tick } = setup({ atk: 100, agi: 99, hp: 999 }, { hp: 1 });
+    const { game, stack, under, ends, playSong, tick } = setup({ atk: 100, agi: 99, hp: 999 }, { hp: 1 });
     for (let i = 0; i < 2000 && ends.length === 0; i++) pump(tick, i);
     for (let i = 0; i < 100; i++) tick();
     expect(ends).toEqual([{ outcome: 'lost', hp: 0 }]);
     expect(game.player.hp).toBe(0);
-    expect(playSong).toHaveBeenCalledWith(SONGS.fallen);
+    expect(playSong.mock.calls.filter((c) => c[0] === SONGS.fallen)).toHaveLength(1);
+    expect(stack.states).toEqual([under]);
   });
 
   it('fled: Run succeeds against a slow monster and pays nothing', () => {
@@ -151,6 +152,47 @@ describe('BattleState', () => {
     expect(game.player.gold).toBe(gold);
     expect(game.player.xp).toBe(xp);
     expect(playSfx).toHaveBeenCalledWith('runOk');
+  });
+
+  it('Run does not play the confirm blip over its own sound', () => {
+    const { playSfx, state, tick } = setup({ agi: 1 }, { agi: 99 });
+    for (let i = 0; i < 2000 && state.phase !== 'command'; i++) pump(tick, i);
+    tick('down');
+    const before = playSfx.mock.calls.length;
+    tick('confirm');
+    for (let i = 0; i < 10; i++) tick();
+    const after = playSfx.mock.calls.slice(before).map((c) => c[0]);
+    expect(after).not.toContain('menuConfirm');
+    expect(after.some((s) => s === 'runOk' || s === 'runFail')).toBe(true);
+  });
+
+  /** Confirm on every tick; returns the tick a song first started and the tick onEnd ran. */
+  function holdRun(songId: 'victory' | 'fallen', monster: Partial<MonsterDef>, player: Parameters<typeof setup>[1]) {
+    const t = setup(monster, player);
+    const song = SONGS[songId];
+    let started = -1;
+    let ended = -1;
+    for (let i = 0; i < 3000 && ended < 0; i++) {
+      t.tick('confirm');
+      if (started < 0 && t.playSong.mock.calls.some((c) => c[0] === song)) started = i;
+      if (t.ends.length > 0) ended = i;
+    }
+    return { ...t, song, started, ended };
+  }
+
+  it('lost: a prompt confirm cannot cut the fallen phrase short', () => {
+    const r = holdRun('fallen', { atk: 100, agi: 99, hp: 999 }, { hp: 1 });
+    expect(r.started).toBeGreaterThanOrEqual(0);
+    expect(r.ended).toBeGreaterThanOrEqual(0);
+    expect(r.ended - r.started).toBeGreaterThanOrEqual(150);
+    expect(r.playSong.mock.calls.filter((c) => c[0] === SONGS.fallen)).toHaveLength(1);
+  });
+
+  it('won: a prompt confirm cannot cut the victory fanfare short', () => {
+    const r = holdRun('victory', { hp: 1 }, { str: 50, hp: 15 });
+    expect(r.started).toBeGreaterThanOrEqual(0);
+    expect(r.ended).toBeGreaterThanOrEqual(0);
+    expect(r.ended - r.started).toBeGreaterThanOrEqual(144);
   });
 
   it('plays hit sounds for blows on each side', () => {
