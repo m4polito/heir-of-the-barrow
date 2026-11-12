@@ -5,6 +5,7 @@ import { TransitionState } from '../src/game/transition';
 import { DialogState } from '../src/game/dialog/dialogState';
 import { ExploreState } from '../src/game/explore';
 import { createGame } from '../src/game/game';
+import { npcPixelOffset } from '../src/game/npc';
 import { createPlayer, hasFlag } from '../src/game/player';
 import type { GameMap } from '../src/game/map';
 import type { Font } from '../src/engine/font';
@@ -196,5 +197,55 @@ describe('talking', () => {
     const { stack, explore, input } = counterGame(TILE_IDS.counter);
     explore.npcs[0]!.def.dialog = 'nope';
     expect(() => stack.update(input)).toThrow(/Unknown dialog: nope/);
+  });
+});
+
+describe('dialog fix round 1', () => {
+  it('a confirm on the tick that reveals the last character only reveals', () => {
+    const drawn: string[] = [];
+    const font = { drawText: (_c: unknown, t: string) => drawn.push(t) } as unknown as Font;
+    const { stack, game } = makeGame({ font });
+    const text = 'Hello.';
+    const dlg = new DialogState(game, [text, 'Second.']);
+    stack.push(dlg);
+    const idle = { pressed: () => false } as unknown as Input;
+    const press = { pressed: (a: string) => a === 'confirm' } as unknown as Input;
+    const ctx = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
+    const shown = () => {
+      drawn.length = 0;
+      dlg.render(ctx, 1);
+      return drawn.filter((t) => t !== '▼').join('|');
+    };
+    for (let i = 0; i < text.length - 1; i++) dlg.update(idle);
+    expect(shown()).toBe('Hello');
+    dlg.update(press);
+    expect(shown()).toBe('Hello.');
+    dlg.update(press);
+    expect(shown()).toBe('S');
+  });
+
+  it('talking snaps a mid-step NPC to its tile before turning it', () => {
+    const songId = Object.keys(SONGS)[0]!;
+    const map: GameMap = {
+      id: 'test',
+      width: 3,
+      height: 1,
+      tiles: [TILE_IDS.floor, TILE_IDS.floor, TILE_IDS.floor],
+      music: songId,
+      entry: { start: { x: 0, y: 0, facing: 'right' } },
+      npcs: [{ id: 'n', sprite: 'elder', x: 1, y: 0, facing: 'down', wander: false, dialog: 'hi' }],
+      triggers: [],
+    };
+    const { stack, game } = makeGame({ maps: { test: map }, dialogs: { hi: ['Hello.'] } });
+    const explore = new ExploreState(game, 'test', 'start');
+    stack.push(explore);
+    const npc = explore.npcs[0]!;
+    npc.stepFrame = 4;
+    const input = { held: () => false, pressed: (a: string) => a === 'confirm' } as unknown as Input;
+    stack.update(input);
+    expect(stack.top).toBeInstanceOf(DialogState);
+    expect(npc.stepFrame).toBe(0);
+    expect(npc.facing).toBe('left');
+    expect(npcPixelOffset(npc)).toEqual({ dx: 0, dy: 0 });
   });
 });

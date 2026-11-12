@@ -50,6 +50,10 @@ export class DialogState implements State {
     if (this.completed) return;
     const { audio } = this.game;
     const model = this.model;
+    if (input.pressed('confirm')) {
+      if (model.isChoice) audio.playSfx('menuConfirm');
+      model.confirm();
+    }
     if (model.isChoice) {
       if (input.pressed('up') || input.pressed('down') || input.pressed('left') || input.pressed('right')) {
         model.moveChoice(1);
@@ -57,10 +61,6 @@ export class DialogState implements State {
       }
     } else {
       if (model.tick() && (this.shownChars() - 1) % 2 === 0) audio.playSfx('blip');
-    }
-    if (input.pressed('confirm')) {
-      if (model.isChoice) audio.playSfx('menuConfirm');
-      model.confirm();
     }
     if (model.done) {
       this.completed = true;

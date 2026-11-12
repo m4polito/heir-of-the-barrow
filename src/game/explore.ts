@@ -136,6 +136,7 @@ export class ExploreState implements State {
     if (input.pressed('confirm') && heroIdle(this._hero)) {
       const npc = this.talkTarget();
       if (npc) {
+        npc.stepFrame = 0; // snap to its tile so the turn cannot shift the sprite
         npc.facing = opposite(this._hero.facing);
         this.game.stack.push(new DialogState(this.game, this.script(npc.def.dialog)));
         return;
