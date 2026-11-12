@@ -2,6 +2,10 @@ export type Channel = 'p1' | 'p2' | 'tri' | 'noise';
 export type Duty = 0.125 | 0.25 | 0.5;
 export type NoisePreset = 'k' | 's' | 'h';
 
+/**
+ * Calls for a given channel must arrive in non-decreasing time order;
+ * at equal times the last call wins.
+ */
 export interface ApuLike {
   noteOn(ch: Exclude<Channel, 'noise'>, freq: number, time: number, opts: { duty?: Duty; vol: number }): void;
   noteOff(ch: Exclude<Channel, 'noise'>, time: number): void;
@@ -26,12 +30,15 @@ export class Apu implements ApuLike {
   private readonly osc = {} as Record<Pitched, OscillatorNode>;
   private readonly gain = {} as Record<Pitched, GainNode>;
   private readonly lastGain: Record<Pitched, number> = { p1: 0, p2: 0, tri: 0 };
-  private readonly duty: Record<Pitched, Duty> = { p1: 0.5, p2: 0.5, tri: 0.5 };
+  private readonly rampEnd: Record<Pitched, number> = { p1: 0, p2: 0, tri: 0 };
+  private readonly duty: Record<'p1' | 'p2', Duty> = { p1: 0.5, p2: 0.5 };
   private readonly waves = new Map<Duty, PeriodicWave>();
-  private readonly noiseFilter: BiquadFilterNode;
-  private readonly noiseGain: GainNode;
+  private readonly noiseBuffer: AudioBuffer;
 
-  constructor(ctx: AudioContext, destination: AudioNode) {
+  constructor(
+    private readonly ctx: AudioContext,
+    private readonly destination: AudioNode,
+  ) {
     for (const d of DUTIES) {
       const real = new Float32Array(65);
       const imag = new Float32Array(65);
@@ -55,19 +62,9 @@ export class Apu implements ApuLike {
       this.gain[ch] = gain;
     }
 
-    const buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
+    this.noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const data = this.noiseBuffer.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-    const src = ctx.createBufferSource();
-    src.buffer = buffer;
-    src.loop = true;
-    this.noiseFilter = ctx.createBiquadFilter();
-    this.noiseGain = ctx.createGain();
-    this.noiseGain.gain.value = 0;
-    src.connect(this.noiseFilter);
-    this.noiseFilter.connect(this.noiseGain);
-    this.noiseGain.connect(destination);
-    src.start();
   }
 
   noteOn(ch: Pitched, freq: number, time: number, opts: { duty?: Duty; vol: number }): void {
@@ -78,8 +75,8 @@ export class Apu implements ApuLike {
         this.duty[ch] = duty;
       }
     }
-    this.osc[ch].frequency.setValueAtTime(freq, time);
-    this.ramp(ch, (opts.vol / 15) * MAX_GAIN, time);
+    const s = this.ramp(ch, (opts.vol / 15) * MAX_GAIN, time);
+    this.osc[ch].frequency.setValueAtTime(freq, s);
   }
 
   noteOff(ch: Pitched, time: number): void {
@@ -88,24 +85,46 @@ export class Apu implements ApuLike {
 
   noiseHit(preset: NoisePreset, time: number, vol: number): void {
     const p = NOISE_PRESETS[preset];
-    this.noiseFilter.type = p.type;
-    this.noiseFilter.frequency.setValueAtTime(p.freq, time);
-    const g = this.noiseGain.gain;
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    src.loop = true;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = p.type;
+    filter.frequency.value = p.freq;
+    const gain = this.ctx.createGain();
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.destination);
+    const g = gain.gain;
     g.setValueAtTime(0, time);
     g.linearRampToValueAtTime((vol / 15) * MAX_GAIN, time + RAMP_SEC);
     g.exponentialRampToValueAtTime(0.0001, time + p.decay);
     g.setValueAtTime(0, time + p.decay + 0.001);
+    src.start(time);
+    src.stop(time + p.decay + 0.01);
   }
 
+  /** Only place cancelScheduledValues is allowed: silences notes queued after `time`. */
   stopAll(time: number): void {
-    for (const ch of PITCHED) this.ramp(ch, 0, time);
-    this.noiseGain.gain.setValueAtTime(0, time);
+    for (const ch of PITCHED) {
+      const g = this.gain[ch].gain;
+      g.cancelScheduledValues(time);
+      this.osc[ch].frequency.cancelScheduledValues(time);
+      g.setValueAtTime(this.lastGain[ch], time);
+      g.linearRampToValueAtTime(0, time + RAMP_SEC);
+      this.lastGain[ch] = 0;
+      this.rampEnd[ch] = time + RAMP_SEC;
+    }
   }
 
-  private ramp(ch: Pitched, target: number, time: number): void {
+  /** Schedules a gain ramp starting no earlier than the previous ramp's end; returns its start time. */
+  private ramp(ch: Pitched, target: number, time: number): number {
     const g = this.gain[ch].gain;
-    g.setValueAtTime(this.lastGain[ch], time);
-    g.linearRampToValueAtTime(target, time + RAMP_SEC);
+    const s = Math.max(time, this.rampEnd[ch]);
+    g.setValueAtTime(this.lastGain[ch], s);
+    g.linearRampToValueAtTime(target, s + RAMP_SEC);
     this.lastGain[ch] = target;
+    this.rampEnd[ch] = s + RAMP_SEC;
+    return s;
   }
 }
