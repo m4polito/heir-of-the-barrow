@@ -51,7 +51,8 @@ export class DialogState implements State {
         if (!this.muted) game.audio.playSfx(id);
       },
       pay: (n) => {
-        if (game.player.gold < n) return false;
+        if (!Number.isInteger(n) || n < 0) throw new Error(`Bad price: ${n}`);
+        if (!(game.player.gold >= n)) return false;
         game.player = { ...game.player, gold: game.player.gold - n };
         return true;
       },
@@ -76,6 +77,7 @@ export class DialogState implements State {
     if (this.completed) return;
     const { audio } = this.game;
     const model = this.model;
+    const topBefore = this.game.stack.top;
     if (input.pressed('cancel')) {
       // cancel wins over confirm: the rest of the script runs silently, choices resolve as No
       audio.playSfx('menuCancel');
@@ -88,6 +90,8 @@ export class DialogState implements State {
       }
       model.confirm();
     }
+    // a service opened another state: wait until this dialog is on top again
+    if (this.game.stack.top !== topBefore) return;
     if (model.isChoice && model.revealed) {
       if (input.pressed('up') || input.pressed('down') || input.pressed('left') || input.pressed('right')) {
         model.moveChoice(1);

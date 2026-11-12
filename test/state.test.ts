@@ -403,10 +403,63 @@ describe('dialog services', () => {
   });
 
   it('pay changes nothing and skips then when gold is short', () => {
-    const { game, stack, d } = setup([{ pay: 6, then: ['ok'] }], {}, 5);
+    let done = 0;
+    const { game, stack, d } = setup([{ pay: 6, then: ['ok'] }], { onDone: () => done++ }, 5);
     expect(game.player.gold).toBe(5);
     stack.update(press('none'));
     expect(stack.states).not.toContain(d);
+    expect(done).toBe(1);
+  });
+
+  it.each([-1, 1.5, NaN])('pay rejects the bad price %s', (n) => {
+    expect(() => setup([{ pay: n, then: ['ok'] }], {}, 10)).toThrow('Bad price');
+  });
+
+  it('pay 0 succeeds and takes nothing', () => {
+    const { game } = setup([{ pay: 0, then: ['ok'] }], {}, 3);
+    expect(game.player.gold).toBe(3);
+  });
+
+  it('save shows ok when the service succeeds, calling it once', () => {
+    let calls = 0;
+    const { game, stack } = setup([{ save: true, ok: ['w'], fail: ['f'] }], { services: { save: () => (calls++, true) } });
+    const drawn: string[] = [];
+    (game as { font: unknown }).font = { drawText: (_c: unknown, t: string) => drawn.push(t) };
+    const ctx = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
+    stack.update(press('none'));
+    (stack.top as DialogState).render(ctx, 1);
+    expect(drawn.filter((t) => t !== '▼').join('')).toBe('w');
+    expect(calls).toBe(1);
+  });
+
+  it('cancelled save still calls the service once', () => {
+    let calls = 0;
+    const { stack } = setup(['hi', { save: true, ok: [], fail: [] }], { services: { save: () => (calls++, true) } });
+    stack.update(press('cancel'));
+    expect(calls).toBe(1);
+  });
+
+  it('a dialog does nothing more in the update that opened a state', () => {
+    const sfx: string[] = [];
+    let done = 0;
+    const fakeState = fake('shopscreen', []);
+    const { stack, game, d } = setup(['hi', { shop: 's' }], {
+      onDone: () => done++,
+      services: { shop: () => stack.push(fakeState) },
+    });
+    game.audio.playSfx = ((id: string) => void sfx.push(id)) as typeof game.audio.playSfx;
+    stack.update(press('none'));
+    stack.update(press('confirm'));
+    sfx.length = 0;
+    stack.update(press('confirm'));
+    expect(stack.top).toBe(fakeState);
+    expect(stack.states).toContain(d);
+    expect(done).toBe(0);
+    expect(sfx).not.toContain('blip');
+    stack.remove(fakeState);
+    stack.update(press('none'));
+    expect(stack.states).not.toContain(d);
+    expect(done).toBe(1);
   });
 
   it('rest restores HP and MP and calls the service once', () => {
