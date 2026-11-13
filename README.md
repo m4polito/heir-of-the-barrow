@@ -19,19 +19,8 @@ npm run build    # typecheck and production build (output in dist/)
 | Cancel  | X or Escape                  |
 | Mute    | M                            |
 
-## Putting it online
+## Online
 
-Nothing is online yet. When you want to share the game, take these steps:
+The game is published at https://m4polito.github.io/heir-of-the-barrow/
 
-1. Create an empty GitHub repository (no README, no license, no .gitignore).
-2. Add it as the remote: `git remote add origin https://github.com/<your-name>/<repository>.git`
-3. Push the default branch: `git push -u origin master`
-4. In the repository's Settings, open Pages and set the source to "GitHub Actions".
-
-The workflow in `.github/workflows/pages.yml` then tests, builds and publishes the game on every push to `master` (or by hand from the Actions tab). The game will be at:
-
-```
-https://<your-name>.github.io/<repository>/
-```
-
-The build uses relative paths (`base: './'`), so it works under that sub-path.
+The workflow in `.github/workflows/pages.yml` tests, builds and publishes the game on every push to `master` (or by hand from the Actions tab). GitHub Pages' source is set to "GitHub Actions", and the `github-pages` environment allows the `master` branch to deploy (by default it allows only `main`).

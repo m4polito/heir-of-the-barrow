@@ -4,10 +4,10 @@ Written for the owner's play-test and for the session that acts on its feedback.
 
 ## Where execution stands
 
-- Branch `phase-6` from `master` (`a318e59`). **Not merged, not pushed. The repository has no git remote and none was added.**
+- Branch `phase-6` from `master` (`a318e59`), merged into `master` on 2026-11-13 after the play-test and pushed to GitHub on the owner's instruction.
 - **Tasks 1 to 10 complete and reviewed.** The whole-branch review (Opus) found no Critical issue and one Important one (the hero bounced between floors when a key was held through the stairs); one fix wave (`6c53597`, with a follow-up `6b45d88`) fixed it with three smaller items and the test gaps queued from the task reviews.
 - Suite at the phase stop: 61 files / 974 tests green; `npx tsc --noEmit` clean; `npm run build` green; the production bundle contains no debug-overlay strings.
-- **Next step: the owner's play-test** (list at the end of this file), then fixes from the feedback, then merge. Putting the game online waits for the owner.
+- The owner play-tested on 2026-11-13; the changes they asked for are in, the branch is merged and the game is online (see "Play-test result" and "Online").
 - Dev server: `npm run dev` from the uppercase path `C:/Projects/VSCode/WarriorsQuest`.
 
 ## Play-test result (owner, 2026-11-13)
@@ -142,14 +142,14 @@ From this phase:
 
 Still open from earlier phases: the "Can stay deferred" list in `docs/superpowers/notes/2026-11-12-phase-4-carry-forward.md` and the deferred minors in `docs/superpowers/notes/2026-11-12-phase-5-carry-forward.md`.
 
-## Putting the game online (not done; the owner's to do or to order)
+## Online (done 2026-11-13, on the owner's instruction)
 
-The workflow `.github/workflows/pages.yml` and `README.md` are in place. Nothing has been created or pushed.
-
-1. Create an empty GitHub repository.
-2. `git remote add origin <its URL>` and push `master` (after this phase is merged).
-3. In the repository's settings, set Pages' source to "GitHub Actions".
-4. The workflow tests, builds and publishes on each push to `master`; the game appears at `https://<user>.github.io/<repository>/`.
+- `phase-6` was merged into `master` with `--no-ff` (`dd1d3e0`).
+- Public repository: https://github.com/m4polito/heir-of-the-barrow (`origin`); `master` pushed.
+- GitHub Pages' source is "GitHub Actions". **Live at https://m4polito.github.io/heir-of-the-barrow/**
+- The first workflow run tested and built, then its deploy step was refused: "Branch master is not allowed to deploy to github-pages due to environment protection rules." The `github-pages` environment allows only `main` by default. Fix: `master` was added to that environment's allowed branches (a repository setting, no code change) and the failed job was re-run; it passed. The published script is the same build as the local one.
+- Every later push to `master` tests, builds and publishes again.
+- The workflow log warns that the actions it uses run on a Node version GitHub is retiring; raise their major versions when new ones are out.
 
 ## Owner play-test for Phase 6 (none of these has been performed by anyone)
 
