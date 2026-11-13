@@ -88,29 +88,72 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
   ],
 
   garrik: [
-    'Aldric was a fool. I am Garrik the smith, and I say so to anyone.',
-    'You may need what a fool needs. Look over the racks.',
+    {
+      if: 'warden_defeated',
+      then: [
+        'I am Garrik the smith, and I was wrong about one thing. You came back.',
+        'Look over the racks. You will be going down again.',
+      ],
+      else: [
+        'Aldric was a fool. I am Garrik the smith, and I say so to anyone.',
+        'You may need what a fool needs. Look over the racks.',
+      ],
+    },
     { shop: 'forge' },
-    'He left a wife and a child for a hole in the ground.',
-    'I will not make that mistake. I make blades and sleep sound.',
+    {
+      if: 'warden_defeated',
+      then: ['Your father was still a fool. I will not say it of you yet.'],
+      else: [
+        'He left a wife and a child for a hole in the ground.',
+        'I will not make that mistake. I make blades and sleep sound.',
+      ],
+    },
   ],
 
   odo: [
-    "Odo's Goods, and Odo himself. Herbs and torches, that is all I carry.",
+    {
+      if: 'warden_defeated',
+      then: ["Odo's Goods, and Odo himself. They say you walked out of the Barrow."],
+      else: ["Odo's Goods, and Odo himself. Herbs and torches, that is all I carry."],
+    },
     { shop: 'goods' },
-    'Prices climb with the Dimming. I did not set them. The cold did.',
+    {
+      if: 'warden_defeated',
+      then: ['Prices have not come down. Give the cold time to hear the news.'],
+      else: ['Prices climb with the Dimming. I did not set them. The cold did.'],
+    },
   ],
 
   pip: [
-    "I'm Pip! My mum says Aldric is a bedtime story.",
-    'Like the ones Gran tells before sleep.',
-    'Have you ever seen a real sword?',
+    {
+      if: 'warden_defeated',
+      then: [
+        "I'm Pip! Is it true? Did you fight the thing in the Barrow?",
+        'Mum says Aldric was real after all.',
+        'Can I hold the sword? Just once?',
+      ],
+      else: [
+        "I'm Pip! My mum says Aldric is a bedtime story.",
+        'Like the ones Gran tells before sleep.',
+        'Have you ever seen a real sword?',
+      ],
+    },
   ],
 
   bram: [
-    'Thirty years they have shouted "Bram, open up!" at this gate. I walked your father to it.',
-    'North-east, past the dead willow.',
-    'Stay off the marsh after dusk. I will not walk you.',
+    {
+      if: 'warden_defeated',
+      then: [
+        'They will shout "Bram, open up!" for you now, at any hour.',
+        'I walked your father to this gate. I should have walked you.',
+        'The marsh is no quieter. But you came back through it.',
+      ],
+      else: [
+        'Thirty years they have shouted "Bram, open up!" at this gate. I walked your father to it.',
+        'North-east, past the dead willow.',
+        'Stay off the marsh after dusk. I will not walk you.',
+      ],
+    },
   ],
 
   tobin: [
@@ -131,15 +174,37 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
   ],
 
   villager_a: [
-    'My crops come up thin as thread. Every year, thinner.',
+    {
+      if: 'warden_defeated',
+      then: ['Thin crops still. But they say the Barrow is quiet, so I planted anyway.'],
+      else: ['My crops come up thin as thread. Every year, thinner.'],
+    },
   ],
 
   villager_b: [
-    'The river runs cold now, even in summer. My father said it was warm once.',
+    {
+      if: 'warden_defeated',
+      then: ['The river is as cold as ever. I put my hand in this morning to be sure.'],
+      else: ['The river runs cold now, even in summer. My father said it was warm once.'],
+    },
   ],
 
   sealed_door: ['The way down is shut. For now.'],
 
-  warden_fallen: [{ give: 'journal_page' }, 'You found a page.'],
-  journal_page_1: ['A page.', { set: 'journal_read' }],
+  warden_fallen: [
+    'The Warden folds, and is only armor.',
+    'Among the rusted plates lies a page, folded small.',
+    { give: 'journal_page' },
+    { sfx: 'chest' },
+    "You found Aldric's Journal, Page 1.",
+  ],
+
+  journal_page_1: [
+    'The hand is cramped and quick.',
+    'The thing at the door is only a warden. It guards a stair, not a grave.',
+    'What sours the land is below it. I can hear water moving down there.',
+    'Tobin will go no further. I have sent him home with my shield. Let it guard you, if I cannot.',
+    'If my child ever reads this: I did not leave you. I went down to finish it.',
+    { set: 'journal_read' },
+  ],
 };

@@ -54,6 +54,10 @@ export function setFlag(p: PlayerState, flag: string): PlayerState {
   return hasFlag(p, flag) ? p : { ...p, flags: [...p.flags, flag] };
 }
 
+export function clearFlag(p: PlayerState, flag: string): PlayerState {
+  return hasFlag(p, flag) ? { ...p, flags: p.flags.filter((f) => f !== flag) } : p;
+}
+
 export function applyLevel(p: PlayerState, level: number): PlayerState {
   const lv = Math.min(LEVELS.length, Math.max(1, Math.floor(level)));
   const row = LEVELS[lv - 1]!;

@@ -6,6 +6,7 @@ import { wrapText } from '../src/ui/wrap';
 
 const IDS: DialogId[] = [
   'maren_intro', 'maren_fallen', 'maren', 'hesta', 'garrik', 'odo', 'pip', 'bram', 'tobin', 'villager_a', 'villager_b',
+  'sealed_door', 'warden_fallen', 'journal_page_1',
 ];
 
 function run(id: DialogId, flags: string[] = [], answer = true, canPay = true, canSave = true) {
@@ -163,8 +164,81 @@ describe('Hollowmere dialog content', () => {
     expect(text).toContain('Wren');
   });
 
-  it.each([['garrik', 'forge'], ['odo', 'goods']] as const)('%s opens the %s shop once', (id, shop) => {
-    expect(run(id).calls.filter((c) => c.startsWith('shop:'))).toEqual([`shop:${shop}`]);
+  it.each([['garrik', 'forge'], ['odo', 'goods']] as const)('%s opens the %s shop once on both branches', (id, shop) => {
+    for (const flags of [[], ['warden_defeated']]) {
+      expect(run(id, flags).calls.filter((c) => c.startsWith('shop:'))).toEqual([`shop:${shop}`]);
+    }
+  });
+
+  const texts = (r: ReturnType<typeof run>) => r.steps.flatMap((s) => (s.kind === 'text' ? [s.text] : []));
+
+  it.each(['garrik', 'odo', 'pip', 'bram', 'villager_a', 'villager_b'] as const)(
+    '%s says something different once the Warden is defeated',
+    (id) => {
+      expect(texts(run(id, ['warden_defeated']))).not.toEqual(texts(run(id)));
+    },
+  );
+
+  it('garrik and odo speak before and after the shop once the Warden is defeated', () => {
+    expect(texts(run('garrik', ['warden_defeated']))).toEqual([
+      'I am Garrik the smith, and I was wrong about one thing. You came back.',
+      'Look over the racks. You will be going down again.',
+      'Your father was still a fool. I will not say it of you yet.',
+    ]);
+    expect(texts(run('odo', ['warden_defeated']))).toEqual([
+      "Odo's Goods, and Odo himself. They say you walked out of the Barrow.",
+      'Prices have not come down. Give the cold time to hear the news.',
+    ]);
+  });
+
+  it('the after-Warden lines of pip, bram and the villagers are the pinned copy', () => {
+    const after = (id: DialogId) => texts(run(id, ['warden_defeated']));
+    expect(after('pip')).toEqual([
+      "I'm Pip! Is it true? Did you fight the thing in the Barrow?",
+      'Mum says Aldric was real after all.',
+      'Can I hold the sword? Just once?',
+    ]);
+    expect(after('bram')).toEqual([
+      'They will shout "Bram, open up!" for you now, at any hour.',
+      'I walked your father to this gate. I should have walked you.',
+      'The marsh is no quieter. But you came back through it.',
+    ]);
+    expect(after('villager_a')).toEqual(['Thin crops still. But they say the Barrow is quiet, so I planted anyway.']);
+    expect(after('villager_b')).toEqual(['The river is as cold as ever. I put my hand in this morning to be sure.']);
+  });
+
+  it('the before-Warden lines of the shopkeepers are unchanged', () => {
+    expect(texts(run('garrik'))).toEqual([
+      'Aldric was a fool. I am Garrik the smith, and I say so to anyone.',
+      'You may need what a fool needs. Look over the racks.',
+      'He left a wife and a child for a hole in the ground.',
+      'I will not make that mistake. I make blades and sleep sound.',
+    ]);
+    expect(texts(run('odo'))).toEqual([
+      "Odo's Goods, and Odo himself. Herbs and torches, that is all I carry.",
+      'Prices climb with the Dimming. I did not set them. The cold did.',
+    ]);
+  });
+
+  it('warden_fallen gives the page once and plays chest before the found line', () => {
+    const r = run('warden_fallen');
+    expect(r.calls).toEqual(['give:journal_page', 'sfx:chest']);
+    expect(texts(r)).toEqual([
+      'The Warden folds, and is only armor.',
+      'Among the rusted plates lies a page, folded small.',
+      "You found Aldric's Journal, Page 1.",
+    ]);
+  });
+
+  it('journal_page_1 sets journal_read, gives nothing and has five text lines', () => {
+    const r = run('journal_page_1');
+    expect(r.calls).toEqual(['set:journal_read']);
+    expect(texts(r)).toHaveLength(5);
+    expect(texts(r)[4]).toBe('If my child ever reads this: I did not leave you. I went down to finish it.');
+  });
+
+  it('sealed_door is the one line', () => {
+    expect(texts(run('sealed_door'))).toEqual(['The way down is shut. For now.']);
   });
 
   describe.each([[[]], [['warden_defeated']]])('maren saves (flags: %j)', (flags) => {

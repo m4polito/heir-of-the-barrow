@@ -27,6 +27,8 @@ export interface StoryConfig {
   startingItems: { item: string; count: number }[];
   /** Prefix for browser storage keys (for example `<prefix>.mute`). */
   storagePrefix: string;
+  /** Flag ids the dev-only debug overlay can toggle. */
+  debugFlags: string[];
 }
 
 export interface Game {
