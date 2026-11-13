@@ -135,7 +135,7 @@ Every NPC has **one line by default** and most have **a second line gated on a s
 Roughly 48×40 tiles, scrolling. Hollowmere sits near the center-west; the Barrow entrance is north-east across the marsh. Terrain: grass, marsh (higher encounter rate), water (impassable), trees (impassable), hills (passable, higher encounter rate), a dirt road from the gate toward the Barrow with a lower encounter rate. One chest with gold in a dead-end copse rewards exploring. Nothing else to find in the slice.
 
 ### 5.5 The Sunken Barrow (dungeon)
-Two floors, roughly 24×24 each. Dark: the player sees a 1-tile radius by default; a **Torch** (consumable) raises it to 3 tiles for a fixed step count. Floor 1 has two chests (gold; a Torch) and the stairs down. Floor 2 has a chest with a **Bronze Sword** behind narrow corridors, and the Warden's chamber at the end. Stairs trigger on step. No locked doors in the slice; the tile format supports a `locked` door for later but none are placed.
+Two floors, roughly 24×24 each. Dark: the player sees a 1-tile radius by default; a **Torch** (consumable) raises it to 3 tiles for a fixed step count. Floor 1 has two chests (gold; a Torch) and the stairs down. Floor 2 has a chest with a **Bronze Sword** behind narrow corridors, and the Warden's chamber at the end. The Barrow is entered by walking onto its mouth on the marsh, and stairs trigger on step. The Warden waits on one tile that is the only way into its chamber; the sealed door is on the chamber's far wall. No locked doors in the slice; the tile format supports a `locked` door for later but none are placed.
 
 ### 5.6 Monsters
 **Mireling** — the only random encounter. A pale, slumped, marsh-wet thing, vaguely humanoid, two eyes like wet stones. Three stat tiers share the one sprite with palette swaps: *Mireling* (road/grass), *Bog Mireling* (marsh/hills), *Barrow Mireling* (dungeon). This honors "one monster" as one design while giving the slice a difficulty curve. The builder may collapse to a single tier if three reads as a cheat.
@@ -166,6 +166,8 @@ interface GameMap {
 ```
 Tile ids index a tile catalog with properties: `walkable`, `encounterRate` (multiplier), `animated` (frame list), `isDoor`, `isStairs`. Visual art is a separate pixel-data table keyed by the same id.
 
+Trigger kinds as built: `warp` (fires when a step lands on it; an optional sound, so stairs sound different from doors), `auto` (a script on entering a map), `chest` (opened by facing it and pressing confirm; holds gold or one item; its opened state is the flag `chest_<id>`), `look` (a dialog shown by facing the tile and pressing confirm) and `boss` (a step onto it starts a fixed battle until its flag is set; winning sets the flag and runs its dialog). After a warp, the hero's first step off the arrival tile cannot land on another warp tile while the direction key is still held, so holding a key through a stair or door does not carry the hero straight back.
+
 Maps are authored as ASCII strings with a legend (e.g. `#` wall, `.` floor, `~` water) and parsed to `tiles` at module load; this keeps them editable by hand and diffable.
 
 ### 6.2 Movement
@@ -173,6 +175,7 @@ Maps are authored as ASCII strings with a legend (e.g. `#` wall, `.` floor, `~` 
 - Collision against tile `walkable`, NPC positions, and map edges.
 - Holding a direction chains steps. Facing changes immediately even if blocked.
 - Walking onto a trigger tile fires it *after* the step completes (stairs, warps, encounter check).
+- A refused step (wall, water, villager, map edge) plays a low bump: at once on the first refused step of a press, then at most once every 16 frames while the key is held.
 
 ### 6.3 Camera
 Centered on the hero. Maps larger than the viewport scroll freely. Interiors smaller than the viewport are drawn centered with black around them.
@@ -339,7 +342,9 @@ Garrik stocks the Bronze Sword so a grinding player can buy it, *and* the chest 
 | Herb | Restore 20–30 HP | 10 |
 | Torch | Dungeon visibility radius 3 for 200 steps | 8 |
 
-Inventory: 8 slots; consumables stack up to 6 per slot; unequipped equipment occupies a slot. "You cannot carry more." refusals. Aldric's Journal is a key item in its own slot-free list.
+Torch rules as built: the light is a square, one tile around the hero in the dark and three with a lit Torch. A Torch burns for 200 steps, counted only on dark maps. Lighting one outside the dark ("There is no need for light here.") or while one burns ("Your torch still burns.") is refused and costs nothing. When it runs out: "Your torch gutters out." The steps left are saved.
+
+Inventory: 8 slots; consumables stack up to 6 per slot; unequipped equipment occupies a slot. "You cannot carry more." refusals. Key items (Aldric's Journal) take no slot, are held once, cannot be sold, and are read from Items without being used up.
 
 ### 10.5 Monster stats
 | Monster | HP | ATK | DEF | AGI | XP | Gold | Dodge | Zone |
@@ -402,7 +407,7 @@ Rows are a fixed subdivision (16th notes). A sequencer schedules notes ahead of 
 | `fallen` | Death | Short descending phrase |
 
 ### 12.4 Sound effects
-Menu move, menu confirm, menu cancel, text blip, door open, stairs, chest open, bump (blocked), encounter sting (precedes battle wipe), hero hit, monster hit, miss, critical, spell cast, heal, run success, run fail, buy, save, error/refusal.
+Menu move, menu confirm, menu cancel, text blip, door open, stairs, chest open, bump (blocked), encounter sting (precedes battle wipe), hero hit, monster hit, miss, critical, spell cast, heal, monster mend, torch lit, run success, run fail, buy, save, error/refusal.
 
 ### 12.5 Mixing
 Master gain with mute. Music about 6 dB under SFX. SFX play on separate voices so they never steal music channels.

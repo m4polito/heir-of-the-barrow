@@ -19,6 +19,22 @@
 - **Approved by the owner on 2026-11-13 with all 18 decisions**, and these changes, already folded into the text below: `warden_fallen`'s last line in the second person; Pip's "Mum says"; the journal's Tobin line; the bump sound (Task 2); deployment stays prepared and not performed (no repository, no remote, no push); Phase 5's open questions stay as they are.
 - Carried in by the owner (2026-11-12): the Warden fight's length is a tuning target (the spec aimed for 10 to 13 rounds; it measured about 19); the Warden's margins are revisited here (decision 1).
 
+## Execution status (2026-11-13)
+
+Tasks 1 to 10 are complete on branch `phase-6` and stopped for the owner's play-test. Not merged, not pushed, no remote added. Records: `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`.
+
+Where the delivered code differs from the task text below:
+
+- **Order:** 1, 2, 9, 3, 5, 4, 6, 7, 8, 10. The songs (Task 5) came before the maps (Task 4), so the maps used `music: 'barrow'` from the start and the map-music test lives in `test/barrow.test.ts`.
+- **Task 1:** `parseSave` already had the item table, so it tells key entries apart itself.
+- **Task 2:** the bump tests are in `test/bump.test.ts`, with a test room helper `test/helpers/exploreKit.ts`.
+- **Task 3:** showing "Your torch gutters out." stops the hero (review fix). On a dark map the hero is drawn after every villager.
+- **Task 4:** the `sealed_door` script was added here, not in Task 7. Floor 1's way out is an up-stair beside the entry.
+- **Task 5:** the Warden's drums are kick, kick, snare, kick; the Barrow's drone is three held notes (rows 0, 64, 96); the Warden's bass notes last three rows and rest one.
+- **Task 6:** `battleState.ts` needed no change (it already placed sprites by height). The boss's dialog opens through the map screen's existing pending-dialog path once the fade back has finished. The data test that boss and look triggers name real monsters, backdrops and dialogs lives here.
+- **Task 8:** `simulate` and `expedition` share one `fight` helper.
+- **Final fix wave (`6c53597`, follow-up `6b45d88`):** after a warp the hero's first step off the arrival tile cannot land on another warp tile while the key stays held (silent, no bump); a key item already held is not added again; floor 1's way out plays the stairs sound.
+
 ## Decisions made in this plan (for the owner's veto)
 
 Numbers were measured with the real battle code in a scratch simulation (4000 to 5000 fights per case); Task 8 re-measures and pins them.
@@ -133,7 +149,7 @@ test/helpers/simulate.ts         + expedition; test/helpers/warden.ts removed
   - `inventory.ts`: `addItem` never refuses a `key` item for lack of slots; the 8-slot limit counts only entries that are not key items. `export function packSlots(items, p): number` returns that count.
   - `save.ts`: `parseSave` accepts up to `INVENTORY_SLOTS` entries that are not key items plus up to 8 key-item entries; everything else as before.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `validateActions`: `weight: NaN`, `min: NaN`, `max: Infinity`, `cooldown: NaN`, `cooldown: 1.5` each throw; the existing valid lists still pass.
   - `new Battle` with actions `[{ do: 'attack', weight: 0 }]` throws at construction.
   - A monster with `gold: [0, 0]` and `xp: 300` that is defeated: the last beat's text is `You gain 300 experience.`; a monster with gold 2–4 still says `... and N gold.`
@@ -143,17 +159,17 @@ test/helpers/simulate.ts         + expedition; test/helpers/warden.ts removed
   - `addItem` of the journal page into a pack of 8 ordinary entries succeeds and `packSlots` is still 8; a ninth ordinary item is still refused; `sellRows`, `itemLines` and `equipLines` still list by pack order.
   - `parseSave`: a good save with 8 ordinary entries plus the journal page parses (Review Focus 5); 9 ordinary entries is still `null`; 9 key entries is `null`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/ai.test.ts test/battle.test.ts test/battleState.test.ts test/inventory.test.ts test/save.test.ts test/sfx.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src test
 git commit -m "feat: battle groundwork for the boss; key items take no pack slot"
@@ -187,7 +203,7 @@ git commit -m "feat: battle groundwork for the boss; key items take no pack slot
   - `sfx.ts`: `bump` — `[{ ch: 'tri', note: 'G2', frames: 3, vol: 10 }, { ch: 'tri', note: 'D2', frames: 3, vol: 10 }]`; `stairs` — `[p1('E4', 3, 8, 0.5), p1('C4', 3, 8, 0.5), p1('A3', 3, 8, 0.5), p1('F3', 5, 8, 0.5)]`; `chest` — `[{ ch: 'noise', preset: 'k', frames: 1, vol: 9 }, p1('G5', 2, 8, 0.25), p1('D6', 6, 8, 0.25)]`.
   - `marsh.ts`: the copse tile at `MARSH_POINTS.copse` becomes a `chest` tile with trigger `{ kind: 'chest', x: 3, y: 36, id: 'copse', gold: 40 }`; `barrowMouth` becomes walkable (encounter rate 0). The warp into the Barrow arrives in Task 4.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - Tiles: the eight ids, names and walkable flags above; `barrowFloor.encounterRate` is 0.75; `sconce` has two different frames; every new tile's art is 16×16 and uses only palette indices that exist (the existing art test's rule).
   - `chestAt`, `lookAt`, `chestFlag('copse') === 'chest_copse'`.
   - Data rule: every chest trigger in `MAPS` sits on a `chest` tile, every `chest` tile has a trigger, each has exactly one of `gold` and `item` (an item known to `ITEMS`), and chest ids are unique across all maps and at most 26 characters.
@@ -203,17 +219,17 @@ git commit -m "feat: battle groundwork for the boss; key items take no pack slot
   - Bump (in `test/explore.test.ts` or the file that already tests refused steps), sounds recorded, hero facing a wall with the direction held: update 1 plays `bump` once; updates 2 to 16 play none; update 17 plays the second; after 48 held updates exactly three have played. Release for one update and press again: `bump` plays on that update. The same against water and against a villager. A step that succeeds plays no `bump`, and walking into a wall after a successful step plays it on the first refused update. `SFX.bump` differs from every other effect.
   - Marsh: the copse tile is a chest reachable only by facing it from (3, 35); the barrow mouth is walkable; the existing road and copse tests still hold.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/tiles.test.ts test/chests.test.ts test/marsh.test.ts test/sfx.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces (use the `pixel-art-sprites` skill for the tiles).
+- [x] **Step 3: Implement** per Interfaces (use the `pixel-art-sprites` skill for the tiles).
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src test
 git commit -m "feat: dungeon tiles, chests, things to look at, stairs, and a bump"
@@ -250,7 +266,7 @@ Owner checks to list (not to perform): the chest in the marsh copse reads as a c
   - `items.ts`: `torch` gains `use: { where: 'field', effect: { kind: 'light', radius: 3, steps: 200 } }`.
   - `sfx.ts`: `torch` — `[{ ch: 'noise', preset: 'h', frames: 2, vol: 8 }, p1('D4', 2, 7, 0.125), p1('A4', 2, 7, 0.125), p1('F#5', 6, 7, 0.125)]`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - `darkRects(120, 104, 1)`: the lit square is x 104–151, y 88–135; the rectangles cover exactly the rest of the screen (check by area: 256×240 − 48×48) and none overlaps it. `darkRects(0, 0, 1)` (hero in a corner) returns only rectangles with area and still totals the right area. Radius 3 lights 112×112.
   - `lightRadius(false, 50, 3)` → `null`; `(true, 0, 3)` → 1; `(true, 1, 3)` → 3.
   - Torch in the dark with `torch 0`: used up, `torch 200`, text `You light the Torch.`, sound `torch`. Not dark: refused with the "no need" line, Torch kept, `torch` unchanged. Already lit: refused with `Your torch still burns.`, Torch kept (Review Focus 2).
@@ -261,17 +277,17 @@ Owner checks to list (not to perform): the chest in the marsh copse reads as a c
   - Save: `torch 137` round-trips through `toSave`, `parseSave`, `fromSave`; a Phase 5 save text (with `torchSteps: 0`) still loads with `torch 0` (Review Focus 5).
   - Data: the Torch's `radius` equals `TORCH_RADIUS`; the Torch is not offered in battle (`battleKit` leaves it out).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/light.test.ts test/fieldUse.test.ts test/menuState.test.ts test/save.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src test
 git commit -m "feat: darkness, and a Torch that pushes it back"
@@ -298,7 +314,7 @@ Owner checks to list (not to perform): judged in Task 4's maps: in the Barrow yo
   - `backdrops.ts`: `barrow`, a 16×24 strip of worked stone that tiles sideways; black above row 8, like the others.
   - Layout is the implementer's, within these rules and the tests below. Corridors may be one or two tiles wide; avoid large open rooms (in the dark they read as nothing).
 
-- [ ] **Step 1: Write failing tests** in `test/barrow.test.ts`:
+- [x] **Step 1: Write failing tests** in `test/barrow.test.ts`:
   - Both maps are 24×24, dark, registered in `MAPS` under their ids; every warp between marsh, floor 1 and floor 2 lands on a walkable tile and round-trips (stepping back from an arrival tile is possible without immediately re-warping: an arrival tile is never itself a warp tile).
   - Every walkable tile on each floor can be reached from its entries, except that on floor 2 the chamber is reached only through the Warden's tile: remove that tile from the walkable set and neither the sealed door's facing tile nor any chamber tile is reachable from the stairs (Review Focus 3).
   - Each chest is reachable (a walkable tile faces it); the sword's corridor rule holds (the facing tile's only way out is a run of at least 8 tiles each with exactly two walkable neighbours).
@@ -308,17 +324,17 @@ Owner checks to list (not to perform): judged in Task 4's maps: in the Barrow yo
   - `interiors.test.ts`: the registry lists eight maps; the list of warps that are not on door tiles is updated; the "interior" rules skip the two Barrow floors.
   - `backdropArt('barrow')` exists, is 16×24, and its left and right columns match for tiling.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/barrow.test.ts test/interiors.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Author the maps** as ASCII with a legend, as `marsh.ts` does, and the backdrop (with the `pixel-art-sprites` skill).
+- [x] **Step 3: Author the maps** as ASCII with a legend, as `marsh.ts` does, and the backdrop (with the `pixel-art-sprites` skill).
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src test
 git commit -m "feat: the Sunken Barrow, two floors in the dark"
@@ -340,23 +356,23 @@ Owner checks to list (not to perform): walk from the gate to the mound and step 
   - `WARDEN_SONG`, id `warden`, tempo 104, 8 bars of 16 rows, loops from row 0. A minor, one chord per bar: Am | Am | F | E | Am | Dm | B♭ | E. Pulse 1 (duty 0.5, vol 11) opens with `BATTLE_MOTIF` an octave lower, each note twice as long as in the battle theme, and returns to it in bar 5. Pulse 2 holds two chord tones per bar in long notes. The triangle plays the bar's root on every beat, low. Noise: kick on every beat, snare on beat 3.
   - Both registered in `SONGS`; both Barrow maps use `music: 'barrow'`.
 
-- [ ] **Step 1: Write failing tests** in `test/songs.test.ts`:
+- [x] **Step 1: Write failing tests** in `test/songs.test.ts`:
   - Both songs pass `validateSong`, have 128 rows and loop.
   - `barrow`: the triangle's sounded notes are only D2 and C2; pulse 1 sounds only in bars 2, 4 and 6; the noise track has 8 to 14 ticks and within each bar no two consecutive gaps are equal.
   - `warden`: pulse 1's first five sounded notes are `BATTLE_MOTIF` one octave down, and the rows between their starts are twice those of the battle theme's statement; every triangle note is the root of its bar's chord (A, A, F, E, A, D, A#, E) and lies below C3; the tempo is lower than the battle theme's.
   - Each Barrow map's `music` is `barrow`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/songs.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Compose** per Interfaces.
+- [x] **Step 3: Compose** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src test
 git commit -m "feat: songs for the Barrow and its Warden"
@@ -386,7 +402,7 @@ Owner checks to list (not to perform): the Barrow's song is sparse and uneasy an
   - `items.ts`: `journal_page` gains `use: { where: 'field', effect: { kind: 'read', dialog: 'journal_page_1' } }`.
   - Placeholder scripts: `warden_fallen: [{ give: 'journal_page' }, 'You found a page.']` and `journal_page_1: ['A page.', { set: 'journal_read' }]`.
 
-- [ ] **Step 1: Write failing tests** in `test/warden.test.ts` (a small dark test map: floor, a boss tile, floor beyond; songs and sounds recorded; a rigged monster where the outcome must be forced):
+- [x] **Step 1: Write failing tests** in `test/warden.test.ts` (a small dark test map: floor, a boss tile, floor beyond; songs and sounds recorded; a rigged monster where the outcome must be forced):
   - Stepping onto the boss tile starts a battle with the trigger's monster: the encounter sting, then the monster's song once (Review Focus 4). Run is refused with `The <name> blocks the way!` every time.
   - Won (monster with 1 HP, 300 XP, hero at level 6): the fanfare beat, the level-up beats, then after the battle closes the flag is set, the trigger's dialog is on top, and when it ends the map's song has been played once since the battle and the pack holds exactly one page.
   - Cancel pressed through every beat and line of that sequence: flag set once, one page (Review Focus 3).
@@ -398,17 +414,17 @@ Owner checks to list (not to perform): the Barrow's song is sparse and uneasy an
   - Reading: with the page in the pack, Items → the page opens `journal_page_1`; afterwards the page is still held and `journal_read` is set; the page's `sellPrice` is 0.
   - Battle render with the 32-pixel sprite: it is drawn at y 72 (feet at 104), and a 24-pixel one still at y 80.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/warden.test.ts test/monsters.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces (the sprite with the `pixel-art-sprites` skill).
+- [x] **Step 3: Implement** per Interfaces (the sprite with the `pixel-art-sprites` skill).
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean (the balance bands still pass: the numbers have not moved).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add -A src test
 git commit -m "feat: the Barrow Warden guards its tile"
@@ -455,7 +471,7 @@ Owner checks to list (not to perform): the Warden reads as a dead thing in someo
     - `villager_a`: `'Thin crops still. But they say the Barrow is quiet, so I planted anyway.'`
     - `villager_b`: `'The river is as cold as ever. I put my hand in this morning to be sure.'`
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
   - Every named villager's first line contains their name on both branches (the existing test, now meaningful for six more branches); no line has a name tag; none uses a banned word; every text step fits two pages; every `ask` fits three lines.
   - `garrik` and `odo` open their shop exactly once on both branches.
   - Each of Garrik, Odo, Pip, Bram and the two villagers says something different once the flag is set.
@@ -464,17 +480,17 @@ Owner checks to list (not to perform): the Warden reads as a dead thing in someo
   - `clearFlag` removes a flag and leaves others; clearing an absent flag returns the same player.
   - Debug: the row reads `Flag: warden_defeated OFF`, confirm sets the flag and the row reads `ON`, confirm again clears it; the production bundle check in Task 10 still finds no `Flag: `.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 Run: `npx vitest run test/dialogContent.test.ts test/debugState.test.ts test/player.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement** per Interfaces.
+- [x] **Step 3: Implement** per Interfaces.
 
-- [ ] **Step 4: Run everything**
+- [x] **Step 4: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add src test
 git commit -m "feat: the journal page, the sealed door, and a town that noticed"
@@ -496,7 +512,7 @@ Owner checks to list (not to perform): with the debug flag row switched on, talk
   - `simulate.ts`: `expedition(rng, p, opts: { fights: number; road: MonsterDef; roadPolicy: Policy; boss: MonsterDef; bossPolicy: Policy }, n): { reachRate: number; winRate: number }` — plays `fights` battles against `road` in a row, carrying HP, MP and used items forward (no XP), casting the hero's heal spell between fights while at least 13 HP are missing and MP allows; then the boss. `winRate` is over all `n` trips.
   - If a threshold below fails with the real code, stop and report the measured numbers; do not move a threshold or a number.
 
-- [ ] **Step 1: Change the numbers and write the tests** (`N = 4000` unless stated; scratch measurements in brackets):
+- [x] **Step 1: Change the numbers and write the tests** (`N = 4000` unless stated; scratch measurements in brackets):
   - The four Warden bands, unchanged: level 4 under 3% [0.5%], level 5 under 50% [42%], level 6 over 70% [90%], level 7 over 90% [94%].
   - Length: mean rounds of won fights is at most 15.5 at level 6 [14.4] and at most 13.5 at level 7 [12.6].
   - The stated level 6 stats: attack 27, defence 14.
@@ -504,15 +520,15 @@ Owner checks to list (not to perform): with the debug flag row switched on, talk
   - The trip (decision 4), `N = 2000`: level 6, full gear, three Herbs, four Barrow fights with `healer(10, null)`, then the Warden with `healer(18, 8)`: `winRate` at least 0.75 [0.84]; level 5 the same: under 0.30 [0.08]; level 7 the same: at least 0.88 [0.94].
   - Design doc: §10.5's Barrow Mireling and Warden rows, §9.8's numbers, and §9.8's sentence about the fight's length ("about 14 rounds at level 6 in simulation, healing turns included").
 
-- [ ] **Step 2: Run them**
+- [x] **Step 2: Run them**
 Run: `npx vitest run test/balance.test.ts test/monsters.test.ts`
 Expected: PASS, including every earlier case unchanged.
 
-- [ ] **Step 3: Run everything**
+- [x] **Step 3: Run everything**
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS; clean.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 ```bash
 git add src test docs/superpowers/specs
 git commit -m "feat: a shorter Warden fight and a Barrow that can be crossed"
@@ -534,19 +550,19 @@ Owner checks to list (not to perform): at level 6 with the Bronze Sword, Leather
   - `README.md`: what the game is (two sentences), the three commands, the keys, and "Putting it online": create an empty GitHub repository, add it as `origin`, push `master`, set Pages' source to "GitHub Actions"; the link's form. It names nothing as done.
   - Nothing is pushed, and no remote is added, in this task.
 
-- [ ] **Step 1: Write a failing test** (`test/build.test.ts`, reading files as raw text as `interiors.test.ts` does): the workflow file exists, mentions `npm test` before `npm run build`, uploads `dist`, and uses only actions whose owner is `actions`; `vite.config.ts` keeps `base: './'` (so the build works under a sub-path).
+- [x] **Step 1: Write a failing test** (`test/build.test.ts`, reading files as raw text as `interiors.test.ts` does): the workflow file exists, mentions `npm test` before `npm run build`, uploads `dist`, and uses only actions whose owner is `actions`; `vite.config.ts` keeps `base: './'` (so the build works under a sub-path).
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 Run: `npx vitest run test/build.test.ts`
 Expected: FAIL (no workflow).
 
-- [ ] **Step 3: Write the workflow and the README.**
+- [x] **Step 3: Write the workflow and the README.**
 
-- [ ] **Step 4: Run everything, then check the built page**
+- [x] **Step 4: Run everything, then check the built page**
 Run: `npm test && npx tsc --noEmit && npm run build`, then confirm `dist/index.html` refers to its script with a relative path.
 Expected: PASS; clean; relative.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add .github README.md test/build.test.ts
 git commit -m "chore: a GitHub Pages workflow and a README"
@@ -560,13 +576,13 @@ git commit -m "chore: a GitHub Pages workflow and a README"
 - Modify: `docs/superpowers/specs/2026-11-11-the-dimming-vertical-slice-design.md`, this plan
 - Create: `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`
 
-- [ ] **Step 1: Update the design doc** (decision 18): §6.1's trigger kinds (warp, auto, chest, look, boss) and the walk-onto Barrow mouth; §10.4's Torch rules as built; §10.5 and §9.8 if Task 8 left anything out.
-- [ ] **Step 2: Verify the branch**
+- [x] **Step 1: Update the design doc** (decision 18): §6.1's trigger kinds (warp, auto, chest, look, boss) and the walk-onto Barrow mouth; §10.4's Torch rules as built; §10.5 and §9.8 if Task 8 left anything out.
+- [x] **Step 2: Verify the branch**
 Run: `npm test && npx tsc --noEmit && npm run build`, then search the built bundle for `Give: `, `Fight: ` and `Flag: `.
 Expected: PASS; clean; no matches.
-- [ ] **Step 3: Write the carry-forward note**: where execution stands, the measured balance table, rulings with their cost if wrong, the final review's findings, deferred minors, questions for the owner, the steps to put the game online, and the owner play-test list below plus every task's owner checks. Mark the list as not performed by anyone.
-- [ ] **Step 4: Tick this plan's steps and add an "Execution status" section** listing where the delivered code differs from the task text.
-- [ ] **Step 5: Commit**
+- [x] **Step 3: Write the carry-forward note**: where execution stands, the measured balance table, rulings with their cost if wrong, the final review's findings, deferred minors, questions for the owner, the steps to put the game online, and the owner play-test list below plus every task's owner checks. Mark the list as not performed by anyone.
+- [x] **Step 4: Tick this plan's steps and add an "Execution status" section** listing where the delivered code differs from the task text.
+- [x] **Step 5: Commit**
 ```bash
 git add docs
 git commit -m "docs: Phase 6 complete — design doc in step, rulings, owner play-test list"
