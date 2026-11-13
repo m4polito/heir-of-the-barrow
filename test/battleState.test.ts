@@ -461,3 +461,17 @@ describe('BattleState', () => {
     });
   });
 });
+
+describe('BattleState song', () => {
+  it('plays the monster song when it names one, else the battle song', () => {
+    const named = setup({ song: 'victory' });
+    named.stack.update(fakeInput().input);
+    expect(named.playSong).toHaveBeenCalledWith(SONGS['victory']);
+    const plain = setup();
+    expect(plain.playSong).toHaveBeenCalledWith(SONGS['battle']);
+  });
+
+  it('throws at construction for a song that does not exist', () => {
+    expect(() => setup({ song: 'nope' })).toThrow('Unknown song: nope');
+  });
+});

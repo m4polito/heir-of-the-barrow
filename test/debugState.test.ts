@@ -159,7 +159,7 @@ describe('DebugState', () => {
 
   it('a Give row that does not fit plays error and changes nothing', () => {
     const { game, dbg } = setup();
-    const ids = Object.keys(game.items).filter((id) => game.items[id]!.kind !== 'consumable');
+    const ids = Object.keys(game.items).filter((id) => (game.items[id]!.kind !== 'consumable' && game.items[id]!.kind !== 'key'));
     game.player = { ...game.player, inventory: Array.from({ length: 8 }, (_, i) => ({ item: ids[i % ids.length]!, count: 1 })) };
     const before = game.player.inventory;
     const sfx = vi.spyOn(game.audio, 'playSfx');

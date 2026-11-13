@@ -226,7 +226,7 @@ describe('Battle spells, items and monster actions', () => {
     const b = new Battle(seqRng([0, 0.99, 0.5, 0.5, 0.5, 0, 0]), { ...base, hp: 15, maxHp: 24, mp: 0 }, mender);
     const beats = b.act('fight');
     expect(texts(beats)).toEqual(['You attack!', 'The Mireling takes 1 damage.', 'The Mireling uses Mend!', 'The Mireling recovers 1 HP.']);
-    expect(beats[3]!.sfx).toBe('heal');
+    expect(beats[3]!.sfx).toBe('mend');
     expect(b.monsterHp).toBe(6);
   });
 
@@ -251,5 +251,40 @@ describe('Battle spells, items and monster actions', () => {
       }
       expect(b.outcome).not.toBeNull();
     }
+  });
+});
+
+describe('Battle groundwork for bosses', () => {
+  const win = (m: MonsterDef) => {
+    const b = new Battle(seqRng([0, 0.99, 0.99, 0.99, 0.5]), { ...base, hp: 15, maxHp: 24, mp: 20 }, m, KIT);
+    return b.act({ spell: 'ember' });
+  };
+
+  it('validates monster actions on construction', () => {
+    expect(() => new Battle(seqRng([]), HERO, { ...M, actions: [{ do: 'attack', weight: 0 }] })).toThrow();
+    expect(() => new Battle(seqRng([]), HERO, { ...M, actions: [{ do: 'attack', weight: 1 }] })).not.toThrow();
+  });
+
+  it('a prize of no gold reads experience only; a prize with gold still names it', () => {
+    const none = win({ ...M, hp: 1, xp: 300, gold: [0, 0] });
+    expect(none[none.length - 1]!.text).toBe('You gain 300 experience.');
+    const some = win({ ...M, hp: 1, gold: [2, 4] });
+    expect(some[some.length - 1]!.text).toMatch(/^You gain 2 experience and [2-4] gold\.$/);
+  });
+
+  it('a monster Mend plays mend, the hero Heal plays heal', () => {
+    const boss: MonsterDef = { ...M, hp: 20, actions: [{ do: 'mend', name: 'Mend', min: 5, max: 5, weight: 1 }] };
+    const b = new Battle(createRng(7), { ...base, hp: 15, maxHp: 24, mp: 10 }, boss, KIT);
+    const beats = [...b.act({ spell: 'ember' }), ...b.act({ spell: 'heal' })];
+    expect(beats.find((x) => x.text.startsWith('The Mireling recovers'))?.sfx).toBe('mend');
+    expect(beats.find((x) => x.text.startsWith('You recover'))?.sfx).toBe('heal');
+  });
+
+  it('an item whose effect is not a heal cannot be used in battle', () => {
+    const bomb = { id: 'bomb', name: 'Bomb', count: 1, effect: { kind: 'damage', min: 1, max: 2 } } as const;
+    const b = new Battle(seqRng([]), { ...base, hp: 10, maxHp: 24, mp: 0 }, M, { spells: [], items: [bomb] });
+    expect(() => b.act({ item: 'bomb' })).toThrow('cannot act: not for battle');
+    expect(b.itemsUsed).toEqual([]);
+    expect(b.itemCount('bomb')).toBe(1);
   });
 });

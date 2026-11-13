@@ -186,3 +186,21 @@ describe('storage', () => {
     expect(readSave({ getItem: () => { throw new Error('denied'); } }, 'k', ctx)).toBeNull();
   });
 });
+
+describe('parseSave pack and key entries', () => {
+  const withInv = (inventory: { item: string; count: number }[]) => JSON.stringify({ ...goodSave(), inventory });
+  const club = (n: number) => Array.from({ length: n }, () => ({ item: 'wooden_club', count: 1 }));
+  const page = { item: 'journal_page', count: 1 };
+  it('accepts 8 ordinary entries plus the journal page, through parse and fromSave', () => {
+    const save = parseSave(withInv([...club(8), page]), ctx);
+    expect(save).not.toBeNull();
+    expect(fromSave(save!).inventory.length).toBe(9);
+  });
+  it('rejects 9 ordinary entries', () => {
+    expect(parseSave(withInv(club(9)), ctx)).toBeNull();
+    expect(parseSave(withInv([...club(9), page]), ctx)).toBeNull();
+  });
+  it('rejects 9 key entries', () => {
+    expect(parseSave(withInv(Array.from({ length: 9 }, () => page)), ctx)).toBeNull();
+  });
+});

@@ -3,7 +3,8 @@ import { STORY } from '../src/data/story';
 import { describe, it, expect } from 'vitest';
 import { createPlayer } from '../src/game/player';
 import type { PlayerState } from '../src/game/player';
-import { addItem, removeItem, equip, unequip, INVENTORY_SLOTS } from '../src/game/inventory';
+import { addItem, removeItem, equip, unequip, INVENTORY_SLOTS, packSlots, itemLines, equipLines } from '../src/game/inventory';
+import { sellRows } from '../src/game/shop';
 
 const empty = (): PlayerState => ({ ...createPlayer('x', STORY.startingItems), inventory: [] });
 
@@ -85,5 +86,33 @@ describe('addItem unknown id', () => {
     const r = addItem(ITEMS, p, 'no_such_item' as never);
     expect(r.ok).toBe(false);
     expect(r.player).toBe(p);
+  });
+});
+
+describe('key items take no pack slot', () => {
+  const full = () => {
+    let p = empty();
+    for (let i = 0; i < INVENTORY_SLOTS; i++) p = addItem(ITEMS, p, 'wooden_club').player;
+    return p;
+  };
+  it('adds a key item to a full pack; the ordinary count stays 8', () => {
+    const r = addItem(ITEMS, full(), 'journal_page');
+    expect(r.ok).toBe(true);
+    expect(r.player.inventory.length).toBe(9);
+    expect(packSlots(ITEMS, r.player)).toBe(8);
+    expect(addItem(ITEMS, r.player, 'wooden_club').ok).toBe(false);
+  });
+  it('packSlots counts only ordinary entries', () => {
+    expect(packSlots(ITEMS, empty())).toBe(0);
+    const p = addItem(ITEMS, addItem(ITEMS, empty(), 'journal_page').player, 'herb', 7).player;
+    expect(packSlots(ITEMS, p)).toBe(2);
+  });
+  it('lists keep pack order', () => {
+    let p = addItem(ITEMS, empty(), 'herb').player;
+    p = addItem(ITEMS, p, 'journal_page').player;
+    p = addItem(ITEMS, p, 'wooden_club').player;
+    expect(itemLines(ITEMS, p)).toEqual(['Herb x1', 'Journal Page', 'Wooden Club']);
+    expect(sellRows(ITEMS, p).map((r) => r.slice(0, 12).trim())).toEqual(['Herb x1', 'Journal Page', 'Wooden Club']);
+    expect(equipLines(ITEMS, p).candidates).toEqual(['wooden_club']);
   });
 });

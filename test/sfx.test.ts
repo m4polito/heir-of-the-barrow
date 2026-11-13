@@ -122,3 +122,16 @@ describe('buy effect', () => {
     }
   });
 });
+
+describe('mend effect', () => {
+  it('is the pinned phrase and differs from every other effect', () => {
+    expect(SFX.mend).toEqual([
+      { ch: 'p1', note: 'E4', duty: 0.125, frames: 3, vol: 7 },
+      { ch: 'p1', note: 'G4', duty: 0.125, frames: 3, vol: 7 },
+      { ch: 'p1', note: 'B4', duty: 0.125, frames: 6, vol: 7 },
+    ]);
+    for (const [id, steps] of Object.entries(SFX)) {
+      if (id !== 'mend') expect(JSON.stringify(steps), id).not.toBe(JSON.stringify(SFX.mend));
+    }
+  });
+});

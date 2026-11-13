@@ -2,7 +2,7 @@ import type { Dir } from '../engine/constants';
 import { LEVELS } from '../data/levels';
 import { GOLD_MAX, XP_MAX } from './player';
 import type { EquipSlot, InventorySlot, PlayerState } from './player';
-import { INVENTORY_SLOTS } from './inventory';
+import { INVENTORY_SLOTS, KEY_ITEM_SLOTS } from './inventory';
 import type { ItemTable } from './items';
 import { isWalkable } from './map';
 import type { GameMap } from './map';
@@ -126,13 +126,15 @@ function validate(raw: unknown, ctx: SaveContext): SaveData | null {
     equipment[key as EquipSlot] = id;
   }
 
-  if (!Array.isArray(raw.inventory) || raw.inventory.length > INVENTORY_SLOTS) return null;
+  if (!Array.isArray(raw.inventory) || raw.inventory.length > INVENTORY_SLOTS + KEY_ITEM_SLOTS) return null;
   const inventory: InventorySlot[] = [];
   for (const entry of raw.inventory as unknown[]) {
     if (!isRecord(entry) || typeof entry.item !== 'string' || !has(ctx.items, entry.item)) return null;
     if (!isInt(entry.count, 1, ctx.items[entry.item]!.stack)) return null;
     inventory.push({ item: entry.item, count: entry.count });
   }
+  const keys = inventory.filter((s) => ctx.items[s.item]!.kind === 'key').length;
+  if (keys > KEY_ITEM_SLOTS || inventory.length - keys > INVENTORY_SLOTS) return null;
 
   if (!Array.isArray(raw.flags) || raw.flags.length > FLAGS_MAX) return null;
   const flags: string[] = [];

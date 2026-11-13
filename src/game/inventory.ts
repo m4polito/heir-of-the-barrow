@@ -2,6 +2,17 @@ import type { ItemTable } from './items';
 import type { EquipSlot, InventorySlot, PlayerState } from './player';
 
 export const INVENTORY_SLOTS = 8;
+/** The most key-item entries a save may hold; they take no pack slot. */
+export const KEY_ITEM_SLOTS = 8;
+
+export function isKeyItem(items: ItemTable, id: string): boolean {
+  return items[id]?.kind === 'key';
+}
+
+/** Pack slots in use: every entry that is not a key item. Key items take no slot. */
+export function packSlots(items: ItemTable, p: PlayerState): number {
+  return p.inventory.filter((s) => !isKeyItem(items, s.item)).length;
+}
 
 export interface InvResult {
   player: PlayerState;
@@ -22,10 +33,13 @@ export function addItem(items: ItemTable, p: PlayerState, id: string, n = 1): In
       left -= take;
     }
   }
-  while (left > 0 && inv.length < INVENTORY_SLOTS) {
+  let slots = packSlots(items, { ...p, inventory: inv });
+  const key = isKeyItem(items, id);
+  while (left > 0 && (key || slots < INVENTORY_SLOTS)) {
     const take = Math.min(cap, left);
     inv.push({ item: id, count: take });
     left -= take;
+    if (!key) slots++;
   }
   if (left > 0) return { player: p, ok: false };
   return { player: { ...p, inventory: inv }, ok: true };

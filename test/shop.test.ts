@@ -13,7 +13,7 @@ const fresh = (over: Partial<PlayerState> = {}): PlayerState => ({
 
 /** Eight pack slots; `first` is the first slot, the rest are other items. */
 function fullPack(first: InventorySlot): InventorySlot[] {
-  const filler = ['torch', 'journal_page', 'aldric_shield', 'journal_page', 'bronze_sword', 'cloth_tunic', 'leather_armor'];
+  const filler = ['torch', 'cloth_tunic', 'aldric_shield', 'torch', 'bronze_sword', 'cloth_tunic', 'leather_armor'];
   return [first, ...filler.slice(0, INVENTORY_SLOTS - 1).map((item) => ({ item, count: 1 }))];
 }
 

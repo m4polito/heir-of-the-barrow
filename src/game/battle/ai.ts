@@ -48,8 +48,14 @@ export class MonsterBrain {
 export function validateActions(actions: readonly MonsterAction[]): void {
   for (const a of actions) {
     if (!Number.isFinite(a.weight) || !(a.weight > 0)) throw new Error(`monster action weight must be above 0: ${a.weight}`);
-    if (a.do !== 'attack' && (a.min < 0 || a.min > a.max)) throw new Error(`monster action ${a.name} has a bad range`);
-    if (a.cooldown !== undefined && a.cooldown < 0) throw new Error('monster action cooldown must not be negative');
+    if (a.do !== 'attack') {
+      if (!Number.isFinite(a.min) || !Number.isFinite(a.max)) throw new Error(`monster action ${a.name} has a range that is not finite`);
+      if (a.min < 0 || a.min > a.max) throw new Error(`monster action ${a.name} has a bad range`);
+    }
+    if (a.cooldown !== undefined) {
+      if (!Number.isFinite(a.cooldown) || !Number.isInteger(a.cooldown)) throw new Error('monster action cooldown must be a whole number');
+      if (a.cooldown < 0) throw new Error('monster action cooldown must not be negative');
+    }
   }
   if (!actions.some((a) => a.if === undefined && !a.cooldown)) {
     throw new Error('monster actions need one with no condition and no cooldown');

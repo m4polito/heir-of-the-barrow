@@ -56,6 +56,7 @@ export class BattleState implements State {
   private readonly onEnd: (outcome: BattleOutcome) => void;
   private readonly monster: MonsterDef;
   private readonly backdrop: string;
+  private readonly songId: string;
   private _phase: BattlePhase = 'beats';
   private sub: SubList | null = null;
   private shownHeroHp: number;
@@ -74,6 +75,9 @@ export class BattleState implements State {
     this.monster = opts.monster;
     this.backdrop = opts.backdrop;
     this.onEnd = opts.onEnd;
+    const songId = opts.monster.song ?? 'battle';
+    if (!game.songs[songId]) throw new Error(`Unknown song: ${songId}`);
+    this.songId = songId;
     this._battle = new Battle(
       game.rng,
       { hp: p.hp, maxHp: p.maxHp, mp: p.mp, atk: attackOf(game.items, p), def: defenseOf(game.items, p), agi: p.agi },
@@ -105,7 +109,7 @@ export class BattleState implements State {
   }
 
   enter(): void {
-    this.game.audio.playSong(this.game.songs['battle']!);
+    this.game.audio.playSong(this.game.songs[this.songId]!);
   }
 
   update(input: Input): void {

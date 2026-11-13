@@ -265,7 +265,7 @@ describe('buying', () => {
     inventory: [
       'herb',
       'torch',
-      'journal_page',
+      'cloth_tunic',
       'aldric_shield',
       'cloth_tunic',
       'leather_armor',

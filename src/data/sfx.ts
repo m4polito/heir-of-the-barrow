@@ -16,6 +16,7 @@ export type SfxId =
   | 'runFail'
   | 'spell'
   | 'heal'
+  | 'mend'
   | 'buy'
   | 'save';
 
@@ -79,6 +80,7 @@ export const SFX: Record<SfxId, SfxStep[]> = {
   runFail: [p1('E4', 3, 9, 0.125), p1('C4', 3, 9, 0.125), p1('G#3', 6, 9, 0.125)],
   spell: [p1('A4', 2, 9, 0.125), p1('E5', 2, 9, 0.125), p1('A5', 2, 9, 0.125), p1('C#6', 2, 9, 0.125), p1('E6', 4, 9, 0.125)],
   heal: [p1('E6', 3, 7, 0.25), p1('C6', 3, 7, 0.25), p1('G5', 3, 7, 0.25), p1('C6', 5, 7, 0.25)],
+  mend: [p1('E4', 3, 7, 0.125), p1('G4', 3, 7, 0.125), p1('B4', 6, 7, 0.125)],
   buy: [p1('B5', 2, 8, 0.5), p1('F#6', 6, 8, 0.5)],
   // Two soft taps and a held note a fifth up: the only effect that repeats a note across a rest.
   save: [
