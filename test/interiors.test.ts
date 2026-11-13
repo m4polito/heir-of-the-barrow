@@ -9,7 +9,7 @@ import { isWalkable, warpAt, chestFlag, type GameMap } from '../src/game/map';
 
 const BY_ID: Record<string, GameMap> = MAPS;
 const ALL = Object.entries(BY_ID);
-const INTERIORS = ALL.filter(([id]) => id !== 'hollowmere' && id !== 'marsh');
+const INTERIORS = ALL.filter(([id]) => id !== 'hollowmere' && id !== 'marsh' && !id.startsWith('barrow_'));
 const key = (x: number, y: number) => `${x},${y}`;
 
 function reach(map: GameMap, sx: number, sy: number): Set<string> {
@@ -29,8 +29,8 @@ function reach(map: GameMap, sx: number, sy: number): Set<string> {
 }
 
 describe('map registry', () => {
-  it('has all six maps keyed by id', () => {
-    expect(Object.keys(MAPS).sort()).toEqual(['elder_house', 'forge', 'hollowmere', 'inn', 'marsh', 'shop']);
+  it('has all eight maps keyed by id', () => {
+    expect(Object.keys(MAPS).sort()).toEqual(['barrow_1', 'barrow_2', 'elder_house', 'forge', 'hollowmere', 'inn', 'marsh', 'shop']);
     for (const [id, map] of ALL) expect(map.id).toBe(id);
   });
   it('every warp targets an existing map and entry', () => {
@@ -57,7 +57,7 @@ describe('interiors', () => {
     expect(reached.size).toBe(walkable);
     for (const e of Object.values(map.entry)) expect(reached.has(key(e.x, e.y))).toBe(true);
   });
-  it('every door-tile warp is walkable, every door tile has a warp, and only gate and town warps are off doors', () => {
+  it('every door-tile warp is walkable, every door tile has a warp, and only the gate, the town and the Barrow warps are off doors', () => {
     const offDoor: string[] = [];
     for (const [id, map] of ALL) {
       const doors = new Set<string>();
@@ -73,7 +73,7 @@ describe('interiors', () => {
       }
       for (const d of doors) expect(warps.has(d), `${id} door ${d} has warp`).toBe(true);
     }
-    expect(offDoor.sort()).toEqual(['hollowmere@11,19', 'hollowmere@12,19', 'marsh@12,20']);
+    expect(offDoor.sort()).toEqual(['barrow_1@20,2', 'barrow_1@3,22', 'barrow_2@20,2', 'hollowmere@11,19', 'hollowmere@12,19', 'marsh@12,20', 'marsh@40,6']);
   });
   it('hollowmere has six warps: four doors and the two-tile south gate', () => {
     expect(MAPS.hollowmere.triggers.filter((t) => t.kind === 'warp').length).toBe(6);

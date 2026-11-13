@@ -48,7 +48,18 @@ export interface LookTrigger {
   dialog: string;
 }
 
-export type Trigger = WarpTrigger | AutoTrigger | ChestTrigger | LookTrigger;
+/** A fight on the tile that ends a story beat: confirm-free, begins when the hero steps on it unless `flag` is set. */
+export interface BossTrigger {
+  kind: 'boss';
+  x: number;
+  y: number;
+  monster: string;
+  backdrop: string;
+  flag: string;
+  dialog: string;
+}
+
+export type Trigger = WarpTrigger | AutoTrigger | ChestTrigger | LookTrigger | BossTrigger;
 
 export interface EncounterEntry {
   monster: string;
@@ -128,6 +139,13 @@ export function chestAt(map: GameMap, x: number, y: number): ChestTrigger | unde
 export function lookAt(map: GameMap, x: number, y: number): LookTrigger | undefined {
   for (const t of map.triggers) {
     if (t.kind === 'look' && t.x === x && t.y === y) return t;
+  }
+  return undefined;
+}
+
+export function bossAt(map: GameMap, x: number, y: number): BossTrigger | undefined {
+  for (const t of map.triggers) {
+    if (t.kind === 'boss' && t.x === x && t.y === y) return t;
   }
   return undefined;
 }

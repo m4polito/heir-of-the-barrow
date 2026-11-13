@@ -11,7 +11,8 @@ export type DialogId =
   | 'bram'
   | 'tobin'
   | 'villager_a'
-  | 'villager_b';
+  | 'villager_b'
+  | 'sealed_door';
 
 export const DIALOGS: Record<DialogId, DialogScript> = {
   maren_intro: [
@@ -134,4 +135,6 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
   villager_b: [
     'The river runs cold now, even in summer. My father said it was warm once.',
   ],
+
+  sealed_door: ['The way down is shut. For now.'],
 };

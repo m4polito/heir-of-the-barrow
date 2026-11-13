@@ -76,10 +76,12 @@ export const MARSH: GameMap = {
   border: TILE_IDS.water,
   entry: {
     town: { x: 12, y: 21, facing: 'down' },
+    barrow: { x: 40, y: 7, facing: 'down' },
   },
   npcs: [],
   triggers: [
     { kind: 'warp', x: 12, y: 20, to: 'hollowmere', entry: 'gate' },
+    { kind: 'warp', x: 40, y: 6, to: 'barrow_1', entry: 'mouth' },
     { kind: 'chest', x: 3, y: 36, id: 'copse', gold: 40 },
   ],
   encounters: {

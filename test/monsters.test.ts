@@ -75,7 +75,7 @@ describe('backdrops', () => {
       expect(art.rows[8]).not.toContain('.');
       for (const row of art.rows.slice(9)) expect(row).not.toContain('.');
     }
-    expect(Object.keys(BACKDROPS).sort()).toEqual(['grass', 'murk']);
+    expect(Object.keys(BACKDROPS).sort()).toEqual(['barrow', 'grass', 'murk']);
   });
   it('throws on unknown id', () => {
     expect(() => backdropArt('nope')).toThrow();
