@@ -3,7 +3,7 @@ import type { Song, Track } from '../../engine/audio/sequencer';
 // "Barrow": sparse and uneasy, 4/4 at a slow 60, D minor, 8 bars of 16 rows that
 // loop from row 0. The harmony never moves off a drone; the unease is the gaps.
 //   bar  1  2  3  4  5  6  7  8
-//   tri  D2 D2 D2 D2 C2 C2 D2 D2     (a low drone, held; released on the last row)
+//   tri  D2 D2 D2 D2 C2 C2 D2 D2     (a low drone: D2 struck at row 0, C2 at row 64, D2 at row 96, each held to the next)
 //   p1   -  f1 -  f2 -  f1 -  -      (f1 = D4 F4 E4, f2 = D4 F4 A4, its answer)
 //   p2   -  -  -  -  -  -  -  A3     (one held A3, released on the last row)
 // p1 plays one three-note figure in bars 2 and 6, and its answer (the last note
@@ -39,14 +39,12 @@ function ticks(...rows: number[]): Row[] {
 
 const flat = (bars: Row[][]): Row[] => bars.flat();
 
-/** A drone note held for the whole bar. Bar 8 releases on its last row so the held D2 does not run into the loop's restart. */
-const drone = (note: string): Row[] => bar([note, BAR]);
-
-const bass = flat([
-  drone('D2'), drone('D2'), drone('D2'), drone('D2'),
-  drone('C2'), drone('C2'),
-  drone('D2'), bar(['D2', 15], ['off', 1]),
-]);
+/** One note struck at the start of each chord span and held (null rows) to the next; D2 at row 96 holds through row 127. At the loop, row 0's noteOn replaces it with the same short fade as every bar line. */
+const bass: Row[] = [
+  'D2', ...Array<Row>(63).fill(null),
+  'C2', ...Array<Row>(31).fill(null),
+  'D2', ...Array<Row>(31).fill(null),
+];
 
 const lead = flat([
   silent(),

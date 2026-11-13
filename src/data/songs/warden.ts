@@ -9,7 +9,7 @@ import type { Song, Track } from '../../engine/audio/sequencer';
 // in bar 5; the other bars carry chord tones in the same four-row pulse. A D
 // natural passing over E in bar 4 makes it E7; bar 8's G#3 leads into the A3
 // at the loop. p2 holds two chord tones a bar, eight rows each, high above.
-// tri plays the bar's root on each beat, all below C3. Noise is a kick on beats
+// tri plays the bar's root on each beat (three rows, then a one-row release), all below C3. Noise is a kick on beats
 // 1, 2 and 4 and the snare on beat 3 (one noise voice, so beat 3 gives up its kick).
 
 type Row = string | null;
@@ -28,9 +28,9 @@ function bar(...events: Ev[]): Row[] {
   return out;
 }
 
-/** The bar's root on each beat. */
+/** The bar's root on each beat: sounded for three rows, released for one, so the beats read as a pulse. */
 function roots(root: string): Row[] {
-  return bar([root, 4], [root, 4], [root, 4], [root, 4]);
+  return bar([root, 3], ['off', 1], [root, 3], ['off', 1], [root, 3], ['off', 1], [root, 3], ['off', 1]);
 }
 
 /** Two chord tones, eight rows each. */

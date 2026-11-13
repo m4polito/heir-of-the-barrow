@@ -320,6 +320,18 @@ describe('barrow and warden', () => {
     expect(new Set(notes.map(([, n]) => n))).toEqual(new Set(['D2', 'C2']));
   });
 
+  it('barrow triangle holds the drone: three note starts at rows 0, 64 and 96, no off', () => {
+    const tri = byChannel(SONGS.barrow, 'tri').rows;
+    expect(tick(tri).map(([i]) => i)).toEqual([0, 64, 96]);
+    expect(tri).not.toContain('off');
+  });
+
+  it('barrow pulse 1 releases on row 15 of bars 2, 4 and 6 and nowhere else', () => {
+    const p1 = byChannel(SONGS.barrow, 'p1').rows;
+    const offs = tick(p1).filter(([, c]) => c === 'off').map(([i]) => i);
+    expect(offs).toEqual([31, 63, 95]);
+  });
+
   it('barrow pulse 1 sounds only in bars 2, 4 and 6 with the pinned figures', () => {
     const p1 = byChannel(SONGS.barrow, 'p1').rows;
     const bars = (b: number) => soundedAt(p1.slice(b * 16, b * 16 + 16)).map(([, n]) => n);
@@ -375,7 +387,10 @@ describe('barrow and warden', () => {
         expect(noteToMidi(n!)).toBeLessThan(noteToMidi('C3'));
       }
     }
-    for (const [, n] of soundedAt(tri)) expect(noteToMidi(n)).toBeLessThan(noteToMidi('C3'));
+    for (const [row, n] of soundedAt(tri)) {
+      expect(n.replace(/\d+$/, ''), `row ${row}`).toBe(roots[Math.floor(row / 16)]);
+      expect(noteToMidi(n)).toBeLessThan(noteToMidi('C3'));
+    }
   });
 
   it('warden pulse 2 holds two long chord tones per bar', () => {
@@ -391,6 +406,10 @@ describe('barrow and warden', () => {
     for (let b = 0; b < 8; b++) {
       expect([0, 4, 8, 12].map((r) => noise[b * 16 + r])).toEqual(['k', 'k', 's', 'k']);
     }
+  });
+
+  it('warden pins its voices', () => {
+    expect(pinned(SONGS.warden)[0]).toEqual(['p1', 0.5, 11]);
   });
 
   it('warden is slower than the battle theme', () => {
