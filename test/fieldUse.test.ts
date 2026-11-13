@@ -8,7 +8,7 @@ import { seqRng } from './helpers/seqRng';
 const LIT = { dark: false };
 const DARK = { dark: true };
 const lv3 = (): PlayerState => gainXp(createPlayer('Wren', [{ item: 'herb', count: 2 }]), 22).player;
-const herbs = (p: PlayerState) => p.inventory.find((s) => s.item === 'herb', LIT)?.count ?? 0;
+const herbs = (p: PlayerState) => p.inventory.find((s) => s.item === 'herb')?.count ?? 0;
 
 describe('castInField', () => {
   it('heals and spends mp', () => {

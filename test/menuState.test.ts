@@ -197,6 +197,31 @@ describe('items and equip', () => {
     it('the map screen reports its own map as lit or dark', () => {
       const t = setup();
       expect(t.game.fieldCtx!()).toEqual({ dark: false });
+      const dark = new ExploreState(t.game, 'barrow_1', 'mouth');
+      t.stack.reset(dark);
+      expect(t.game.fieldCtx!()).toEqual({ dark: true });
+    });
+    it('a read item opens its dialog once and shows no other line', () => {
+      const t = setup();
+      const g = t.game as unknown as { items: Record<string, unknown>; dialogs: Record<string, unknown> };
+      g.items = { ...ITEMS, note: { id: 'note', name: 'Note', kind: 'key', price: 0, stack: 1, use: { where: 'field', effect: { kind: 'read', dialog: 'the_note' } } } };
+      g.dialogs = { ...DIALOGS, the_note: ['A scrawl.'] };
+      t.game.player = { ...t.game.player, inventory: [{ item: 'note', count: 1 }] };
+      const items = new ItemsState(t.game);
+      t.stack.push(items);
+      items.update(keys('confirm'));
+      expect(t.stack.states.filter((s) => s instanceof DialogState)).toHaveLength(1);
+      expect(shownText(t.game, t.stack)).toBe('A scrawl.');
+      expect(t.game.player.inventory).toEqual([{ item: 'note', count: 1 }]);
+    });
+    it('a read item with a missing dialog throws', () => {
+      const t = setup();
+      const g = t.game as unknown as { items: Record<string, unknown> };
+      g.items = { ...ITEMS, note: { id: 'note', name: 'Note', kind: 'key', price: 0, stack: 1, use: { where: 'field', effect: { kind: 'read', dialog: 'nope' } } } };
+      t.game.player = { ...t.game.player, inventory: [{ item: 'note', count: 1 }] };
+      const items = new ItemsState(t.game);
+      t.stack.push(items);
+      expect(() => items.update(keys('confirm'))).toThrow('Unknown dialog: nope');
     });
   });
 

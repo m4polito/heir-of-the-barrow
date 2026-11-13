@@ -350,6 +350,8 @@ export class ExploreState implements State {
     }
     if (burned && game.player.torch === 0 && !took && game.stack.top === this) {
       this.showLines(['Your torch gutters out.']);
+      return true; // the hero stops here; nothing starts underneath the dialog
+
     }
     return took;
   }

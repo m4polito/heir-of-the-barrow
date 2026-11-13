@@ -55,6 +55,12 @@ describe('darkRects', () => {
 });
 
 describe('data', () => {
+  it('every light or read item is field-only', () => {
+    for (const def of Object.values(ITEMS)) {
+      const k = def.use?.effect.kind;
+      if (k === 'light' || k === 'read') expect(def.use!.where, def.id).toBe('field');
+    }
+  });
   it("the Torch's radius is the lit radius and it is not offered in battle", () => {
     const use = ITEMS.torch.use!;
     expect(use.effect.kind === 'light' && use.effect.radius).toBe(TORCH_RADIUS);
@@ -110,6 +116,35 @@ describe('map screen on a dark map', () => {
     expect(t.game.player.torch).toBe(5);
   });
 
+  it('the torch going out stops the hero before the next step', () => {
+    const t = setupRoom({ dark: true, pos: shortOfEdge, patch: { torch: 2 } });
+    for (let i = 0; i < 40 && !(t.stack.top instanceof DialogState); i++) t.hold(1, 'right');
+    expect(t.stack.top).toBeInstanceOf(DialogState);
+    expect(t.explore.hero.stepFrame).toBe(0);
+    expect(t.explore.hero.x).toBe(3);
+    for (let i = 0; i < 100 && t.stack.top !== t.explore; i++) t.press('confirm');
+    expect(t.stack.top).toBe(t.explore);
+    t.idle(30);
+    expect(t.explore.hero.x).toBe(3);
+    expect(t.explore.hero.stepFrame).toBe(0);
+  });
+
+  it('a warp on the step the torch reaches 0 shows no torch dialog', () => {
+    const other = { ...setupRoom({}).room, id: 'other', entry: { in: { x: 1, y: 1, facing: 'down' as const } } };
+    const t = setupRoom({
+      dark: true,
+      pos: { x: 1, y: 4, facing: 'right' },
+      patch: { torch: 1 },
+      triggers: [{ kind: 'warp', x: 2, y: 4, to: 'other', entry: 'in' }],
+      extraMaps: { other },
+    });
+    t.hold(9, 'right');
+    t.idle(60);
+    expect(t.game.player.torch).toBe(0);
+    expect(t.stack.states.some((s) => s instanceof DialogState)).toBe(false);
+    expect(t.explore.mapId).toBe('other');
+  });
+
   const forced: EncounterTable = {
     baseRate: 2,
     zones: { barrowFloor: { backdrop: 'grass', monsters: [{ monster: 'mireling', weight: 1 }] } },
@@ -125,6 +160,18 @@ describe('map screen on a dark map', () => {
     expect(t.stack.states.some((s) => s instanceof BattleState)).toBe(true);
     expect(t.stack.states.some((s) => s instanceof DialogState)).toBe(false);
     expect(t.explore.lightRadius).toBe(DARK_RADIUS);
+  });
+
+  it('after the battle on the last torch step the map screen is on top with no torch dialog', () => {
+    const t = setupRoom({ dark: true, pos: shortOfEdge, patch: { torch: 4, str: 99 }, encounters: forced });
+    t.hold(36, 'right');
+    for (let i = 0; i < 3000 && t.stack.top !== t.explore; i++) {
+      t.stack.update(keys(i % 3 === 0 ? { pressed: ['confirm'] } : {}));
+    }
+    expect(t.stack.top).toBe(t.explore);
+    expect(t.stack.states.some((s) => s instanceof DialogState)).toBe(false);
+    t.idle(5);
+    expect(t.stack.top).toBe(t.explore);
   });
 
   it('a battle fought with torch 50 ends with 50', () => {
