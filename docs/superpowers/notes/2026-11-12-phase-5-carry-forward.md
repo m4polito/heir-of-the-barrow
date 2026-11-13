@@ -1,5 +1,7 @@
 # Phase 5 carry-forward (phase stop for the owner's play-test, 2026-11-12)
 
+> **Commit hashes in this file predate the history rewrite of 2026-11-13 and no longer exist.** The commits are the same, with new hashes; find one by its subject line (`git log --grep="<subject>"`). See "Online" in `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`.
+
 Written for the owner's play-test and for the session that acts on its feedback. The plan is `docs/superpowers/plans/2026-11-12-phase-5-commerce-and-rest.md`; the owner approved it and all eighteen of its decisions on 2026-11-12 and added Task 0 (an original level table).
 
 ## Where execution stands

@@ -1,5 +1,7 @@
 # Phase 2 carry-forward (phase stop for the owner's play-test, 2026-11-12)
 
+> **Commit hashes in this file predate the history rewrite of 2026-11-13 and no longer exist.** The commits are the same, with new hashes; find one by its subject line (`git log --grep="<subject>"`). See "Online" in `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`.
+
 Written for the owner's play-test and for the session that acts on its feedback. Everything here was agreed with the owner or ruled by the orchestrator during execution; the plan itself is `docs/superpowers/plans/2026-11-11-phase-2-town-that-talks.md`.
 
 ## Where execution stands

@@ -1,5 +1,7 @@
 # Phase 3: Out the Gate — Implementation Plan
 
+> **Commit hashes in this file predate the history rewrite of 2026-11-13 and no longer exist.** The commits are the same, with new hashes; find one by its subject line (`git log --grep="<subject>"`). See "Online" in `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Walk out of Hollowmere's gate onto the Marsh overworld, meet Mirelings in random one-on-one battles with Fight and Run, win gold and experience, and on death wake in Maren's house with half your gold; with the marsh, battle, victory and fallen music, an encounter sting, and hit/miss sounds.

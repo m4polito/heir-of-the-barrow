@@ -1,5 +1,7 @@
 # Phase 5: Commerce and Rest — Implementation Plan
 
+> **Commit hashes in this file predate the history rewrite of 2026-11-13 and no longer exist.** The commits are the same, with new hashes; find one by its subject line (`git log --grep="<subject>"`). See "Online" in `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Garrik and Odo sell and buy; Hesta's bed costs 6 gold and plays a sleep jingle; Maren saves the game and the title screen offers Continue; a yes/no question shows its text and its answers in one window; balance tests confirm that a level 1 hero who spends the starting gold on the Wooden Club clears road fights comfortably.

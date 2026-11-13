@@ -1,5 +1,7 @@
 # Phase 2: A Town That Talks — Implementation Plan
 
+> **Commit hashes in this file predate the history rewrite of 2026-11-13 and no longer exist.** The commits are the same, with new hashes; find one by its subject line (`git log --grep="<subject>"`). See "Online" in `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** From the title screen, name the hero, wake in Maren's house, receive Aldric's Shield in the opening scene, walk Hollowmere talking to every villager, enter every building, open a menu to see status and equip the shield, with a title theme, text blips, and menu sounds; plus a dev-only debug overlay.

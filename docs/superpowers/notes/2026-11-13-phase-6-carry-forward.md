@@ -1,5 +1,7 @@
 # Phase 6 carry-forward (phase stop for the owner's play-test, 2026-11-13)
 
+> **Commit hashes in this file predate the history rewrite of 2026-11-13 and no longer exist.** The commits are the same, with new hashes; find one by its subject line (`git log --grep="<subject>"`). See "Online" in `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`.
+
 Written for the owner's play-test and for the session that acts on its feedback. The plan is `docs/superpowers/plans/2026-11-12-phase-6-the-barrow.md`; the owner approved it and all eighteen of its decisions on 2026-11-13, with changes (second-person "You found Aldric's Journal, Page 1."; Pip's "Mum says"; the journal's Tobin line; a bump sound; deployment prepared and not performed; Phase 5's open questions unchanged).
 
 ## Where execution stands
@@ -149,6 +151,8 @@ Still open from earlier phases: the "Can stay deferred" list in `docs/superpower
 - GitHub Pages' source is "GitHub Actions". **Live at https://m4polito.github.io/heir-of-the-barrow/**
 - The first workflow run tested and built, then its deploy step was refused: "Branch master is not allowed to deploy to github-pages due to environment protection rules." The `github-pages` environment allows only `main` by default. Fix: `master` was added to that environment's allowed branches (a repository setting, no code change) and the failed job was re-run; it passed. The published script is the same build as the local one.
 - Every later push to `master` tests, builds and publishes again.
+- **History rewrite (2026-11-13, the owner's instruction).** The first push published the owner's personal email as author and committer of every commit. All 121 commits on `master` were rewritten to the owner's GitHub noreply address (file contents unchanged, `Co-Authored-By` trailers untouched), the merged `phase-*` branches were deleted, and `master` was force-pushed. Because GitHub still served the old commits by hash, the repository was then deleted and recreated under the same name, with Pages' source and the `master` environment rule set again; the first run of the new repository built and deployed, and the old hashes no longer resolve through GitHub's API. This repository's `user.email` is now the noreply address.
+- **Every commit hash written in these notes and plans before the rewrite is gone.** The merges are now: Phase 3 `857937e`, Phase 4 `5065793`, Phase 5 `6baba09`, Phase 6 `0943401`.
 - The workflow log warns that the actions it uses run on a Node version GitHub is retiring; raise their major versions when new ones are out.
 
 ## Owner play-test for Phase 6 (none of these has been performed by anyone)

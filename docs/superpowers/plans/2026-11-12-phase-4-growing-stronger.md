@@ -1,5 +1,7 @@
 # Phase 4: Growing Stronger — Implementation Plan
 
+> **Commit hashes in this file predate the history rewrite of 2026-11-13 and no longer exist.** The commits are the same, with new hashes; find one by its subject line (`git log --grep="<subject>"`). See "Online" in `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Victories now level the hero up; Heal and Ember are learned and cast; an Herb can be used in a fight; Heal and the Herb work from the field menu; the early fights are rebalanced so an unarmed level 1 hero can walk the road and a level 3 hero with Heal can enter the marsh; every named villager says their own name.

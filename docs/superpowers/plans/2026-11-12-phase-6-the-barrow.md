@@ -1,5 +1,7 @@
 # Phase 6: The Barrow — Implementation Plan
 
+> **Commit hashes in this file predate the history rewrite of 2026-11-13 and no longer exist.** The commits are the same, with new hashes; find one by its subject line (`git log --grep="<subject>"`). See "Online" in `docs/superpowers/notes/2026-11-13-phase-6-carry-forward.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The hero can walk into the Sunken Barrow: two dark floors, a Torch that widens the light, chests, stairs, Barrow Mirelings, and the Barrow Warden with its own music and a shorter, retuned fight. Winning drops Aldric's journal page, which can be read; the door beyond is sealed; the villagers have new lines. The game can be built for a shared link.
