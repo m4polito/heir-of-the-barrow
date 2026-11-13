@@ -73,7 +73,8 @@ describe('holding a direction through a warp', () => {
     expect(lock(t.explore)).toBe(false);
     t.hold(60, 'up');
     expect(t.explore.mapId).toBe('barrow_1');
-    expect(t.count('stairs')).toBe(2);
+    expect(t.count('stairs')).toBe(1);
+    expect(t.count('stairsUp')).toBe(1);
   });
 
   it('leaving the elder house holding Down: house to town to the gate, two warps, no bump, no stop', () => {

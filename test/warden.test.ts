@@ -244,6 +244,25 @@ describe('the Warden as data', () => {
     expect(used.size).toBeLessThanOrEqual(4);
   });
 
+  it('both arms attach to the body and the silhouette is balanced', () => {
+    const rows = monsterArt('warden', 0).rows;
+    const filled = (r: number, c: number) => rows[r]![c] !== '.';
+    // Shoulder rows 12 to 14: the torso is columns 11 to 20, so outward from its edge each side must be one
+    // unbroken run of at least 2 pixels (the arm), with no empty column between arm and torso.
+    for (const r of [12, 13, 14]) {
+      expect(filled(r, 11) && filled(r, 20), `torso edge row ${r}`).toBe(true);
+      let left = 0;
+      for (let c = 10; c >= 0 && filled(r, c); c--) left++;
+      let right = 0;
+      for (let c = 21; c < 32 && filled(r, c); c++) right++;
+      expect(left, `left arm row ${r}`).toBeGreaterThanOrEqual(2);
+      expect(right, `right arm row ${r}`).toBeGreaterThanOrEqual(2);
+    }
+    const count = (lo: number, hi: number) => rows.reduce((n, row) => n + [...row.slice(lo, hi)].filter((ch) => ch !== '.').length, 0);
+    const [l, r] = [count(0, 16), count(16, 32)];
+    expect(Math.abs(l - r) / Math.max(l, r)).toBeLessThanOrEqual(0.15);
+  });
+
   it('every monster sprite id is known to monsterArt', () => {
     for (const m of Object.values(MONSTERS) as MonsterDef[]) expect(() => monsterArt(m.sprite, m.palette)).not.toThrow();
   });

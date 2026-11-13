@@ -39,7 +39,7 @@ const MIRELING_PALETTES: Record<string, number>[] = [
 const MIRELING: PixelArt[] = MIRELING_PALETTES.map((colors) => ({ w: 24, h: 24, colors, rows: MIRELING_ROWS }));
 
 // Barrow Warden: a long-dead figure facing the viewer, in the remains of ridged plate. The helm has a
-// central crest, the left pauldron (viewer's left) is gone and leaves a bare bone arm, the right one is
+// central crest, the left pauldron (viewer's left) is gone and leaves a barer shoulder, the right one is
 // domed. Nothing is raised; the hands hang empty. b plate, s shade, h highlight, e eye. No outline.
 const WARDEN_ROWS = [
   '................................',
@@ -53,16 +53,16 @@ const WARDEN_ROWS = [
   '..........bbsssbbsssbb..........',
   '...........bbs.hh.sbb...........',
   '.............sbs..sbs...........',
-  '.......s.s.sbbhhhhbbsbhhhhss....',
-  '.......bs..bbbsbbsbbbbbbbbhs....',
-  '.......bs..bbsbbbbsbbbsbbbbs....',
-  '.......bs..bsbhhhhbsbbssssbs....',
-  '.......bs..bbbbbbbbbb.bbs.......',
-  '.......s...bbsbbbbsbb.bbs.......',
-  '.......s...bbbhhhhbbb.bbs.......',
-  '.......bs..bbssbbssbb.bbs.......',
-  '.......bs..sbbbbbbbbs.bbs.......',
-  '.......sbs.ssbbbbbbss.sbbs......',
+  '........sbbsbbhhhhbbsbhhhhss....',
+  '.......sbbbbbbsbbsbbbbbbbbhs....',
+  '.......sbbbbbsbbbbsbbbsbbbbs....',
+  '.......sbbbbsbhhhhbsbbssssbs....',
+  '.......sbb.bbbbbbbbbb.bbs.......',
+  '.......sbb.bbsbbbbsbb.bbs.......',
+  '.......sbb.bbbhhhhbbb.bbs.......',
+  '.......sbb.bbssbbssbb.bbs.......',
+  '.......sbb.sbbbbbbbbs.bbs.......',
+  '......sbbs.ssbbbbbbss.sbbs......',
   '..........sbbbsbbsbbbs..........',
   '..........sbbs.bb.sbbs..........',
   '..........bbs..bb..sbb..........',

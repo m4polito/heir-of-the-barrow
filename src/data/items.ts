@@ -22,5 +22,5 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   plank_shield: { id: 'plank_shield', name: 'Plank Shield', kind: 'shield', def: 2, price: 25, stack: 1 },
   herb: { id: 'herb', name: 'Herb', kind: 'consumable', price: 10, stack: 6, use: { where: 'both', effect: { kind: 'heal', min: 20, max: 30 } } },
   torch: { id: 'torch', name: 'Torch', kind: 'consumable', price: 8, stack: 6, use: { where: 'field', effect: { kind: 'light', radius: 3, steps: 200 } } },
-  journal_page: { id: 'journal_page', name: 'Journal Page', kind: 'key', price: 0, stack: 1, use: { where: 'field', effect: { kind: 'read', dialog: 'journal_page_1' } } },
+  journal_page: { id: 'journal_page', name: "Aldric's Journal", kind: 'key', price: 0, stack: 1, use: { where: 'field', effect: { kind: 'read', dialog: 'journal_page_1' } } },
 };

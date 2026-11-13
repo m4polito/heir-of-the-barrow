@@ -36,6 +36,11 @@ describe('castInField', () => {
     expect(r).toMatchObject({ ok: true, warp: true, text: 'You are carried home.', sfx: 'spell' });
     if (r.ok) expect(r.player.mp).toBe(27);
   });
+  it('homeward leaves a lit torch alone', () => {
+    const p = { ...applyLevel(lv3(), 9), mp: 35, torch: 36 };
+    const r = castInField(seqRng([]), SPELLS, p, 'homeward');
+    expect(r.ok && r.player.torch).toBe(36);
+  });
   it('throws on programming errors', () => {
     expect(() => castInField(seqRng([]), SPELLS, lv3(), 'ember')).toThrow();
     expect(() => castInField(seqRng([]), SPELLS, lv3(), 'nope')).toThrow();

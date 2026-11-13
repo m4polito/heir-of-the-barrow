@@ -149,7 +149,16 @@ describe('dungeon effects', () => {
       { ch: 'p1', note: 'G5', duty: 0.25, frames: 2, vol: 8 },
       { ch: 'p1', note: 'D6', duty: 0.25, frames: 6, vol: 8 },
     ]);
-    for (const id of ['bump', 'stairs', 'chest'] as const)
+    expect(SFX.stairsUp).toEqual([
+      { ch: 'p1', note: 'F3', duty: 0.5, frames: 3, vol: 8 },
+      { ch: 'p1', note: 'A3', duty: 0.5, frames: 3, vol: 8 },
+      { ch: 'p1', note: 'C4', duty: 0.5, frames: 3, vol: 8 },
+      { ch: 'p1', note: 'E4', duty: 0.5, frames: 5, vol: 8 },
+    ]);
+    const midi = (n: string) => ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].indexOf(n.slice(0, -1)) + 12 * Number(n.slice(-1));
+    const rising = SFX.stairsUp.map((s) => midi(s.note!));
+    rising.slice(1).forEach((m, i) => expect(m).toBeGreaterThan(rising[i]!));
+    for (const id of ['bump', 'stairs', 'stairsUp', 'chest'] as const)
       for (const [other, steps] of Object.entries(SFX))
         if (other !== id) expect(JSON.stringify(steps), `${id} vs ${other}`).not.toBe(JSON.stringify(SFX[id]));
   });

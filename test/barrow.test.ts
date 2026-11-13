@@ -154,11 +154,11 @@ describe('the Barrow floors', () => {
       kind: 'warp', x: down[0]![0], y: down[0]![1], to: 'barrow_2', entry: 'stairs', sfx: 'stairs',
     });
     expect(warpAt(B2, up[0]![0], up[0]![1])).toEqual({
-      kind: 'warp', x: up[0]![0], y: up[0]![1], to: 'barrow_1', entry: 'stairs', sfx: 'stairs',
+      kind: 'warp', x: up[0]![0], y: up[0]![1], to: 'barrow_1', entry: 'stairs', sfx: 'stairsUp',
     });
   });
 
-  it('every warp on a stair tile plays the stairs sound', () => {
+  it('every warp on a stair tile plays its direction: up-stairs rise, down-stairs fall', () => {
     let seen = 0;
     for (const m of Object.values(BY_ID))
       for (const t of m.triggers) {
@@ -166,7 +166,7 @@ describe('the Barrow floors', () => {
         const id = tileId(m, t.x, t.y);
         if (id !== TILE_IDS.stairsUp && id !== TILE_IDS.stairsDown) continue;
         seen++;
-        expect(t.sfx, `${m.id} ${t.x},${t.y}`).toBe('stairs');
+        expect(t.sfx, `${m.id} ${t.x},${t.y}`).toBe(id === TILE_IDS.stairsUp ? 'stairsUp' : 'stairs');
       }
     expect(seen).toBeGreaterThanOrEqual(3);
   });

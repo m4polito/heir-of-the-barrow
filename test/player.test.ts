@@ -90,6 +90,10 @@ describe('applyDeath and settleBattle', () => {
     expect(q).toMatchObject({ xp: p.xp, level: p.level, inventory: p.inventory, equipment: p.equipment, flags: p.flags });
     expect(p).toEqual(before);
   });
+  it('applyDeath puts out a lit torch', () => {
+    expect(applyDeath({ ...base(), torch: 36 }).torch).toBe(0);
+    expect(applyDeath({ ...base(), torch: 0 }).torch).toBe(0);
+  });
   const end = (hp: number, mp = 0, itemsUsed: readonly string[] = []) => ({ hp, mp, itemsUsed });
   it('settleBattle applies hp and reward', () => {
     const p = { ...base(), gold: 10, xp: 5 };

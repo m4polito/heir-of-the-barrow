@@ -80,9 +80,9 @@ export function applyLevel(p: PlayerState, level: number): PlayerState {
 export const GOLD_MAX = 65535;
 export const XP_MAX = 65535;
 
-/** Death penalty: half the gold, full hp and mp; nothing else changes. */
+/** Death penalty: half the gold, full hp and mp, and a lit torch goes out; nothing else changes. */
 export function applyDeath(p: PlayerState): PlayerState {
-  return { ...p, gold: Math.floor(p.gold / 2), hp: p.maxHp, mp: p.maxMp };
+  return { ...p, gold: Math.floor(p.gold / 2), hp: p.maxHp, mp: p.maxMp, torch: 0 };
 }
 
 /** Spell ids learned at or below the given level, in table order. */

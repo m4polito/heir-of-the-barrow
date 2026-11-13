@@ -124,8 +124,8 @@ describe('key items take no pack slot', () => {
     let p = addItem(ITEMS, empty(), 'herb').player;
     p = addItem(ITEMS, p, 'journal_page').player;
     p = addItem(ITEMS, p, 'wooden_club').player;
-    expect(itemLines(ITEMS, p)).toEqual(['Herb x1', 'Journal Page', 'Wooden Club']);
-    expect(sellRows(ITEMS, p).map((r) => r.slice(0, 12).trim())).toEqual(['Herb x1', 'Journal Page', 'Wooden Club']);
+    expect(itemLines(ITEMS, p)).toEqual(['Herb x1', "Aldric's Journal", 'Wooden Club']);
+    expect(sellRows(ITEMS, p).map((r) => r.slice(0, 12).trim())).toEqual(['Herb x1', 'Wooden Club']);
     expect(equipLines(ITEMS, p).candidates).toEqual(['wooden_club']);
   });
 });
