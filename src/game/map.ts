@@ -1,5 +1,6 @@
 import type { Dir } from '../engine/constants';
 import { TILES, type TileDef } from '../data/tiles';
+import type { SfxId } from '../data/sfx';
 
 export interface NpcPlacement {
   id: string;
@@ -19,6 +20,8 @@ export interface WarpTrigger {
   y: number;
   to: string;
   entry: string;
+  /** Sound on stepping through; the door by default. */
+  sfx?: SfxId;
 }
 
 export interface AutoTrigger {
@@ -27,7 +30,25 @@ export interface AutoTrigger {
   dialog: string;
 }
 
-export type Trigger = WarpTrigger | AutoTrigger;
+/** A chest on the tile: exactly one of `gold` and `item`. Opened state is the flag `chestFlag(id)`. */
+export interface ChestTrigger {
+  kind: 'chest';
+  x: number;
+  y: number;
+  id: string;
+  gold?: number;
+  item?: string;
+}
+
+/** Something to look at on the tile: confirm while facing it shows this dialog. */
+export interface LookTrigger {
+  kind: 'look';
+  x: number;
+  y: number;
+  dialog: string;
+}
+
+export type Trigger = WarpTrigger | AutoTrigger | ChestTrigger | LookTrigger;
 
 export interface EncounterEntry {
   monster: string;
@@ -95,4 +116,22 @@ export function warpAt(map: GameMap, x: number, y: number): WarpTrigger | undefi
     if (t.kind === 'warp' && t.x === x && t.y === y) return t;
   }
   return undefined;
+}
+
+export function chestAt(map: GameMap, x: number, y: number): ChestTrigger | undefined {
+  for (const t of map.triggers) {
+    if (t.kind === 'chest' && t.x === x && t.y === y) return t;
+  }
+  return undefined;
+}
+
+export function lookAt(map: GameMap, x: number, y: number): LookTrigger | undefined {
+  for (const t of map.triggers) {
+    if (t.kind === 'look' && t.x === x && t.y === y) return t;
+  }
+  return undefined;
+}
+
+export function chestFlag(id: string): string {
+  return 'chest_' + id;
 }

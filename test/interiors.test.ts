@@ -4,7 +4,8 @@ import { DIALOGS } from '../src/data/dialog/hollowmere';
 import { NPC_SPRITES } from '../src/data/sprites/npcs';
 import { STORY } from '../src/data/story';
 import { TILE_IDS } from '../src/data/tiles';
-import { isWalkable, warpAt, type GameMap } from '../src/game/map';
+import { ITEMS } from '../src/data/items';
+import { isWalkable, warpAt, chestFlag, type GameMap } from '../src/game/map';
 
 const BY_ID: Record<string, GameMap> = MAPS;
 const ALL = Object.entries(BY_ID);
@@ -170,5 +171,32 @@ describe('story-free engine', () => {
   it('save.ts does not import nameEntry (the name grid lives in a leaf module)', () => {
     const [, text] = files.find(([f]) => f.endsWith('/game/save.ts'))!;
     expect(/from\s*['"]\.\/nameEntry['"]/.test(text)).toBe(false);
+  });
+});
+
+describe('chests', () => {
+  const chests = ALL.flatMap(([, map]) => map.triggers.flatMap((t) => (t.kind === 'chest' ? [{ map, t }] : [])));
+  it('every chest trigger sits on a chest tile and holds exactly one of gold and an item', () => {
+    for (const { map, t } of chests) {
+      expect(map.tiles[t.y * map.width + t.x], t.id).toBe(TILE_IDS.chest);
+      expect(Number(t.gold !== undefined) + Number(t.item !== undefined), t.id).toBe(1);
+      if (t.gold !== undefined) expect(t.gold, t.id).toBeGreaterThan(0);
+      if (t.item !== undefined) expect(Object.keys(ITEMS), t.id).toContain(t.item);
+    }
+  });
+  it('every chest tile has a trigger', () => {
+    for (const [id, map] of ALL)
+      map.tiles.forEach((tile, i) => {
+        if (tile !== TILE_IDS.chest) return;
+        const x = i % map.width, y = Math.floor(i / map.width);
+        expect(chests.some((c) => c.map === map && c.t.x === x && c.t.y === y), `${id} ${x},${y}`).toBe(true);
+      });
+  });
+  it('chest ids are unique and short enough to save', () => {
+    const ids = chests.map((c) => c.t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) expect(id.length).toBeLessThanOrEqual(26);
+    expect(ids).toContain('copse');
+    expect(chestFlag('copse')).toBe('chest_copse');
   });
 });

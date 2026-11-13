@@ -4,7 +4,8 @@ import type { Input } from '../engine/input';
 import { TILE_IDS, TILES, ANIM_FRAME_LEN } from '../data/tiles';
 import { HERO_SPRITES } from '../data/sprites/hero';
 import { npcArt } from '../data/sprites/npcs';
-import { isWalkable, tileAt, warpAt, type GameMap } from './map';
+import { isWalkable, tileAt, warpAt, chestAt, lookAt, chestFlag, type GameMap, type ChestTrigger } from './map';
+import type { SfxId } from '../data/sfx';
 import { createHero, updateHero, heroPixelOffset, facingTile, opposite, heroIdle, type HeroState } from './hero';
 import { createNpc, updateNpc, npcPixelOffset, type NpcState } from './npc';
 import { cameraOrigin } from './camera';
@@ -14,12 +15,16 @@ import { ShopState } from './shopState';
 import { SleepState } from './sleepState';
 import { MenuState } from './menu/menuState';
 import { toSave, saveKey, writeSave } from './save';
-import { setFlag, hasFlag, applyDeath } from './player';
+import { setFlag, hasFlag, applyDeath, GOLD_MAX } from './player';
+import { addItem } from './inventory';
 import { encounterStep, ENCOUNTER_GRACE } from './encounter';
 import { backdropArt } from '../data/sprites/backdrops';
 import { BattleState } from './battle/battleState';
 import type { BattleOutcome } from './battle/battle';
 import type { Game } from './game';
+
+/** Frames between bumps while a direction is held against something. */
+export const BUMP_REPEAT = 16;
 
 type Entry = string | { x: number; y: number; facing: Dir };
 
@@ -48,6 +53,8 @@ export class ExploreState implements State {
   private pendingDialog: string | undefined;
   /** Steps left before an encounter can start. */
   private grace = ENCOUNTER_GRACE;
+  /** Frames until the next bump may sound; 0 means the next refused step sounds at once. */
+  private bumpWait = 0;
   readonly npcs: NpcState[];
 
   constructor(
@@ -87,9 +94,9 @@ export class ExploreState implements State {
     this.game.audio.playSong(this.game.songs[this._map.music]!);
   }
 
-  warpTo(mapId: string, entry: string): void {
+  warpTo(mapId: string, entry: string, sfx: SfxId = 'door'): void {
     const target = lookup(this.game, mapId, entry);
-    this.game.audio.playSfx('door');
+    this.game.audio.playSfx(sfx);
     this.game.stack.push(
       new TransitionState(this.game.stack, {
         onMid: () => {
@@ -204,6 +211,40 @@ export class ExploreState implements State {
     };
   }
 
+  private showLines(lines: string[]): void {
+    this.game.stack.push(new DialogState(this.game, lines, { services: this.services() }));
+  }
+
+  /** Opens the chest, or says it is empty. The player is changed before the dialog opens. */
+  private openChest(c: ChestTrigger): void {
+    const { game } = this;
+    if (hasFlag(game.player, chestFlag(c.id))) {
+      this.showLines(['The chest is empty.']);
+      return;
+    }
+    let found: string;
+    let player = game.player;
+    if (c.gold !== undefined) {
+      player = { ...player, gold: Math.min(GOLD_MAX, player.gold + c.gold) };
+      found = `You find ${c.gold} gold.`;
+    } else {
+      const id = c.item;
+      const def = id === undefined ? undefined : game.items[id];
+      if (id === undefined || !def) throw new Error(`Unknown item: ${id}`);
+      const r = addItem(game.items, player, id);
+      if (!r.ok) {
+        game.audio.playSfx('error');
+        this.showLines(['You cannot carry more.']);
+        return;
+      }
+      player = r.player;
+      found = `You find the ${def.name}.`;
+    }
+    game.player = setFlag(player, chestFlag(c.id));
+    game.audio.playSfx('chest');
+    this.showLines(['You open the chest.', found]);
+  }
+
   private runAutoTrigger(): boolean {
     for (const t of this._map.triggers) {
       if (t.kind !== 'auto' || hasFlag(this.game.player, t.flag)) continue;
@@ -240,6 +281,17 @@ export class ExploreState implements State {
         this.game.stack.push(new DialogState(this.game, this.script(npc.def.dialog), { services: this.services() }));
         return;
       }
+      const near = facingTile(this._hero);
+      const chest = chestAt(this._map, near.x, near.y);
+      if (chest) {
+        this.openChest(chest);
+        return;
+      }
+      const look = lookAt(this._map, near.x, near.y);
+      if (look) {
+        this.game.stack.push(new DialogState(this.game, this.script(look.dialog), { services: this.services() }));
+        return;
+      }
     }
     if (input.pressed('cancel') && heroIdle(this._hero)) {
       this.game.audio.playSfx('menuConfirm');
@@ -254,6 +306,7 @@ export class ExploreState implements State {
     }
     const held = (a: Dir) => input.held(a);
     const map = this._map;
+    const before = this._hero;
     this._hero = updateHero(
       this._hero,
       held,
@@ -261,12 +314,13 @@ export class ExploreState implements State {
       (x, y) => {
         const w = warpAt(map, x, y);
         if (w) {
-          this.warpTo(w.to, w.entry);
+          this.warpTo(w.to, w.entry, w.sfx);
           return true;
         }
         return this.rollEncounter(x, y);
       },
     );
+    this.updateBump(input, before);
     for (let i = 0; i < this.npcs.length; i++) {
       const n = this.npcs[i]!;
       this.npcs[i] = updateNpc(
@@ -278,6 +332,23 @@ export class ExploreState implements State {
           !(this._hero.x === x && this._hero.y === y) &&
           !this.reserved(x, y),
       );
+    }
+  }
+
+  /** A thud when a held direction is refused: at once, then every BUMP_REPEAT frames. */
+  private updateBump(input: Input, before: HeroState): void {
+    const anyHeld = (['up', 'down', 'left', 'right'] as const).some((d) => input.held(d));
+    const hero = this._hero;
+    const stepping = hero.stepFrame > 0 || hero.x !== before.x || hero.y !== before.y;
+    if (!anyHeld || stepping) {
+      this.bumpWait = 0;
+      return;
+    }
+    if (this.game.stack.top !== this) return; // a warp or battle took over this frame
+    if (this.bumpWait > 0) this.bumpWait--;
+    if (this.bumpWait === 0) {
+      this.game.audio.playSfx('bump');
+      this.bumpWait = BUMP_REPEAT;
     }
   }
 
@@ -298,7 +369,11 @@ export class ExploreState implements State {
       for (let tx = x0; tx <= x1; tx++) {
         const t = tileAt(map, tx, ty) ?? (map.border === undefined ? undefined : TILES[map.border]);
         if (!t) continue;
-        const art = t.frames[Math.floor(frame / ANIM_FRAME_LEN) % t.frames.length]!;
+        const shown =
+          t.id === TILE_IDS.chest && hasFlag(this.game.player, chestFlag(chestAt(map, tx, ty)?.id ?? ''))
+            ? TILES[TILE_IDS.chestOpen]!
+            : t;
+        const art = shown.frames[Math.floor(frame / ANIM_FRAME_LEN) % shown.frames.length]!;
         ctx.drawImage(sprites.get(art), tx * TILE - ox, ty * TILE - oy);
       }
     }

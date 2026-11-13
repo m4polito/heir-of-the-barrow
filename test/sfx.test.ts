@@ -135,3 +135,22 @@ describe('mend effect', () => {
     }
   });
 });
+
+describe('dungeon effects', () => {
+  it('bump, stairs and chest are the pinned phrases and differ from every other effect', () => {
+    expect(SFX.bump).toEqual([
+      { ch: 'tri', note: 'G2', frames: 3, vol: 10 },
+      { ch: 'tri', note: 'D2', frames: 3, vol: 10 },
+    ]);
+    expect(SFX.stairs.map((s) => s.note)).toEqual(['E4', 'C4', 'A3', 'F3']);
+    expect(SFX.stairs.map((s) => s.frames)).toEqual([3, 3, 3, 5]);
+    expect(SFX.chest).toEqual([
+      { ch: 'noise', preset: 'k', frames: 1, vol: 9 },
+      { ch: 'p1', note: 'G5', duty: 0.25, frames: 2, vol: 8 },
+      { ch: 'p1', note: 'D6', duty: 0.25, frames: 6, vol: 8 },
+    ]);
+    for (const id of ['bump', 'stairs', 'chest'] as const)
+      for (const [other, steps] of Object.entries(SFX))
+        if (other !== id) expect(JSON.stringify(steps), `${id} vs ${other}`).not.toBe(JSON.stringify(SFX[id]));
+  });
+});

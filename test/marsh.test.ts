@@ -6,7 +6,7 @@ import { MONSTERS } from '../src/data/monsters';
 import { BACKDROPS } from '../src/data/sprites/backdrops';
 import { SONGS } from '../src/data/songs';
 import { TILES, TILE_IDS } from '../src/data/tiles';
-import { isWalkable, warpAt, type GameMap } from '../src/game/map';
+import { chestAt, isWalkable, warpAt, type GameMap } from '../src/game/map';
 
 const key = (x: number, y: number) => `${x},${y}`;
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
@@ -128,16 +128,24 @@ describe('the Marsh map', () => {
     expect(count(MARSH, TILE_IDS.road)).toBeGreaterThanOrEqual(50);
   });
 
-  it('has a dead-end copse far from the road', () => {
+  it('has a dead-end copse far from the road, holding a chest reached only from the north', () => {
     const { x, y } = MARSH_POINTS.copse;
     expect(MARSH_POINTS.barrow).toEqual({ x: 40, y: 6 });
-    expect(isWalkable(MARSH, x, y)).toBe(true);
+    expect(tileId(MARSH, x, y)).toBe(TILE_IDS.chest);
+    expect(isWalkable(MARSH, x, y)).toBe(false);
+    expect(chestAt(MARSH, x, y)).toEqual({ kind: 'chest', x: 3, y: 36, id: 'copse', gold: 40 });
     const open = DIRS.filter(([dx, dy]) => isWalkable(MARSH, x + dx, y + dy));
-    expect(open.length).toBe(1);
+    expect(open).toEqual([[0, -1]]);
+    expect(isWalkable(MARSH, 3, 35)).toBe(true);
     const trees = DIRS.filter(([dx, dy]) => tileId(MARSH, x + dx, y + dy) === TILE_IDS.tree);
     expect(trees.length).toBeGreaterThanOrEqual(2);
     const fromRoad = bfs(MARSH, find(MARSH, TILE_IDS.road), (nx, ny) => isWalkable(MARSH, nx, ny));
-    expect(fromRoad.get(key(x, y))).toBeGreaterThanOrEqual(12);
+    expect(fromRoad.get(key(x, 35))).toBeGreaterThanOrEqual(11);
+  });
+
+  it('lets the hero walk onto the barrow mouth, with no encounters there', () => {
+    expect(isWalkable(MARSH, 40, 6)).toBe(true);
+    expect(TILES[TILE_IDS.barrowMouth]).toMatchObject({ walkable: true, encounterRate: 0 });
   });
 
   it('has a valid encounter table', () => {
