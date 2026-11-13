@@ -2,10 +2,11 @@ import type { Dir } from '../engine/constants';
 import { LEVELS } from '../data/levels';
 import { GOLD_MAX, XP_MAX } from './player';
 import type { EquipSlot, InventorySlot, PlayerState } from './player';
-import { INVENTORY_SLOTS } from './inventory';
+import { INVENTORY_SLOTS, KEY_ITEM_SLOTS } from './inventory';
 import type { ItemTable } from './items';
 import { isWalkable } from './map';
 import type { GameMap } from './map';
+import { PLAY_FRAMES_MAX } from './playTime';
 import { NAME_GRID, NAME_MAX } from './nameGrid';
 
 export const SAVE_VERSION = 1;
@@ -34,6 +35,8 @@ export interface SaveData {
   y: number;
   facing: Dir;
   torchSteps: number;
+  /** Absent in saves made before play time was counted; loads as 0. */
+  playFrames?: number;
 }
 
 export interface SaveContext {
@@ -60,7 +63,8 @@ export function toSave(
     x: at.x,
     y: at.y,
     facing: at.facing,
-    torchSteps: 0,
+    torchSteps: p.torch,
+    playFrames: p.playFrames,
   };
 }
 
@@ -80,6 +84,8 @@ export function fromSave(s: SaveData): PlayerState {
     equipment: { ...s.equipment },
     inventory: s.inventory.map((i) => ({ item: i.item, count: i.count })),
     flags: [...s.flags],
+    torch: s.torchSteps,
+    playFrames: s.playFrames ?? 0,
   };
 }
 
@@ -116,6 +122,8 @@ function validate(raw: unknown, ctx: SaveContext): SaveData | null {
   if (!isInt(xp, 0, XP_MAX) || !isInt(gold, 0, GOLD_MAX)) return null;
   if (!isInt(hp, 1, 65535) || !isInt(mp, 0, 65535)) return null;
   if (!isInt(torchSteps, 0, TORCH_STEPS_MAX)) return null;
+  const playFrames: unknown = has(raw, 'playFrames') ? raw.playFrames : 0;
+  if (!isInt(playFrames, 0, PLAY_FRAMES_MAX)) return null;
 
   const equipment: Partial<Record<EquipSlot, string>> = {};
   if (!isRecord(raw.equipment)) return null;
@@ -126,13 +134,15 @@ function validate(raw: unknown, ctx: SaveContext): SaveData | null {
     equipment[key as EquipSlot] = id;
   }
 
-  if (!Array.isArray(raw.inventory) || raw.inventory.length > INVENTORY_SLOTS) return null;
+  if (!Array.isArray(raw.inventory) || raw.inventory.length > INVENTORY_SLOTS + KEY_ITEM_SLOTS) return null;
   const inventory: InventorySlot[] = [];
   for (const entry of raw.inventory as unknown[]) {
     if (!isRecord(entry) || typeof entry.item !== 'string' || !has(ctx.items, entry.item)) return null;
     if (!isInt(entry.count, 1, ctx.items[entry.item]!.stack)) return null;
     inventory.push({ item: entry.item, count: entry.count });
   }
+  const keys = inventory.filter((s) => ctx.items[s.item]!.kind === 'key').length;
+  if (keys > KEY_ITEM_SLOTS || inventory.length - keys > INVENTORY_SLOTS) return null;
 
   if (!Array.isArray(raw.flags) || raw.flags.length > FLAGS_MAX) return null;
   const flags: string[] = [];
@@ -163,6 +173,7 @@ function validate(raw: unknown, ctx: SaveContext): SaveData | null {
     y,
     facing: facing as Dir,
     torchSteps,
+    playFrames,
   };
 }
 

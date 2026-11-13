@@ -10,4 +10,5 @@ export const STORY = {
   home: { map: 'hollowmere', entry: 'gate' },
   startingItems: [{ item: 'herb', count: 1 }],
   storagePrefix: 'dimming',
+  debugFlags: ['warden_defeated'],
 } as const satisfies StoryConfig;

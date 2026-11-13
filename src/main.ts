@@ -6,6 +6,7 @@ import { startLoop } from './engine/loop';
 import { PALETTE } from './data/palette';
 import { BootState } from './game/boot';
 import { TitleState } from './game/title';
+import { stepGame } from './game/step';
 import { createGame } from './game/game';
 import { createPlayer } from './game/player';
 import { createRng } from './engine/rng';
@@ -73,7 +74,7 @@ startLoop(
     input.update();
     frame++;
     if (input.pressed('mute')) audio.toggleMute();
-    stack.update(input);
+    stepGame(game, input);
   },
   () => {
     stack.render(screen.ctx, frame);

@@ -38,8 +38,8 @@ describe('spell table', () => {
     for (const row of LEVELS) if (row.learns) expect(Object.keys(SPELLS)).toContain(row.learns);
     for (const [k, v] of Object.entries(SPELLS)) expect(v.id).toBe(k);
   });
-  it('herb heals in both contexts; torch has no use', () => {
+  it('herb heals in both contexts; the torch lights in the field only', () => {
     expect(ITEMS.herb.use).toEqual({ where: 'both', effect: { kind: 'heal', min: 20, max: 30 } });
-    expect(ITEMS.torch.use).toBeUndefined();
+    expect(ITEMS.torch.use).toEqual({ where: 'field', effect: { kind: 'light', radius: 3, steps: 200 } });
   });
 });

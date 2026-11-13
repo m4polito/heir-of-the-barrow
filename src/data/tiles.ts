@@ -20,6 +20,14 @@ export const TILE_IDS = {
   town: 16,
   barrowMouth: 17,
   deadTree: 18,
+  barrowWall: 19,
+  barrowFloor: 20,
+  stairsDown: 21,
+  stairsUp: 22,
+  chest: 23,
+  chestOpen: 24,
+  sealedDoor: 25,
+  sconce: 26,
 } as const;
 
 export interface TileDef {
@@ -422,6 +430,186 @@ const DEAD_TREE = art({ g: 6, b: 9, s: 2 }, [
   'gggggggggggggggg',
 ]);
 
+// Barrow wall: deep-teal 19 rough blocks, black 0 mortar, gray 2 chips.
+const BARROW_WALL = art({ k: 0, s: 19, h: 2 }, [
+  'kkkkkkkkkkkkkkkk',
+  'sshsssssksssssss',
+  'sssssssskssshsss',
+  'sssssssskssssssh',
+  'ssssssssksssssss',
+  'kkkkkkkkkkkkkkkk',
+  'ssskssssssssksss',
+  'ssskssshssssksss',
+  'ssskssssssssksss',
+  'ssskssssssssksss',
+  'kkkkkkkkkkkkkkkk',
+  'sshsssssksssssss',
+  'sssssssskssshsss',
+  'sssssssskssssssh',
+  'ssssssssksssssss',
+  'kkkkkkkkkkkkkkkk',
+]);
+
+// Barrow floor: black 0 earth with a few deep-teal 19 flecks; darker and plainer than the wall.
+const BARROW_FLOOR = art({ k: 0, f: 19 }, [
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkkkkkkfkkkk',
+  'kkfkkkkkkkkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkfkkkkkkkkk',
+  'kkkkkkkkkkkkkfkk',
+  'kkkkkkkkkkkkkkkk',
+  'kfkkkkkkkkkkkkkk',
+  'kkkkkkkkkfkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkfkkkkkkkkkfk',
+  'kkkkkkkkkkkkkkkk',
+  'kkfkkkkkkkfkkkkk',
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkfkkkkkkkkk',
+  'kkkkkkkkkkkkfkkk',
+]);
+
+// Stairs down: steps narrowing into the dark; light-gray 3 treads, gray 2 risers, deep-teal 19 depths.
+const STAIRS_DOWN = art({ k: 0, h: 3, s: 2, d: 19 }, [
+  'kkkkkkkkkkkkkkkk',
+  'khhhhhhhhhhhhhhk',
+  'kssssssssssssssk',
+  'kkhhhhhhhhhhhhkk',
+  'kksssssssssssskk',
+  'kkksssssssssskkk',
+  'kkkddddddddddkkk',
+  'kkkksssssssskkkk',
+  'kkkkddddddddkkkk',
+  'kkkkkddddddkkkkk',
+  'kkkkkddddddkkkkk',
+  'kkkkkkddddkkkkkk',
+  'kkkkkkddddkkkkkk',
+  'kkkkkkkddkkkkkkk',
+  'kkkkkkkddkkkkkkk',
+  'kkkkkkkkkkkkkkkk',
+]);
+
+// Stairs up: the same flight turned about, widening toward the hero.
+const STAIRS_UP = art({ k: 0, h: 3, s: 2, d: 19 }, [
+  'kkkkkkkkkkkkkkkk',
+  'kkkkkkkddkkkkkkk',
+  'kkkkkkkddkkkkkkk',
+  'kkkkkkddddkkkkkk',
+  'kkkkkkddddkkkkkk',
+  'kkkkkddddddkkkkk',
+  'kkkkkddddddkkkkk',
+  'kkkkddddddddkkkk',
+  'kkkksssssssskkkk',
+  'kkkddddddddddkkk',
+  'kkksssssssssskkk',
+  'kksssssssssssskk',
+  'kkhhhhhhhhhhhhkk',
+  'kssssssssssssssk',
+  'khhhhhhhhhhhhhhk',
+  'kkkkkkkkkkkkkkkk',
+]);
+
+// Chest: ochre 10 banded wood, gray 2 iron bands, yellow 16 lock, black 0 outline, on brown 9 earth.
+const CHEST = art({ e: 9, k: 0, o: 10, b: 10, i: 2, y: 16 }, [
+  'eeeeeeeeeeeeeeee',
+  'eeeeeeeeeeeeeeee',
+  'eekkkkkkkkkkkkee',
+  'eekooiooooiookee',
+  'eekooiooooiookee',
+  'eekooiooooiookee',
+  'eekkkkkyykkkkkee',
+  'eekbbibyybibbkee',
+  'eekbbibbbbibbkee',
+  'eekbbibbbbibbkee',
+  'eekbbibbbbibbkee',
+  'eekkkkkkkkkkkkee',
+  'eeeeeeeeeeeeeeee',
+  'eeeeeeeeeeeeeeee',
+  'eeeeeeeeeeeeeeee',
+  'eeeeeeeeeeeeeeee',
+]);
+
+// Open chest: the lid stands back over a deep-teal 19 hollow with a yellow 16 glint.
+const CHEST_OPEN = art({ e: 9, k: 0, o: 10, b: 10, i: 2, y: 16, t: 19 }, [
+  'eeeeeeeeeeeeeeee',
+  'eekkkkkkkkkkkkee',
+  'eekooiooooiookee',
+  'eekooiooooiookee',
+  'eekooiooooiookee',
+  'eekkkkkkkkkkkkee',
+  'eekttttttttttkee',
+  'eektttyttttttkee',
+  'eekbbibbbbibbkee',
+  'eekbbibbbbibbkee',
+  'eekbbibbbbibbkee',
+  'eekkkkkkkkkkkkee',
+  'eeeeeeeeeeeeeeee',
+  'eeeeeeeeeeeeeeee',
+  'eeeeeeeeeeeeeeee',
+  'eeeeeeeeeeeeeeee',
+]);
+
+// Sealed door: brown 9 planks, ochre 10 highlights, a gray 2 bar across with yellow 16 studs, black 0 frame.
+const SEALED_DOOR = art({ k: 0, b: 9, o: 10, h: 3, i: 2, y: 16 }, [
+  'kkkkkkkkkkkkkkkk',
+  'kbbbbbbbbbbbbbbk',
+  'kobbobbbbobbbbbk',
+  'kobbobbbbobbbbbk',
+  'kobbobbbbobbbbbk',
+  'kobbobbbbobbbbbk',
+  'khhhhhhhhhhhhhhk',
+  'kiyiiiiiiiiiiyik',
+  'kkkkkkkkkkkkkkkk',
+  'kobbobbbbobbbbbk',
+  'kobbobbbbobbbbbk',
+  'kobbobbbbobbbbbk',
+  'kobbobbbbobbbbbk',
+  'kobbobbbbobbbbbk',
+  'kbbbbbbbbbbbbbbk',
+  'kkkkkkkkkkkkkkkk',
+]);
+
+// Sconce: a brown 9 bracket on barrow wall holds a flame (yellow 16, orange 15, red 13); two frames.
+const SCONCE_A = art({ k: 0, s: 19, h: 2, y: 16, o: 15, r: 13, b: 9 }, [
+  'kkkkkkkkkkkkkkkk',
+  'sshsssssksssssss',
+  'ssssssssyssshsss',
+  'sssssssyyssssssh',
+  'sssssssoosssssss',
+  'kkkkkkkrrkkkkkkk',
+  'ssskssssbsssksss',
+  'sssksssbbsssksss',
+  'sssksssbbsssksss',
+  'ssskssssbsssksss',
+  'kkkkkkkkkkkkkkkk',
+  'sshsssssksssssss',
+  'sssssssskssshsss',
+  'sssssssskssssssh',
+  'ssssssssksssssss',
+  'kkkkkkkkkkkkkkkk',
+]);
+
+// Sconce, second frame: the flame leans.
+const SCONCE_B = art({ k: 0, s: 19, h: 2, y: 16, o: 15, r: 13, b: 9 }, [
+  'kkkkkkkkkkkkkkkk',
+  'sshsssssksssssss',
+  'sssssssykssshsss',
+  'sssssssyyssssssh',
+  'sssssssoysssssss',
+  'kkkkkkkrrkkkkkkk',
+  'ssskssssbsssksss',
+  'sssksssbbsssksss',
+  'sssksssbbsssksss',
+  'ssskssssbsssksss',
+  'kkkkkkkkkkkkkkkk',
+  'sshsssssksssssss',
+  'sssssssskssshsss',
+  'sssssssskssssssh',
+  'ssssssssksssssss',
+  'kkkkkkkkkkkkkkkk',
+]);
+
 export const TILES: readonly TileDef[] = [
   { id: TILE_IDS.grass, name: 'grass', walkable: true, encounterRate: 1, frames: [GRASS] },
   { id: TILE_IDS.road, name: 'road', walkable: true, encounterRate: 0.5, frames: [ROAD] },
@@ -440,6 +628,14 @@ export const TILES: readonly TileDef[] = [
   { id: TILE_IDS.marsh, name: 'marsh', walkable: true, encounterRate: 1.5, frames: [MARSH] },
   { id: TILE_IDS.hill, name: 'hill', walkable: true, encounterRate: 1.5, frames: [HILL] },
   { id: TILE_IDS.town, name: 'town', walkable: true, encounterRate: 0, frames: [TOWN] },
-  { id: TILE_IDS.barrowMouth, name: 'barrowMouth', walkable: false, encounterRate: 0, frames: [BARROW_MOUTH] },
+  { id: TILE_IDS.barrowMouth, name: 'barrowMouth', walkable: true, encounterRate: 0, frames: [BARROW_MOUTH] },
   { id: TILE_IDS.deadTree, name: 'deadTree', walkable: false, encounterRate: 0, frames: [DEAD_TREE] },
+  { id: TILE_IDS.barrowWall, name: 'barrowWall', walkable: false, encounterRate: 0, frames: [BARROW_WALL] },
+  { id: TILE_IDS.barrowFloor, name: 'barrowFloor', walkable: true, encounterRate: 0.75, frames: [BARROW_FLOOR] },
+  { id: TILE_IDS.stairsDown, name: 'stairsDown', walkable: true, encounterRate: 0, frames: [STAIRS_DOWN] },
+  { id: TILE_IDS.stairsUp, name: 'stairsUp', walkable: true, encounterRate: 0, frames: [STAIRS_UP] },
+  { id: TILE_IDS.chest, name: 'chest', walkable: false, encounterRate: 0, frames: [CHEST] },
+  { id: TILE_IDS.chestOpen, name: 'chestOpen', walkable: false, encounterRate: 0, frames: [CHEST_OPEN] },
+  { id: TILE_IDS.sealedDoor, name: 'sealedDoor', walkable: false, encounterRate: 0, frames: [SEALED_DOOR] },
+  { id: TILE_IDS.sconce, name: 'sconce', walkable: false, encounterRate: 0, frames: [SCONCE_A, SCONCE_B] },
 ];

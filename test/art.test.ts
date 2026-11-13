@@ -54,6 +54,11 @@ describe('art compiles', () => {
       expect(out.h).toBe(24);
     });
   }
+  it('warden compiles to 32x32', () => {
+    const out = compilePixelArt(monsterArt('warden', 0), PALETTE);
+    expect(out.w).toBe(32);
+    expect(out.h).toBe(32);
+  });
   for (const [id, art] of Object.entries(BACKDROPS)) {
     it(`backdrop ${id} compiles to 16x24`, () => {
       const out = compilePixelArt(art, PALETTE);

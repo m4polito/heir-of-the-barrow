@@ -5,7 +5,7 @@ import { drawWindow, drawMenu } from '../ui/window';
 import { equip, isEquipment, itemName } from './inventory';
 import { DialogState } from './dialog/dialogState';
 import type { DialogScript } from './dialog/script';
-import { buy, buyAndWear, buyCheck, sell, sellPrice, sellRows, stockRows, type ShopDef } from './shop';
+import { buy, buyAndWear, buyCheck, sell, sellPrice, sellRows, sellSlots, stockRows, type ShopDef } from './shop';
 import type { Game } from './game';
 
 type Phase = 'menu' | 'buy' | 'sell';
@@ -44,7 +44,7 @@ export class ShopState implements State {
   /** Rebuilds the sell list after a sale, keeping the cursor on a real row. */
   private refreshSell(): void {
     const cursor = this.list.cursor;
-    if (this.game.player.inventory.length === 0) {
+    if (sellSlots(this.game.items, this.game.player).length === 0) {
       this._phase = 'menu';
       return;
     }
@@ -115,7 +115,8 @@ export class ShopState implements State {
 
   private confirmSell(): void {
     const { game } = this;
-    const slot = this.list.cursor;
+    const slot = sellSlots(game.items, game.player)[this.list.cursor];
+    if (slot === undefined) return;
     const held = game.player.inventory[slot];
     if (!held) return;
     const gold = sellPrice(game.items[held.item]);
@@ -134,7 +135,7 @@ export class ShopState implements State {
   }
 
   update(input: Input): void {
-    const { audio, stack, player } = this.game;
+    const { audio, stack, player, items } = this.game;
     if (!this.armed) {
       this.armed = true;
       input.rearm();
@@ -160,7 +161,7 @@ export class ShopState implements State {
       audio.playSfx('menuConfirm');
       this.open('buy');
     } else if (this.menu.cursor === 1) {
-      if (player.inventory.length === 0) this.say('You have nothing to sell.', true);
+      if (sellSlots(items, player).length === 0) this.say('You have nothing to sell.', true);
       else {
         audio.playSfx('menuConfirm');
         this.open('sell');

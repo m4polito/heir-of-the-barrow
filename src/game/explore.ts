@@ -4,7 +4,8 @@ import type { Input } from '../engine/input';
 import { TILE_IDS, TILES, ANIM_FRAME_LEN } from '../data/tiles';
 import { HERO_SPRITES } from '../data/sprites/hero';
 import { npcArt } from '../data/sprites/npcs';
-import { isWalkable, tileAt, warpAt, type GameMap } from './map';
+import { isWalkable, tileAt, warpAt, chestAt, lookAt, bossAt, chestFlag, type GameMap, type ChestTrigger, type BossTrigger } from './map';
+import type { SfxId } from '../data/sfx';
 import { createHero, updateHero, heroPixelOffset, facingTile, opposite, heroIdle, type HeroState } from './hero';
 import { createNpc, updateNpc, npcPixelOffset, type NpcState } from './npc';
 import { cameraOrigin } from './camera';
@@ -14,12 +15,17 @@ import { ShopState } from './shopState';
 import { SleepState } from './sleepState';
 import { MenuState } from './menu/menuState';
 import { toSave, saveKey, writeSave } from './save';
-import { setFlag, hasFlag, applyDeath } from './player';
+import { setFlag, hasFlag, applyDeath, GOLD_MAX } from './player';
+import { addItem } from './inventory';
 import { encounterStep, ENCOUNTER_GRACE } from './encounter';
+import { lightRadius, darkRects, TORCH_RADIUS } from './light';
 import { backdropArt } from '../data/sprites/backdrops';
 import { BattleState } from './battle/battleState';
 import type { BattleOutcome } from './battle/battle';
 import type { Game } from './game';
+
+/** Frames between bumps while a direction is held against something. */
+export const BUMP_REPEAT = 16;
 
 type Entry = string | { x: number; y: number; facing: Dir };
 
@@ -48,6 +54,12 @@ export class ExploreState implements State {
   private pendingDialog: string | undefined;
   /** Steps left before an encounter can start. */
   private grace = ENCOUNTER_GRACE;
+  /** Frames until the next bump may sound; 0 means the next refused step sounds at once. */
+  private bumpWait = 0;
+  /** Set when a warp places the hero: the first step off the arrival tile may not land on a warp tile. Clears at the first completed step or when no key is held. */
+  private arrivalLock = false;
+  /** Set when this update's refused step was the silent arrival-lock refusal, which is not a bump. */
+  private lockRefused = false;
   readonly npcs: NpcState[];
 
   constructor(
@@ -79,7 +91,13 @@ export class ExploreState implements State {
     return this._map.id;
   }
 
+  /** Tiles of light around the hero, or null on a map that is not dark. */
+  get lightRadius(): number | null {
+    return lightRadius(this._map.dark === true, this.game.player.torch, TORCH_RADIUS);
+  }
+
   enter(): void {
+    this.game.fieldCtx = () => ({ dark: this._map.dark === true });
     this.playMapSong();
   }
 
@@ -87,9 +105,9 @@ export class ExploreState implements State {
     this.game.audio.playSong(this.game.songs[this._map.music]!);
   }
 
-  warpTo(mapId: string, entry: string): void {
+  warpTo(mapId: string, entry: string, sfx: SfxId = 'door'): void {
     const target = lookup(this.game, mapId, entry);
-    this.game.audio.playSfx('door');
+    this.game.audio.playSfx(sfx);
     this.game.stack.push(
       new TransitionState(this.game.stack, {
         onMid: () => {
@@ -99,13 +117,14 @@ export class ExploreState implements State {
           this.playMapSong();
           this.grace = ENCOUNTER_GRACE;
           this.enteredMap = true;
+          this.arrivalLock = true;
         },
       }),
     );
   }
 
-  /** Fade out, fight `monsterId` on `backdrop`, and handle the outcome. */
-  startBattle(monsterId: string, backdrop: string): void {
+  /** Fade out, fight `monsterId` on `backdrop`, and handle the outcome; `onWon` runs after a victory. */
+  startBattle(monsterId: string, backdrop: string, onWon?: () => void): void {
     const { game } = this;
     const monster = game.monsters[monsterId];
     if (!monster) throw new Error(`Unknown monster: ${monsterId}`);
@@ -117,12 +136,12 @@ export class ExploreState implements State {
       new TransitionState(stack, {
         frames: 30,
         inFrames: 10,
-        onMid: () => stack.push(new BattleState(game, { monster, backdrop, onEnd: (o) => this.endBattle(o) })),
+        onMid: () => stack.push(new BattleState(game, { monster, backdrop, onEnd: (o) => this.endBattle(o, onWon) })),
       }),
     );
   }
 
-  private endBattle(outcome: BattleOutcome): void {
+  private endBattle(outcome: BattleOutcome, onWon?: () => void): void {
     const { game } = this;
     if (outcome === 'lost') {
       game.player = applyDeath(game.player);
@@ -132,6 +151,15 @@ export class ExploreState implements State {
     }
     this.grace = ENCOUNTER_GRACE;
     this.playMapSong();
+    if (outcome === 'won') onWon?.();
+  }
+
+  /** A boss tile whose flag is unset starts its fight; a win sets the flag, then shows the dialog once the map is back on top. */
+  private startBoss(b: BossTrigger): void {
+    this.startBattle(b.monster, b.backdrop, () => {
+      this.game.player = setFlag(this.game.player, b.flag);
+      this.pendingDialog = b.dialog;
+    });
   }
 
   private rollEncounter(x: number, y: number): boolean {
@@ -204,6 +232,40 @@ export class ExploreState implements State {
     };
   }
 
+  private showLines(lines: string[]): void {
+    this.game.stack.push(new DialogState(this.game, lines, { services: this.services() }));
+  }
+
+  /** Opens the chest, or says it is empty. The player is changed before the dialog opens. */
+  private openChest(c: ChestTrigger): void {
+    const { game } = this;
+    if (hasFlag(game.player, chestFlag(c.id))) {
+      this.showLines(['The chest is empty.']);
+      return;
+    }
+    let found: string;
+    let player = game.player;
+    if (c.gold !== undefined) {
+      player = { ...player, gold: Math.min(GOLD_MAX, player.gold + c.gold) };
+      found = `You find ${c.gold} gold.`;
+    } else {
+      const id = c.item;
+      const def = id === undefined ? undefined : game.items[id];
+      if (id === undefined || !def) throw new Error(`Unknown item: ${id}`);
+      const r = addItem(game.items, player, id);
+      if (!r.ok) {
+        game.audio.playSfx('error');
+        this.showLines(['You cannot carry more.']);
+        return;
+      }
+      player = r.player;
+      found = `You find the ${def.name}.`;
+    }
+    game.player = setFlag(player, chestFlag(c.id));
+    game.audio.playSfx('chest');
+    this.showLines(['You open the chest.', found]);
+  }
+
   private runAutoTrigger(): boolean {
     for (const t of this._map.triggers) {
       if (t.kind !== 'auto' || hasFlag(this.game.player, t.flag)) continue;
@@ -240,6 +302,17 @@ export class ExploreState implements State {
         this.game.stack.push(new DialogState(this.game, this.script(npc.def.dialog), { services: this.services() }));
         return;
       }
+      const near = facingTile(this._hero);
+      const chest = chestAt(this._map, near.x, near.y);
+      if (chest) {
+        this.openChest(chest);
+        return;
+      }
+      const look = lookAt(this._map, near.x, near.y);
+      if (look) {
+        this.game.stack.push(new DialogState(this.game, this.script(look.dialog), { services: this.services() }));
+        return;
+      }
     }
     if (input.pressed('cancel') && heroIdle(this._hero)) {
       this.game.audio.playSfx('menuConfirm');
@@ -254,19 +327,23 @@ export class ExploreState implements State {
     }
     const held = (a: Dir) => input.held(a);
     const map = this._map;
+    const before = this._hero;
+    if (this.arrivalLock && !(['up', 'down', 'left', 'right'] as const).some(held)) this.arrivalLock = false;
+    this.lockRefused = false;
     this._hero = updateHero(
       this._hero,
       held,
-      (x, y) => isWalkable(map, x, y) && !this.npcAt(x, y),
       (x, y) => {
-        const w = warpAt(map, x, y);
-        if (w) {
-          this.warpTo(w.to, w.entry);
-          return true;
+        if (!isWalkable(map, x, y) || this.npcAt(x, y)) return false;
+        if (this.arrivalLock && warpAt(map, x, y)) {
+          this.lockRefused = true;
+          return false;
         }
-        return this.rollEncounter(x, y);
+        return true;
       },
+      (x, y) => this.onStep(x, y),
     );
+    this.updateBump(input, before);
     for (let i = 0; i < this.npcs.length; i++) {
       const n = this.npcs[i]!;
       this.npcs[i] = updateNpc(
@@ -278,6 +355,50 @@ export class ExploreState implements State {
           !(this._hero.x === x && this._hero.y === y) &&
           !this.reserved(x, y),
       );
+    }
+  }
+
+  /** A step has completed: burn the torch, then warp or roll for a battle. Returns true if something took over. */
+  private onStep(x: number, y: number): boolean {
+    const { game } = this;
+    this.arrivalLock = false; // the hero has left the arrival tile
+    const burned = this._map.dark === true && game.player.torch > 0;
+    if (burned) game.player = { ...game.player, torch: game.player.torch - 1 };
+    const w = warpAt(this._map, x, y);
+    let took = false;
+    if (w) {
+      this.warpTo(w.to, w.entry, w.sfx);
+      took = true;
+    } else {
+      const boss = bossAt(this._map, x, y);
+      if (!boss) took = this.rollEncounter(x, y);
+      else if (!hasFlag(game.player, boss.flag)) {
+        this.startBoss(boss);
+        took = true;
+      }
+    }
+    if (burned && game.player.torch === 0 && !took && game.stack.top === this) {
+      this.showLines(['Your torch gutters out.']);
+      return true; // the hero stops here; nothing starts underneath the dialog
+
+    }
+    return took;
+  }
+
+  /** A thud when a held direction is refused: at once, then every BUMP_REPEAT frames. */
+  private updateBump(input: Input, before: HeroState): void {
+    const anyHeld = (['up', 'down', 'left', 'right'] as const).some((d) => input.held(d));
+    const hero = this._hero;
+    const stepping = hero.stepFrame > 0 || hero.x !== before.x || hero.y !== before.y;
+    if (!anyHeld || stepping || this.lockRefused) {
+      this.bumpWait = 0;
+      return;
+    }
+    if (this.game.stack.top !== this) return; // a warp or battle took over this frame
+    if (this.bumpWait > 0) this.bumpWait--;
+    if (this.bumpWait === 0) {
+      this.game.audio.playSfx('bump');
+      this.bumpWait = BUMP_REPEAT;
     }
   }
 
@@ -298,7 +419,11 @@ export class ExploreState implements State {
       for (let tx = x0; tx <= x1; tx++) {
         const t = tileAt(map, tx, ty) ?? (map.border === undefined ? undefined : TILES[map.border]);
         if (!t) continue;
-        const art = t.frames[Math.floor(frame / ANIM_FRAME_LEN) % t.frames.length]!;
+        const shown =
+          t.id === TILE_IDS.chest && hasFlag(this.game.player, chestFlag(chestAt(map, tx, ty)?.id ?? ''))
+            ? TILES[TILE_IDS.chestOpen]!
+            : t;
+        const art = shown.frames[Math.floor(frame / ANIM_FRAME_LEN) % shown.frames.length]!;
         ctx.drawImage(sprites.get(art), tx * TILE - ox, ty * TILE - oy);
       }
     }
@@ -329,7 +454,16 @@ export class ExploreState implements State {
         ctx.drawImage(sprites.get(HERO_SPRITES[this._hero.facing][this._hero.walkFrame]), hx - ox, hy - oy),
     });
     items.sort((a, b) => a.y - b.y || Number(a.hero) - Number(b.hero));
-    for (const it of items) it.draw();
+    const radius = this.lightRadius;
+    if (radius === null) {
+      for (const it of items) it.draw();
+    } else {
+      // Tiles and villagers, then the dark over them, then the hero on top of it.
+      for (const it of items) if (!it.hero) it.draw();
+      ctx.fillStyle = '#000';
+      for (const r of darkRects(hx - ox, hy - oy, radius)) ctx.fillRect(r.x, r.y, r.w, r.h);
+      for (const it of items) if (it.hero) it.draw();
+    }
     if (this.game.debug.noEncounters) this.game.font.drawText(ctx, 'ENC OFF', 192, 8);
   }
 }

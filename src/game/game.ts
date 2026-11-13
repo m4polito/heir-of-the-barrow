@@ -11,6 +11,7 @@ import type { ItemDef } from './items';
 import type { MonsterTable } from './battle/monster';
 import type { SpellTable } from './effects';
 import type { PlayerState } from './player';
+import type { FieldCtx } from './fieldUse';
 import type { ShopTable } from './shop';
 
 export interface StoryConfig {
@@ -26,6 +27,8 @@ export interface StoryConfig {
   startingItems: { item: string; count: number }[];
   /** Prefix for browser storage keys (for example `<prefix>.mute`). */
   storagePrefix: string;
+  /** Flag ids the dev-only debug overlay can toggle. */
+  debugFlags: string[];
 }
 
 export interface Game {
@@ -48,10 +51,12 @@ export interface Game {
   player: PlayerState;
   debug: { noEncounters: boolean };
   debugOpen?: () => void;
+  /** Set by the map screen: facts about the current map that field items depend on. */
+  fieldCtx?: () => FieldCtx;
 }
 
 export function createGame(
-  deps: Omit<Game, 'player' | 'debug' | 'debugOpen'> & { player: PlayerState },
+  deps: Omit<Game, 'player' | 'debug' | 'debugOpen' | 'fieldCtx'> & { player: PlayerState },
 ): Game {
   return { ...deps, debug: { noEncounters: false } };
 }

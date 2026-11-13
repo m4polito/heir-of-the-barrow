@@ -68,11 +68,15 @@ export function stockRows(items: ItemTable, stock: readonly string[]): string[] 
   return stock.map((id) => row(items[id]?.name ?? id, String(items[id]?.price ?? 0)));
 }
 
+/** Pack slots the shop will list: key items are never offered. */
+export function sellSlots(items: ItemTable, p: PlayerState): number[] {
+  return p.inventory.flatMap((s, i) => (items[s.item]?.kind === 'key' ? [] : [i]));
+}
+
 export function sellRows(items: ItemTable, p: PlayerState): string[] {
-  if (p.inventory.length === 0) return [];
   const labels = itemLines(items, p);
-  return p.inventory.map((s, i) => {
-    const price = sellPrice(items[s.item]);
-    return row(labels[i]!, price > 0 ? String(price) : '-');
+  return sellSlots(items, p).map((slot) => {
+    const price = sellPrice(items[p.inventory[slot]!.item]);
+    return row(labels[slot]!, price > 0 ? String(price) : '-');
   });
 }

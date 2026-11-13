@@ -1,6 +1,6 @@
 import type { PixelArt } from '../../engine/pixels';
 
-// Two 16x24 strips that tile sideways behind a battle. Both edges match, so repeats are seamless.
+// Three 16x24 strips that tile sideways behind a battle. Both edges match, so repeats are seamless.
 
 // Grass: the ground surface is row 8, with tufts rising above it and turf below. 6 green, 7 light green, 21 dark green.
 const GRASS: PixelArt = {
@@ -68,7 +68,41 @@ const MURK: PixelArt = {
   ],
 };
 
-export const BACKDROPS: Record<string, PixelArt> = { grass: GRASS, murk: MURK };
+// Barrow: courses of worked stone; the wall face starts at row 8, mortar lines in gray 2, lit edges in light gray 3,
+// stone body deep teal 19. Joints stagger and the first and last columns match, so it tiles sideways.
+const BARROW: PixelArt = {
+  w: 16,
+  h: 24,
+  colors: { s: 19, m: 2, l: 3 },
+  rows: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    'mmmmmmmmmmmmmmmm',
+    'lssssssmsssssssl',
+    'lssssssssssssssl',
+    'lsssssssmssssssl',
+    'mmmmmmmmmmmmmmmm',
+    'smsssssssssssmss',
+    'sssssmsssssssmss',
+    'smsssssssssssmss',
+    'mmmmmmmmmmmmmmmm',
+    'lssssssmsssssssl',
+    'lssssssssssssssl',
+    'lsssssssmssssssl',
+    'mmmmmmmmmmmmmmmm',
+    'smsssssssssssmss',
+    'sssssmsssssssmss',
+    'smsssssssssssmss',
+  ],
+};
+
+export const BACKDROPS: Record<string, PixelArt> = { grass: GRASS, murk: MURK, barrow: BARROW };
 
 export function backdropArt(id: string): PixelArt {
   const art = BACKDROPS[id];

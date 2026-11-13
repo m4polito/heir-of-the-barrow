@@ -8,10 +8,10 @@ import { addItem, equip } from '../src/game/inventory';
 import { createPlayer } from '../src/game/player';
 import { buy, buyCheck } from '../src/game/shop';
 import { attackOf, defenseOf } from '../src/game/stats';
-import { fightOnly, healer, heroAt, simulate } from './helpers/simulate';
-import { WARDEN } from './helpers/warden';
+import { expedition, fightOnly, healer, heroAt, simulate } from './helpers/simulate';
 
 const N = 4000;
+const WARDEN = MONSTERS.barrow_warden;
 
 describe('early-game balance', () => {
   it('road: an unarmed level 1 hero with the shield beats a Mireling quickly and cheaply', () => {
@@ -66,6 +66,59 @@ describe('Barrow Warden win-rate bands', () => {
     const r = run(7, 8);
     expect(r.winRate).toBeGreaterThan(0.9);
   });
+  it('the fight is short: won fights average at most 15.5 rounds at level 6 and 13.5 at level 7', () => {
+    expect(run(6, 7).meanRounds).toBeLessThanOrEqual(15.5);
+    expect(run(7, 8).meanRounds).toBeLessThanOrEqual(13.5);
+  });
+});
+
+describe('Barrow Mireling', () => {
+  const MIRELING = MONSTERS.barrow_mireling;
+  const full = ['bronze_sword', 'leather_armor', 'aldric_shield'];
+  const knife = ['iron_knife', 'leather_armor', 'aldric_shield'];
+
+  it('level 6 in full gear wins nearly always, quickly and cheaply', () => {
+    const r = simulate(createRng(21), heroAt(6, full, 3), MIRELING, fightOnly, N);
+    expect(r.winRate).toBeGreaterThanOrEqual(0.99);
+    expect(r.meanRounds).toBeLessThanOrEqual(4);
+    expect(r.meanHpLost).toBeLessThanOrEqual(11);
+  });
+  it('level 5 with the Iron Knife usually wins', () => {
+    const r = simulate(createRng(22), heroAt(5, knife, 3), MIRELING, fightOnly, N);
+    expect(r.winRate).toBeGreaterThanOrEqual(0.85);
+  });
+  it('level 4 with the Iron Knife usually loses', () => {
+    const r = simulate(createRng(23), heroAt(4, knife, 3), MIRELING, fightOnly, N);
+    expect(r.winRate).toBeLessThan(0.4);
+  });
+});
+
+describe('the whole trip: four Barrow fights, then the Warden', () => {
+  const gear = ['bronze_sword', 'leather_armor', 'aldric_shield'];
+  const trip = (level: number, seed: number) =>
+    expedition(
+      createRng(seed),
+      heroAt(level, gear, 3),
+      { fights: 4, road: MONSTERS.barrow_mireling, roadPolicy: healer(10, null), boss: WARDEN, bossPolicy: healer(18, 8) },
+      2000,
+    );
+
+  it('level 6 usually crosses the Barrow and wins', () => {
+    const r = trip(6, 31);
+    expect(r.winRate).toBeGreaterThanOrEqual(0.75);
+    expect(r.reachRate).toBeGreaterThanOrEqual(r.winRate);
+    expect(r.reachRate).toBeGreaterThanOrEqual(0.9);
+  }, 60000);
+  it('level 5 rarely does', () => {
+    const r = trip(5, 32);
+    expect(r.winRate).toBeLessThan(0.3);
+    expect(r.reachRate).toBeGreaterThanOrEqual(r.winRate);
+  }, 60000);
+  it('level 7 almost always does', () => {
+    const r = trip(7, 33);
+    expect(r.winRate).toBeGreaterThanOrEqual(0.88);
+    expect(r.reachRate).toBeGreaterThanOrEqual(r.winRate);
+  }, 60000);
 });
 
 describe('the first purchase', () => {

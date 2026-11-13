@@ -135,7 +135,7 @@ Every NPC has **one line by default** and most have **a second line gated on a s
 Roughly 48×40 tiles, scrolling. Hollowmere sits near the center-west; the Barrow entrance is north-east across the marsh. Terrain: grass, marsh (higher encounter rate), water (impassable), trees (impassable), hills (passable, higher encounter rate), a dirt road from the gate toward the Barrow with a lower encounter rate. One chest with gold in a dead-end copse rewards exploring. Nothing else to find in the slice.
 
 ### 5.5 The Sunken Barrow (dungeon)
-Two floors, roughly 24×24 each. Dark: the player sees a 1-tile radius by default; a **Torch** (consumable) raises it to 3 tiles for a fixed step count. Floor 1 has two chests (gold; a Torch) and the stairs down. Floor 2 has a chest with a **Bronze Sword** behind narrow corridors, and the Warden's chamber at the end. Stairs trigger on step. No locked doors in the slice; the tile format supports a `locked` door for later but none are placed.
+Two floors, roughly 24×24 each. Dark: the player sees a 1-tile radius by default; a **Torch** (consumable) raises it to 3 tiles for a fixed step count. Floor 1 has two chests (gold; a Torch) and the stairs down. Floor 2 has a chest with a **Bronze Sword** behind narrow corridors, and the Warden's chamber at the end. The Barrow is entered by walking onto its mouth on the marsh, and stairs trigger on step. The Warden waits on one tile that is the only way into its chamber; the sealed door is on the chamber's far wall. No locked doors in the slice; the tile format supports a `locked` door for later but none are placed.
 
 ### 5.6 Monsters
 **Mireling** — the only random encounter. A pale, slumped, marsh-wet thing, vaguely humanoid, two eyes like wet stones. Three stat tiers share the one sprite with palette swaps: *Mireling* (road/grass), *Bog Mireling* (marsh/hills), *Barrow Mireling* (dungeon). This honors "one monster" as one design while giving the slice a difficulty curve. The builder may collapse to a single tier if three reads as a cheat.
@@ -166,6 +166,8 @@ interface GameMap {
 ```
 Tile ids index a tile catalog with properties: `walkable`, `encounterRate` (multiplier), `animated` (frame list), `isDoor`, `isStairs`. Visual art is a separate pixel-data table keyed by the same id.
 
+Trigger kinds as built: `warp` (fires when a step lands on it; an optional sound, so stairs sound different from doors), `auto` (a script on entering a map), `chest` (opened by facing it and pressing confirm; holds gold or one item; its opened state is the flag `chest_<id>`), `look` (a dialog shown by facing the tile and pressing confirm) and `boss` (a step onto it starts a fixed battle until its flag is set; winning sets the flag and runs its dialog). After a warp, the hero's first step off the arrival tile cannot land on another warp tile while the direction key is still held, so holding a key through a stair or door does not carry the hero straight back.
+
 Maps are authored as ASCII strings with a legend (e.g. `#` wall, `.` floor, `~` water) and parsed to `tiles` at module load; this keeps them editable by hand and diffable.
 
 ### 6.2 Movement
@@ -173,6 +175,7 @@ Maps are authored as ASCII strings with a legend (e.g. `#` wall, `.` floor, `~` 
 - Collision against tile `walkable`, NPC positions, and map edges.
 - Holding a direction chains steps. Facing changes immediately even if blocked.
 - Walking onto a trigger tile fires it *after* the step completes (stairs, warps, encounter check).
+- A refused step (wall, water, villager, map edge) plays a low bump: at once on the first refused step of a press, then at most once every 16 frames while the key is held.
 
 ### 6.3 Camera
 Centered on the hero. Maps larger than the viewport scroll freely. Interiors smaller than the viewport are drawn centered with black around them.
@@ -282,13 +285,13 @@ actions: [
 ```
 
 ### 9.8 Boss: Barrow Warden
-- HP 70, ATK 20, DEF 14, AGI 12 (starting values; tune in play-test).
-- Actions: attack (6), **Rot Breath** 7–12 fixed damage ignoring defense (3), **Mend** heals 15–25 when below half HP (2, cooldown 2 turns).
+- HP 52, ATK 26, DEF 16, AGI 12 (starting values; tune in play-test).
+- Actions: attack (6), **Rot Breath** 7–12 fixed damage ignoring defense (3), **Mend** heals 10–16 when below half HP (2, 4-turn wait).
 - Cannot be run from. Victory plays the fanfare, awards ~300 XP and 0 gold, sets `warden_defeated`, drops the journal page into inventory.
-- Intended win condition: level 6–7 with the Bronze Sword and Leather Armor, two or three Herbs, Heal spell. Beatable at 5 with luck; not at 4. **The intent governs the numbers**: with the §9.5 formulas and §10 tables, a level 6 hero (ATK 27, DEF 14) has a long fight: about 19 rounds in simulation, a Phase 6 tuning target (the aim is 10–13). A unit test simulates the fight at levels 4, 5, 6 and 7 with the intended gear and asserts the win rates are near 0%, under 50%, over 70%, and over 90% respectively; if tuning moves the tables, the test moves with them.
+- Intended win condition: level 6–7 with the Bronze Sword and Leather Armor, two or three Herbs, Heal spell. Beatable at 5 with luck; not at 4. **The intent governs the numbers**: with the §9.5 formulas and §10 tables, a level 6 hero (ATK 27, DEF 14) has a long fight: about 14 rounds at level 6 in simulation, healing turns included. A unit test simulates the fight at levels 4, 5, 6 and 7 with the intended gear and asserts the win rates are near 0%, under 50%, over 70%, and over 90% respectively; if tuning moves the tables, the test moves with them.
 
 ### 9.9 Death
-"You have fallen." Fade to black. Respawn in Maren's house facing her at full HP/MP, gold halved (floor), XP and items kept. Maren speaks a death-specific line. No game over screen.
+"You have fallen." Fade to black. Respawn in Maren's house facing her at full HP/MP, gold halved (floor), XP and items kept. A lit Torch goes out (Homeward leaves it lit). Maren speaks a death-specific line. No game over screen.
 
 ### 9.10 Victory
 Message sequence: "The Mireling is defeated." → "You gain N experience and N gold." → level-up fanfare and stat-gain lines if applicable → "You learned Heal!" if applicable. Then return to Explore.
@@ -339,15 +342,17 @@ Garrik stocks the Bronze Sword so a grinding player can buy it, *and* the chest 
 | Herb | Restore 20–30 HP | 10 |
 | Torch | Dungeon visibility radius 3 for 200 steps | 8 |
 
-Inventory: 8 slots; consumables stack up to 6 per slot; unequipped equipment occupies a slot. "You cannot carry more." refusals. Aldric's Journal is a key item in its own slot-free list.
+Torch rules as built: the light is a square, one tile around the hero in the dark and three with a lit Torch. A Torch burns for 200 steps, counted only on dark maps. Lighting one outside the dark ("There is no need for light here.") or while one burns ("Your torch still burns.") is refused and costs nothing. When it runs out: "Your torch gutters out." The steps left are saved. Death puts the Torch out.
+
+Inventory: 8 slots; consumables stack up to 6 per slot; unequipped equipment occupies a slot. "You cannot carry more." refusals. Key items (Aldric's Journal, listed under that name) take no slot, are held once, are not offered in a shop's sell list, and are read from Items without being used up.
 
 ### 10.5 Monster stats
 | Monster | HP | ATK | DEF | AGI | XP | Gold | Dodge | Zone |
 |---|---|---|---|---|---|---|---|---|
 | Mireling | 4 | 5 | 1 | 3 | 2 | 2–4 | 1/32 | road, grass |
 | Bog Mireling | 14 | 11 | 6 | 6 | 7 | 6–10 | 1/16 | marsh, hills |
-| Barrow Mireling | 24 | 20 | 14 | 10 | 18 | 12–18 | 1/16 | Barrow |
-| Barrow Warden | 70 | 20 | 14 | 12 | 300 | 0 | 1/32 | boss |
+| Barrow Mireling | 22 | 16 | 12 | 10 | 18 | 12–18 | 1/16 | Barrow |
+| Barrow Warden | 52 | 26 | 16 | 12 | 300 | 0 | 1/32 | boss |
 
 Tuned 2026-11-12 after the Phase 3 play-test; pinned by `test/balance.test.ts`. Level table replaced 2026-11-12 with an original curve.
 
@@ -363,7 +368,7 @@ Hesta speaks two lines, then asks: "A bed is 6 gold, if you need one. Stay?" (af
 
 ### 11.3 Save/Load
 - Saving happens **only by talking to Maren**: "Shall I remember your journey?" Yes → write save, "It is written." The trip home is part of the game's rhythm.
-- Save = JSON in `localStorage` under a versioned key, containing: `version`, hero name, level, XP, HP, MP, gold, equipment, inventory, flags, map id, position, facing, torch steps remaining (written as 0 until Phase 6). The mute preference keeps its own storage entry, because it must apply before Continue is chosen. Strength, agility and the HP and MP maximums are not stored; they are rebuilt from the level, and stored HP and MP are held to those maximums on load. A save that cannot be read (damaged, another version, an unknown item or map) is ignored, not deleted: Continue is not offered. Maren asks straight after her first line; a successful save plays its own sound with "It is written."; if the browser refuses to store the save she says "The page will not take the ink. Nothing was written." Nothing saves automatically, so reloading the page returns to the last save.
+- Save = JSON in `localStorage` under a versioned key, containing: `version`, hero name, level, XP, HP, MP, gold, equipment, inventory, flags, map id, position, facing, torch steps remaining, and total play time (an optional field; a save without it loads as 0). Play time counts update steps while a game is in progress, so it does not advance on the title screen or while the tab is hidden, and Status shows it as `TIME h:mm`. The mute preference keeps its own storage entry, because it must apply before Continue is chosen. Strength, agility and the HP and MP maximums are not stored; they are rebuilt from the level, and stored HP and MP are held to those maximums on load. A save that cannot be read (damaged, another version, an unknown item or map) is ignored, not deleted: Continue is not offered. Maren asks straight after her first line; a successful save plays its own sound with "It is written."; if the browser refuses to store the save she says "The page will not take the ink. Nothing was written." Nothing saves automatically, so reloading the page returns to the last save.
 - **Title → Continue** loads it. One slot in the slice.
 - **Password system: deferred past the slice** (owner's decision). A later phase adds a classic text password as a portable save: the save struct bit-packed with a checksum, a 32-character unambiguous alphabet, under 40 characters, offered by Maren after saving and entered from the title screen. The save struct should be designed so every field has a small fixed range (e.g. gold capped at 65535, flags as an indexed list) so that bit-packing later is a codec change, not a schema change.
 
@@ -402,7 +407,7 @@ Rows are a fixed subdivision (16th notes). A sequencer schedules notes ahead of 
 | `fallen` | Death | Short descending phrase |
 
 ### 12.4 Sound effects
-Menu move, menu confirm, menu cancel, text blip, door open, stairs, chest open, bump (blocked), encounter sting (precedes battle wipe), hero hit, monster hit, miss, critical, spell cast, heal, run success, run fail, buy, save, error/refusal.
+Menu move, menu confirm, menu cancel, text blip, door open, stairs down (falling), stairs up (rising), chest open, bump (blocked), encounter sting (precedes battle wipe), hero hit, monster hit, miss, critical, spell cast, heal, monster mend, torch lit, run success, run fail, buy, save, error/refusal.
 
 ### 12.5 Mixing
 Master gain with mute. Music about 6 dB under SFX. SFX play on separate voices so they never steal music channels.

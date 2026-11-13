@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { TILES, TILE_IDS } from '../src/data/tiles';
 
 describe('tiles', () => {
-  it('has nineteen tiles indexed by id', () => {
-    expect(TILES.length).toBe(19);
+  it('has twenty-seven tiles indexed by id', () => {
+    expect(TILES.length).toBe(27);
     TILES.forEach((t, i) => expect(t.id).toBe(i));
   });
 
@@ -34,7 +34,31 @@ describe('tiles', () => {
     expect(t(TILE_IDS.marsh)).toMatchObject({ name: 'marsh', walkable: true, encounterRate: 1.5 });
     expect(t(TILE_IDS.hill)).toMatchObject({ name: 'hill', walkable: true, encounterRate: 1.5 });
     expect(t(TILE_IDS.town)).toMatchObject({ name: 'town', walkable: true, encounterRate: 0 });
-    expect(t(TILE_IDS.barrowMouth)).toMatchObject({ name: 'barrowMouth', walkable: false, encounterRate: 0 });
+    expect(t(TILE_IDS.barrowMouth)).toMatchObject({ name: 'barrowMouth', walkable: true, encounterRate: 0 });
     expect(t(TILE_IDS.deadTree)).toMatchObject({ name: 'deadTree', walkable: false, encounterRate: 0 });
+  });
+
+  it('dungeon tiles: ids, names and walkability', () => {
+    const want = {
+      barrowWall: [19, false], barrowFloor: [20, true], stairsDown: [21, true], stairsUp: [22, true],
+      chest: [23, false], chestOpen: [24, false], sealedDoor: [25, false], sconce: [26, false],
+    } as const;
+    for (const [name, [id, walkable]] of Object.entries(want)) {
+      expect(TILE_IDS[name as keyof typeof TILE_IDS], name).toBe(id);
+      expect(TILES[id]).toMatchObject({ id, name, walkable });
+    }
+    expect(TILES[TILE_IDS.barrowFloor]!.encounterRate).toBe(0.75);
+    expect(TILES[TILE_IDS.stairsDown]!.encounterRate).toBe(0);
+    expect(TILES[TILE_IDS.stairsUp]!.encounterRate).toBe(0);
+  });
+
+  it('the sconce flickers between two different frames', () => {
+    const f = TILES[TILE_IDS.sconce]!.frames;
+    expect(f.length).toBe(2);
+    expect(f[0]!.rows).not.toEqual(f[1]!.rows);
+  });
+
+  it('the shut and open chest differ', () => {
+    expect(TILES[TILE_IDS.chest]!.frames[0]!.rows).not.toEqual(TILES[TILE_IDS.chestOpen]!.frames[0]!.rows);
   });
 });

@@ -22,6 +22,10 @@ export interface PlayerState {
   equipment: Partial<Record<EquipSlot, string>>;
   inventory: InventorySlot[];
   flags: string[];
+  /** Steps of torchlight left. */
+  torch: number;
+  /** Whole 60 fps update steps played; see playTime.ts. */
+  playFrames: number;
 }
 
 export function createPlayer(name: string, startingItems: readonly { item: string; count: number }[]): PlayerState {
@@ -40,6 +44,8 @@ export function createPlayer(name: string, startingItems: readonly { item: strin
     equipment: {},
     inventory: startingItems.map((s) => ({ item: s.item, count: s.count })),
     flags: [],
+    torch: 0,
+    playFrames: 0,
   };
 }
 
@@ -49,6 +55,10 @@ export function hasFlag(p: PlayerState, flag: string): boolean {
 
 export function setFlag(p: PlayerState, flag: string): PlayerState {
   return hasFlag(p, flag) ? p : { ...p, flags: [...p.flags, flag] };
+}
+
+export function clearFlag(p: PlayerState, flag: string): PlayerState {
+  return hasFlag(p, flag) ? { ...p, flags: p.flags.filter((f) => f !== flag) } : p;
 }
 
 export function applyLevel(p: PlayerState, level: number): PlayerState {
@@ -73,9 +83,9 @@ export function applyLevel(p: PlayerState, level: number): PlayerState {
 export const GOLD_MAX = 65535;
 export const XP_MAX = 65535;
 
-/** Death penalty: half the gold, full hp and mp; nothing else changes. */
+/** Death penalty: half the gold, full hp and mp, and a lit torch goes out; nothing else changes. */
 export function applyDeath(p: PlayerState): PlayerState {
-  return { ...p, gold: Math.floor(p.gold / 2), hp: p.maxHp, mp: p.maxMp };
+  return { ...p, gold: Math.floor(p.gold / 2), hp: p.maxHp, mp: p.maxMp, torch: 0 };
 }
 
 /** Spell ids learned at or below the given level, in table order. */

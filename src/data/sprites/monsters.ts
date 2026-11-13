@@ -38,8 +38,49 @@ const MIRELING_PALETTES: Record<string, number>[] = [
 
 const MIRELING: PixelArt[] = MIRELING_PALETTES.map((colors) => ({ w: 24, h: 24, colors, rows: MIRELING_ROWS }));
 
+// Barrow Warden: a long-dead figure facing the viewer, in the remains of ridged plate. The helm has a
+// central crest, the left pauldron (viewer's left) is gone and leaves a barer shoulder, the right one is
+// domed. Nothing is raised; the hands hang empty. b plate, s shade, h highlight, e eye. No outline.
+const WARDEN_ROWS = [
+  '................................',
+  '...............hh...............',
+  '..............hbbh..............',
+  '............hbbhhbbh............',
+  '...........bbbbhhbbbb...........',
+  '..........bbbbshhsbbbb..........',
+  '..........bsbbbhhbbbsb..........',
+  '..........bsseebbeessb..........',
+  '..........bbsssbbsssbb..........',
+  '...........bbs.hh.sbb...........',
+  '.............sbs..sbs...........',
+  '........sbbsbbhhhhbbsbhhhhss....',
+  '.......sbbbbbbsbbsbbbbbbbbhs....',
+  '.......sbbbbbsbbbbsbbbsbbbbs....',
+  '.......sbbbbsbhhhhbsbbssssbs....',
+  '.......sbb.bbbbbbbbbb.bbs.......',
+  '.......sbb.bbsbbbbsbb.bbs.......',
+  '.......sbb.bbbhhhhbbb.bbs.......',
+  '.......sbb.bbssbbssbb.bbs.......',
+  '.......sbb.sbbbbbbbbs.bbs.......',
+  '......sbbs.ssbbbbbbss.sbbs......',
+  '..........sbbbsbbsbbbs..........',
+  '..........sbbs.bb.sbbs..........',
+  '..........bbs..bb..sbb..........',
+  '...........bhbs..sbhb...........',
+  '...........bbbs..sbbb...........',
+  '...........bsbs..sbsb...........',
+  '...........bbbs..sbbb...........',
+  '...........bbbs..sbbb...........',
+  '.........sbbbbs..sbbbbs.........',
+  '........sbbbbbs..sbbbbbs........',
+  '........sssssss..sssssss........',
+];
+
+const WARDEN: PixelArt = { w: 32, h: 32, colors: { b: 2, s: 9, h: 3, e: 12 }, rows: WARDEN_ROWS };
+
 /** The monster drawing for a sprite id and palette index; identity-stable so the sprite cache can key on it. */
 export function monsterArt(sprite: string, palette: number): PixelArt {
+  if (sprite === 'warden') return WARDEN;
   if (sprite !== 'mireling') throw new Error(`Unknown monster sprite: ${sprite}`);
   return MIRELING[palette] ?? MIRELING[0]!;
 }

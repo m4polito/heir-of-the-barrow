@@ -14,7 +14,7 @@ import { ExploreState } from '../src/game/explore';
 import { TransitionState } from '../src/game/transition';
 import { BattleState } from '../src/game/battle/battleState';
 import { createGame } from '../src/game/game';
-import { createPlayer } from '../src/game/player';
+import { createPlayer, hasFlag } from '../src/game/player';
 import { DebugState, installDebug } from '../src/game/debug';
 import { MAPS } from '../src/data/maps';
 import { DIALOGS } from '../src/data/dialog/hollowmere';
@@ -138,13 +138,33 @@ describe('DebugState', () => {
     expect(game.monsters.barrow_mireling).toBeDefined();
   });
 
-  it('lists one Give row per item, between the Fight rows and Close', () => {
+  it('lists one Give row per item, between the Fight rows and the Flag rows', () => {
     const { dbg } = setup();
     const labels = (dbg as unknown as { labels(): string[] }).labels();
     const lastFight = labels.map((l) => l.startsWith('Fight: ')).lastIndexOf(true);
-    const close = labels.indexOf('Close');
+    const close = labels.findIndex((l) => l.startsWith('Flag: '));
     expect(labels.slice(lastFight + 1, close)).toEqual(Object.keys(ITEMS).map((id) => `Give: ${id}`));
     expect(labels).toContain('Give: herb');
+  });
+
+  it('lists one Flag row per story debug flag, between the Give rows and Close', () => {
+    const { dbg, game } = setup();
+    const labels = (dbg as unknown as { labels(): string[] }).labels();
+    expect(game.story.debugFlags).toEqual(['warden_defeated']);
+    const lastGive = labels.map((l) => l.startsWith('Give: ')).lastIndexOf(true);
+    expect(labels.slice(lastGive + 1)).toEqual(['Flag: warden_defeated OFF', 'Close']);
+  });
+
+  it('a Flag row toggles the flag, relabels, and keeps the overlay open', () => {
+    const { stack, game, dbg } = setup();
+    const labels = () => (dbg as unknown as { labels(): string[] }).labels();
+    pick(dbg, labels().indexOf('Flag: warden_defeated OFF'));
+    expect(hasFlag(game.player, 'warden_defeated')).toBe(true);
+    expect(labels()).toContain('Flag: warden_defeated ON');
+    dbg.update(keys('confirm'));
+    expect(hasFlag(game.player, 'warden_defeated')).toBe(false);
+    expect(labels()).toContain('Flag: warden_defeated OFF');
+    expect(stack.top).toBe(dbg);
   });
 
   it('a Give row adds one item each time and keeps the overlay open', () => {
@@ -159,7 +179,7 @@ describe('DebugState', () => {
 
   it('a Give row that does not fit plays error and changes nothing', () => {
     const { game, dbg } = setup();
-    const ids = Object.keys(game.items).filter((id) => game.items[id]!.kind !== 'consumable');
+    const ids = Object.keys(game.items).filter((id) => (game.items[id]!.kind !== 'consumable' && game.items[id]!.kind !== 'key'));
     game.player = { ...game.player, inventory: Array.from({ length: 8 }, (_, i) => ({ item: ids[i % ids.length]!, count: 1 })) };
     const before = game.player.inventory;
     const sfx = vi.spyOn(game.audio, 'playSfx');
@@ -174,13 +194,13 @@ describe('DebugState', () => {
     a.dbg.update(keys('cancel'));
     expect(a.stack.top).toBeInstanceOf(ExploreState);
     const b = setup();
-    pick(b.dbg, 6 + Object.keys(b.game.maps).length + Object.keys(b.game.monsters).length + Object.keys(b.game.items).length);
+    pick(b.dbg, 6 + Object.keys(b.game.maps).length + Object.keys(b.game.monsters).length + Object.keys(b.game.items).length + b.game.story.debugFlags.length);
     expect(b.stack.top).toBeInstanceOf(ExploreState);
   });
 
   it('every row, including the last, is reachable', () => {
     const { dbg } = setup();
-    const n = 7 + Object.keys(MAPS).length + Object.keys(MONSTERS).length + Object.keys(ITEMS).length;
+    const n = 7 + STORY.debugFlags.length + Object.keys(MAPS).length + Object.keys(MONSTERS).length + Object.keys(ITEMS).length;
     for (let i = 0; i < n - 1; i++) dbg.update(keys('down'));
     // (list is private; reaching Close above proves the last row is addressable)
     expect(() => dbg.update(keys('confirm'))).not.toThrow();

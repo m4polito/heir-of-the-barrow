@@ -13,7 +13,7 @@ const fresh = (over: Partial<PlayerState> = {}): PlayerState => ({
 
 /** Eight pack slots; `first` is the first slot, the rest are other items. */
 function fullPack(first: InventorySlot): InventorySlot[] {
-  const filler = ['torch', 'journal_page', 'aldric_shield', 'journal_page', 'bronze_sword', 'cloth_tunic', 'leather_armor'];
+  const filler = ['torch', 'cloth_tunic', 'aldric_shield', 'torch', 'bronze_sword', 'cloth_tunic', 'leather_armor'];
   return [first, ...filler.slice(0, INVENTORY_SLOTS - 1).map((item) => ({ item, count: 1 }))];
 }
 
@@ -158,6 +158,22 @@ describe('rows', () => {
     const p = fresh({ inventory: [{ item: 'herb', count: 3 }, { item: 'aldric_shield', count: 1 }] });
     expect(sellRows(ITEMS, p)).toEqual(['Herb x3          5', "Aldric's Shield  -"]);
     expect(sellRows(ITEMS, fresh({ inventory: [] }))).toEqual([]);
+  });
+
+  it('key items are not listed for sale; other rows keep their order', () => {
+    const p = fresh({ inventory: [{ item: 'herb', count: 1 }, { item: 'journal_page', count: 1 }, { item: 'wooden_club', count: 1 }] });
+    expect(sellRows(ITEMS, p)).toEqual(['Herb x1          5', 'Wooden Club     15']);
+    expect(sellRows(ITEMS, fresh({ inventory: [{ item: 'journal_page', count: 1 }] }))).toEqual([]);
+    expect(sell(ITEMS, p, 1)).toBeNull();
+  });
+
+  it('every row any item can make fits the list window (at most 18 characters)', () => {
+    for (const shop of Object.values(SHOPS)) for (const r of stockRows(ITEMS, shop.stock)) expect(r.length).toBeLessThanOrEqual(18);
+    for (const id of Object.keys(ITEMS))
+      for (const count of [1, 9]) {
+        const p = fresh({ inventory: [{ item: id, count }] });
+        for (const r of sellRows(ITEMS, p)) expect(r.length, `${id} x${count}`).toBeLessThanOrEqual(18);
+      }
   });
 
   it('every row is 18 characters', () => {

@@ -265,7 +265,7 @@ describe('buying', () => {
     inventory: [
       'herb',
       'torch',
-      'journal_page',
+      'cloth_tunic',
       'aldric_shield',
       'cloth_tunic',
       'leather_armor',
@@ -369,6 +369,41 @@ describe('selling', () => {
     t.press('confirm');
     expect(t.shop().phase).toBe('menu');
     expect(t.game.player.gold).toBe(45);
+  });
+
+  it('with a key item in the pack, the rows map to the right pack entries', () => {
+    const t = sellList({
+      inventory: [
+        { item: 'herb', count: 1 },
+        { item: 'journal_page', count: 1 },
+        { item: 'wooden_club', count: 1 },
+      ],
+    });
+    expect(t.shop().rows).toHaveLength(2);
+    t.press('down');
+    t.press('confirm');
+    t.idle();
+    expect(t.shown()).toContain('The Wooden Club?');
+    t.press('confirm');
+    expect(t.game.player.inventory.map((s) => s.item)).toEqual(['herb', 'journal_page']);
+    expect(t.shop().rows).toHaveLength(1);
+  });
+
+  it('a pack holding only a key item sells like an empty pack', () => {
+    const t = sellList({ inventory: [{ item: 'journal_page', count: 1 }] });
+    t.idle();
+    expect(t.shown()).toBe('You have nothing to sell.');
+    t.press('confirm');
+    expect(t.shop().phase).toBe('menu');
+  });
+
+  it('selling the last sellable item with a key item left returns to the menu', () => {
+    const t = sellList({ inventory: [{ item: 'journal_page', count: 1 }, { item: 'herb', count: 1 }] });
+    t.press('confirm');
+    t.idle();
+    t.press('confirm');
+    expect(t.shop().phase).toBe('menu');
+    expect(t.game.player.inventory.map((s) => s.item)).toEqual(['journal_page']);
   });
 
   it('says so when there is nothing to sell', () => {

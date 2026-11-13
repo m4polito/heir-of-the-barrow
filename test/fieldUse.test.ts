@@ -5,6 +5,8 @@ import { SPELLS } from '../src/data/spells';
 import { ITEMS } from '../src/data/items';
 import { seqRng } from './helpers/seqRng';
 
+const LIT = { dark: false };
+const DARK = { dark: true };
 const lv3 = (): PlayerState => gainXp(createPlayer('Wren', [{ item: 'herb', count: 2 }]), 22).player;
 const herbs = (p: PlayerState) => p.inventory.find((s) => s.item === 'herb')?.count ?? 0;
 
@@ -34,6 +36,11 @@ describe('castInField', () => {
     expect(r).toMatchObject({ ok: true, warp: true, text: 'You are carried home.', sfx: 'spell' });
     if (r.ok) expect(r.player.mp).toBe(27);
   });
+  it('homeward leaves a lit torch alone', () => {
+    const p = { ...applyLevel(lv3(), 9), mp: 35, torch: 36 };
+    const r = castInField(seqRng([]), SPELLS, p, 'homeward');
+    expect(r.ok && r.player.torch).toBe(36);
+  });
   it('throws on programming errors', () => {
     expect(() => castInField(seqRng([]), SPELLS, lv3(), 'ember')).toThrow();
     expect(() => castInField(seqRng([]), SPELLS, lv3(), 'nope')).toThrow();
@@ -42,7 +49,7 @@ describe('castInField', () => {
 
 describe('useItemInField', () => {
   it('uses a herb', () => {
-    const r = useItemInField(seqRng([0]), ITEMS, { ...lv3(), hp: 1 }, 'herb');
+    const r = useItemInField(seqRng([0]), ITEMS, { ...lv3(), hp: 1 }, 'herb', LIT);
     expect(r).toMatchObject({ ok: true, text: 'You recover 20 HP.', sfx: 'heal' });
     if (r.ok) {
       expect(r.player.hp).toBe(21);
@@ -51,14 +58,57 @@ describe('useItemInField', () => {
   });
   it('keeps the herb at full hp', () => {
     const p = lv3();
-    expect(useItemInField(seqRng([]), ITEMS, p, 'herb')).toEqual({ ok: false, text: 'You are not hurt.' });
+    expect(useItemInField(seqRng([]), ITEMS, p, 'herb', LIT)).toEqual({ ok: false, text: 'You are not hurt.' });
     expect(herbs(p)).toBe(2);
   });
   it('refuses an item with no use', () => {
-    const p = { ...lv3(), inventory: [{ item: 'torch', count: 1 }] };
-    expect(useItemInField(seqRng([]), ITEMS, p, 'torch')).toEqual({ ok: false, text: 'You cannot use that now.' });
+    const p = { ...lv3(), inventory: [{ item: 'wooden_club', count: 1 }] };
+    expect(useItemInField(seqRng([]), ITEMS, p, 'wooden_club', LIT)).toEqual({ ok: false, text: 'You cannot use that now.' });
   });
   it('throws for an item not held', () => {
-    expect(() => useItemInField(seqRng([]), ITEMS, lv3(), 'torch')).toThrow();
+    expect(() => useItemInField(seqRng([]), ITEMS, lv3(), 'torch', LIT)).toThrow();
+  });
+});
+
+describe('useItemInField: the Torch', () => {
+  const held = (torch = 0): PlayerState => ({ ...lv3(), torch, inventory: [{ item: 'torch', count: 2 }] });
+  const torches = (p: PlayerState) => p.inventory.find((s) => s.item === 'torch')?.count ?? 0;
+
+  it('lights in the dark: used up, 200 steps, sound torch, draws nothing', () => {
+    const r = useItemInField(seqRng([]), ITEMS, held(), 'torch', DARK);
+    expect(r).toMatchObject({ ok: true, text: 'You light the Torch.', sfx: 'torch' });
+    if (r.ok) {
+      expect(r.player.torch).toBe(200);
+      expect(torches(r.player)).toBe(1);
+    }
+  });
+  it('is refused where it is not dark and stays held', () => {
+    const p = held();
+    expect(useItemInField(seqRng([]), ITEMS, p, 'torch', LIT)).toEqual({ ok: false, text: 'There is no need for light here.' });
+    expect(p.torch).toBe(0);
+    expect(torches(p)).toBe(2);
+  });
+  it('is refused while a torch still burns', () => {
+    const p = held(5);
+    expect(useItemInField(seqRng([]), ITEMS, p, 'torch', DARK)).toEqual({ ok: false, text: 'Your torch still burns.' });
+    expect(p.torch).toBe(5);
+    expect(torches(p)).toBe(2);
+  });
+});
+
+describe('useItemInField: read items', () => {
+  const items = { ...ITEMS, note: { id: 'note', name: 'Note', kind: 'key' as const, price: 0, stack: 1, use: { where: 'field' as const, effect: { kind: 'read' as const, dialog: 'the_note' } } } };
+  it('opens the dialog, keeps the item, changes nothing else', () => {
+    const p = { ...lv3(), inventory: [{ item: 'note', count: 1 }] };
+    const r = useItemInField(seqRng([]), items, p, 'note', LIT);
+    expect(r).toMatchObject({ ok: true, dialog: 'the_note', text: '', sfx: 'menuConfirm' });
+    if (r.ok) expect(r.player).toEqual(p);
+  });
+  it('a spell with a light or read effect is refused', () => {
+    const p = { ...applyLevel(lv3(), 9), mp: 35 };
+    for (const effect of [{ kind: 'light' as const, radius: 3, steps: 9 }, { kind: 'read' as const, dialog: 'x' }]) {
+      const spells = { ...SPELLS, homeward: { ...SPELLS.homeward, effect } };
+      expect(castInField(seqRng([]), spells, p, 'homeward')).toEqual({ ok: false, text: 'You cannot use that now.' });
+    }
   });
 });

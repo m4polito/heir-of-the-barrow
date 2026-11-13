@@ -117,6 +117,7 @@ describe('random encounters', () => {
     expect(hasBattle()).toBe(false);
     ticks(1, 'right'); // fourth step completed
     expect(stack.top).toBeInstanceOf(TransitionState);
+    expect(playSfx.mock.calls.filter((c) => c[0] === 'bump')).toHaveLength(0);
     expect(stopSong).toHaveBeenCalledTimes(1);
     expect(playSfx.mock.calls.filter((c) => c[0] === 'encounter')).toHaveLength(1);
     expect(hasBattle()).toBe(false);

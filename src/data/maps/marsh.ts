@@ -11,12 +11,13 @@ const LEGEND: Record<string, number> = {
   H: TILE_IDS.town,
   B: TILE_IDS.barrowMouth,
   w: TILE_IDS.deadTree,
+  C: TILE_IDS.chest,
 };
 
 // 48 x 40. Grassland round Hollowmere (the town tile, west of centre), a wide marsh across
 // the middle that the road threads through, hills to the north and east, and the barrow
 // mound in the north-east. A dead willow stands by the road half-way; a walled-in copse
-// in the south-west is a dead end kept for a later chest.
+// in the south-west is a dead end holding a chest.
 const ROWS = [
   't~~~ttttttt~~~~~~~~~~~tttttttttttttttttttttttttt',
   'ttttgttggttgttthhhhhhhhhggghhhhhhhttthhhhhhhhhtt',
@@ -54,7 +55,7 @@ const ROWS = [
   'tttgttt~~ggggggtgggmmmmmmmmmmmmggmmmmmmmg~~~~~tt',
   'tttgttttttttttgtggggmmmmmmmmmgggmmmmmmmmmgg~tttt',
   'tttgttttttttttgggtttgmmmmmmmgggggmmmmmmmggtttttt',
-  'tttgttttttttttgtgtttggggmgggggggggggmgggttttttt~',
+  'tttCttttttttttgtgtttggggmgggggggggggmgggttttttt~',
   'ttttttttttttttgtgtttggggggggggggggggggtgttttttt~',
   'ttttttttttttttttgttttggtttttttttttttggttttttttt~',
   't~~~~~~~~~ttttttt~~~~~~tttt~~~~~~~~~~~~~tttttttt',
@@ -75,9 +76,14 @@ export const MARSH: GameMap = {
   border: TILE_IDS.water,
   entry: {
     town: { x: 12, y: 21, facing: 'down' },
+    barrow: { x: 40, y: 7, facing: 'down' },
   },
   npcs: [],
-  triggers: [{ kind: 'warp', x: 12, y: 20, to: 'hollowmere', entry: 'gate' }],
+  triggers: [
+    { kind: 'warp', x: 12, y: 20, to: 'hollowmere', entry: 'gate' },
+    { kind: 'warp', x: 40, y: 6, to: 'barrow_1', entry: 'mouth' },
+    { kind: 'chest', x: 3, y: 36, id: 'copse', gold: 40 },
+  ],
   encounters: {
     baseRate: 1 / 16,
     zones: {

@@ -122,3 +122,57 @@ describe('buy effect', () => {
     }
   });
 });
+
+describe('mend effect', () => {
+  it('is the pinned phrase and differs from every other effect', () => {
+    expect(SFX.mend).toEqual([
+      { ch: 'p1', note: 'E4', duty: 0.125, frames: 3, vol: 7 },
+      { ch: 'p1', note: 'G4', duty: 0.125, frames: 3, vol: 7 },
+      { ch: 'p1', note: 'B4', duty: 0.125, frames: 6, vol: 7 },
+    ]);
+    for (const [id, steps] of Object.entries(SFX)) {
+      if (id !== 'mend') expect(JSON.stringify(steps), id).not.toBe(JSON.stringify(SFX.mend));
+    }
+  });
+});
+
+describe('dungeon effects', () => {
+  it('bump, stairs and chest are the pinned phrases and differ from every other effect', () => {
+    expect(SFX.bump).toEqual([
+      { ch: 'tri', note: 'G2', frames: 3, vol: 10 },
+      { ch: 'tri', note: 'D2', frames: 3, vol: 10 },
+    ]);
+    expect(SFX.stairs.map((s) => s.note)).toEqual(['E4', 'C4', 'A3', 'F3']);
+    expect(SFX.stairs.map((s) => s.frames)).toEqual([3, 3, 3, 5]);
+    expect(SFX.chest).toEqual([
+      { ch: 'noise', preset: 'k', frames: 1, vol: 9 },
+      { ch: 'p1', note: 'G5', duty: 0.25, frames: 2, vol: 8 },
+      { ch: 'p1', note: 'D6', duty: 0.25, frames: 6, vol: 8 },
+    ]);
+    expect(SFX.stairsUp).toEqual([
+      { ch: 'p1', note: 'F3', duty: 0.5, frames: 3, vol: 8 },
+      { ch: 'p1', note: 'A3', duty: 0.5, frames: 3, vol: 8 },
+      { ch: 'p1', note: 'C4', duty: 0.5, frames: 3, vol: 8 },
+      { ch: 'p1', note: 'E4', duty: 0.5, frames: 5, vol: 8 },
+    ]);
+    const midi = (n: string) => ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].indexOf(n.slice(0, -1)) + 12 * Number(n.slice(-1));
+    const rising = SFX.stairsUp.map((s) => midi(s.note!));
+    rising.slice(1).forEach((m, i) => expect(m).toBeGreaterThan(rising[i]!));
+    for (const id of ['bump', 'stairs', 'stairsUp', 'chest'] as const)
+      for (const [other, steps] of Object.entries(SFX))
+        if (other !== id) expect(JSON.stringify(steps), `${id} vs ${other}`).not.toBe(JSON.stringify(SFX[id]));
+  });
+});
+
+describe('torch effect', () => {
+  it('is the pinned phrase and differs from every other effect', () => {
+    expect(SFX.torch).toEqual([
+      { ch: 'noise', preset: 'h', frames: 2, vol: 8 },
+      { ch: 'p1', note: 'D4', duty: 0.125, frames: 2, vol: 7 },
+      { ch: 'p1', note: 'A4', duty: 0.125, frames: 2, vol: 7 },
+      { ch: 'p1', note: 'F#5', duty: 0.125, frames: 6, vol: 7 },
+    ]);
+    for (const [other, steps] of Object.entries(SFX))
+      if (other !== 'torch') expect(JSON.stringify(steps), `torch vs ${other}`).not.toBe(JSON.stringify(SFX.torch));
+  });
+});

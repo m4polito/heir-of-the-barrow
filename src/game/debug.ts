@@ -4,7 +4,7 @@ import { MenuList } from '../ui/menuList';
 import { drawWindow, drawMenu } from '../ui/window';
 import type { Game } from './game';
 import type { GameMap } from './map';
-import { applyLevel, GOLD_MAX } from './player';
+import { applyLevel, clearFlag, setFlag, hasFlag, GOLD_MAX } from './player';
 import { ExploreState } from './explore';
 import { addItem } from './inventory';
 
@@ -14,17 +14,19 @@ function defaultEntry(map: GameMap): string {
   return 'start' in map.entry ? 'start' : Object.keys(map.entry)[0]!;
 }
 
-/** Dev-only overlay: level, gold, encounters, heal, warp, fight, give. Never imported by production code. */
+/** Dev-only overlay: level, gold, encounters, heal, warp, fight, give, flag toggles. Never imported by production code. */
 export class DebugState implements State {
   private readonly list: MenuList;
   private readonly mapIds: string[];
   private readonly monsterIds: string[];
   private readonly itemIds: string[];
+  private readonly flagIds: string[];
 
   constructor(private readonly game: Game) {
     this.mapIds = Object.keys(game.maps);
     this.monsterIds = Object.keys(game.monsters);
     this.itemIds = Object.keys(game.items);
+    this.flagIds = game.story.debugFlags;
     this.list = new MenuList(this.labels());
   }
 
@@ -39,6 +41,7 @@ export class DebugState implements State {
       ...this.mapIds.map((id) => `Warp: ${id}`),
       ...this.monsterIds.map((id) => `Fight: ${id}`),
       ...this.itemIds.map((id) => `Give: ${id}`),
+      ...this.flagIds.map((id) => `Flag: ${id} ${hasFlag(this.game.player, id) ? 'ON' : 'OFF'}`),
       'Close',
     ];
   }
@@ -65,6 +68,9 @@ export class DebugState implements State {
       const added = addItem(game.items, game.player, this.itemIds[index - giveStart]!);
       if (added.ok) game.player = added.player;
       else game.audio.playSfx('error');
+    } else if (index < giveStart + this.itemIds.length + this.flagIds.length) {
+      const id = this.flagIds[index - giveStart - this.itemIds.length]!;
+      game.player = hasFlag(game.player, id) ? clearFlag(game.player, id) : setFlag(game.player, id);
     } else {
       game.stack.pop();
     }

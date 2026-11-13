@@ -17,7 +17,7 @@ import { wrapText } from '../src/ui/wrap';
 const ROWS = [
   ['mireling', 'Mireling', 0, 4, 5, 1, 3, 2, [2, 4], 1 / 32, 'A Mireling slumps out of the reeds.'],
   ['bog_mireling', 'Bog Mireling', 1, 14, 11, 6, 6, 7, [6, 10], 1 / 16, 'A Bog Mireling drags itself from the mud.'],
-  ['barrow_mireling', 'Barrow Mireling', 2, 24, 20, 14, 10, 18, [12, 18], 1 / 16, 'A Barrow Mireling unfolds from the dark.'],
+  ['barrow_mireling', 'Barrow Mireling', 2, 22, 16, 12, 10, 18, [12, 18], 1 / 16, 'A Barrow Mireling unfolds from the dark.'],
 ] as const;
 
 describe('monster table', () => {
@@ -33,17 +33,18 @@ describe('monster table', () => {
       if (m.actions) expect(() => validateActions(m.actions!)).not.toThrow();
     }
   });
-  it('has exactly three monsters', () => {
-    expect(Object.keys(MONSTERS)).toHaveLength(3);
+  it('has the three ordinary monsters and the Warden', () => {
+    expect(Object.keys(MONSTERS)).toEqual(['mireling', 'bog_mireling', 'barrow_mireling', 'barrow_warden']);
   });
 });
 
 describe('monster art', () => {
-  it('each monster compiles at 24x24', () => {
+  it('each monster compiles at its sprite size', () => {
     for (const m of Object.values(MONSTERS)) {
       const out = compilePixelArt(monsterArt(m.sprite, m.palette), PALETTE);
-      expect(out.w).toBe(24);
-      expect(out.h).toBe(24);
+      const size = m.sprite === 'warden' ? 32 : 24;
+      expect(out.w).toBe(size);
+      expect(out.h).toBe(size);
     }
   });
   it('three palettes share rows but differ in colours', () => {
@@ -75,7 +76,7 @@ describe('backdrops', () => {
       expect(art.rows[8]).not.toContain('.');
       for (const row of art.rows.slice(9)) expect(row).not.toContain('.');
     }
-    expect(Object.keys(BACKDROPS).sort()).toEqual(['grass', 'murk']);
+    expect(Object.keys(BACKDROPS).sort()).toEqual(['barrow', 'grass', 'murk']);
   });
   it('throws on unknown id', () => {
     expect(() => backdropArt('nope')).toThrow();

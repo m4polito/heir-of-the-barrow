@@ -8,6 +8,7 @@ import type { PlayerState } from '../src/game/player';
 import { fromSave, parseSave, readSave, saveKey, toSave, writeSave } from '../src/game/save';
 import type { SaveContext, SaveData } from '../src/game/save';
 import type { Dir } from '../src/engine/constants';
+import { PLAY_FRAMES_MAX } from '../src/game/playTime';
 
 const ctx: SaveContext = { items: ITEMS, maps: MAPS };
 const at = { map: 'elder_house', x: 6, y: 4, facing: 'up' as Dir };
@@ -47,6 +48,18 @@ describe('save round trip', () => {
     expect(fromSave(s)).toEqual(p);
     expect({ map: s.map, x: s.x, y: s.y, facing: s.facing }).toEqual(at);
     expect(s.torchSteps).toBe(0);
+  });
+
+  it('carries the torch steps through a save', () => {
+    const p = { ...hero(), torch: 137 };
+    const s = parseSave(JSON.stringify(toSave(p, at)), ctx)!;
+    expect(s.torchSteps).toBe(137);
+    expect(fromSave(s)).toEqual(p);
+  });
+
+  it('a Phase 5 save (torchSteps 0) loads with no torch', () => {
+    const text = JSON.stringify({ ...toSave(hero(), at), torchSteps: 0 });
+    expect(fromSave(parseSave(text, ctx)!).torch).toBe(0);
   });
 
   it('keeps a debug-raised level 5 hero with 0 xp at level 5 stats', () => {
@@ -184,5 +197,52 @@ describe('storage', () => {
     expect(writeSave({ setItem: () => { throw new Error('full'); } }, 'k', goodSave())).toBe(false);
     expect(readSave(null, 'k', ctx)).toBeNull();
     expect(readSave({ getItem: () => { throw new Error('denied'); } }, 'k', ctx)).toBeNull();
+  });
+});
+
+describe('parseSave pack and key entries', () => {
+  const withInv = (inventory: { item: string; count: number }[]) => JSON.stringify({ ...goodSave(), inventory });
+  const club = (n: number) => Array.from({ length: n }, () => ({ item: 'wooden_club', count: 1 }));
+  const page = { item: 'journal_page', count: 1 };
+  it('accepts 8 ordinary entries plus the journal page, through parse and fromSave', () => {
+    const save = parseSave(withInv([...club(8), page]), ctx);
+    expect(save).not.toBeNull();
+    expect(fromSave(save!).inventory.length).toBe(9);
+  });
+  it('rejects 9 ordinary entries', () => {
+    expect(parseSave(withInv(club(9)), ctx)).toBeNull();
+    expect(parseSave(withInv([...club(9), page]), ctx)).toBeNull();
+  });
+  it('rejects 9 key entries', () => {
+    expect(parseSave(withInv(Array.from({ length: 9 }, () => page)), ctx)).toBeNull();
+  });
+});
+
+describe('play time in the save', () => {
+  it('round-trips through toSave, JSON, parseSave and fromSave', () => {
+    const p = { ...hero(), playFrames: 123456 };
+    const s = parseSave(JSON.stringify(toSave(p, at)), ctx)!;
+    expect(s.playFrames).toBe(123456);
+    expect(fromSave(s)).toEqual(p);
+  });
+  it('toSave always writes it', () => {
+    expect(goodSave().playFrames).toBe(0);
+  });
+  it('a save with no playFrames field (every save made before it) loads with 0', () => {
+    const old: Record<string, unknown> = { ...goodSave() };
+    delete old.playFrames;
+    const text = JSON.stringify(old);
+    expect(text).not.toContain('playFrames');
+    const s = parseSave(text, ctx);
+    expect(s).not.toBeNull();
+    expect(fromSave(s!).playFrames).toBe(0);
+  });
+  it.each([-1, 1.5, '7', null, PLAY_FRAMES_MAX + 1])('rejects playFrames %j', (bad) => {
+    expect(parseSave(JSON.stringify({ ...goodSave(), playFrames: bad }), ctx)).toBeNull();
+  });
+  it('accepts 0 and the cap', () => {
+    for (const ok of [0, PLAY_FRAMES_MAX]) {
+      expect(parseSave(JSON.stringify({ ...goodSave(), playFrames: ok }), ctx)?.playFrames).toBe(ok);
+    }
   });
 });

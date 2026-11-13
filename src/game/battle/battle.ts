@@ -1,6 +1,6 @@
 import type { Rng } from '../../engine/rng';
 import { rollEffect } from '../effects';
-import { MonsterBrain } from './ai';
+import { MonsterBrain, validateActions } from './ai';
 import type { Beat } from './beats';
 import type { BattleKit } from './kit';
 import type { MonsterDef } from './monster';
@@ -35,6 +35,7 @@ export class Battle {
   ) {
     this.hp = hero.hp;
     this.mp = hero.mp;
+    if (monster.actions) validateActions(monster.actions);
     this.brain = new MonsterBrain(monster.actions);
     this.mHp = monster.hp;
   }
@@ -103,7 +104,8 @@ export class Battle {
       if (it && this.itemCount(it.id) < 1) throw new Error('cannot act: none left');
       const why = this.refusal(cmd);
       if (why) throw new Error(`cannot act: ${why}`);
-      if ((sp ?? it)!.effect.kind === 'warp') throw new Error('cannot act: not for battle');
+      if (sp && sp.effect.kind !== 'heal' && sp.effect.kind !== 'damage') throw new Error('cannot act: not for battle');
+      if (it && it.effect.kind !== 'heal') throw new Error('cannot act: not for battle');
     }
     if (cmd === 'run') {
       const { agi } = this.hero;
@@ -149,9 +151,23 @@ export class Battle {
 
   private useItem(beats: Beat[], id: string): void {
     const it = this.kit.items.find((x) => x.id === id)!;
-    this.used.push(id);
-    beats.push(this.beat(`You use the ${it.name}.`));
-    this.heroHeal(beats, rollEffect(this.rng, it.effect));
+    const effect = it.effect;
+    switch (effect.kind) {
+      case 'heal':
+        this.used.push(id);
+        beats.push(this.beat(`You use the ${it.name}.`));
+        this.heroHeal(beats, rollEffect(this.rng, effect));
+        return;
+      case 'damage':
+      case 'warp':
+      case 'light':
+      case 'read':
+        throw new Error('cannot act: not for battle');
+      default: {
+        const unreachable: never = effect;
+        throw new Error(`unknown effect: ${JSON.stringify(unreachable)}`);
+      }
+    }
   }
 
   private heroHeal(beats: Beat[], roll: number): void {
@@ -174,7 +190,8 @@ export class Battle {
     this.prize = { xp, gold: this.rng.int(gold[0], gold[1]) };
     this.result = 'won';
     beats.push(this.beat(`The ${m} is defeated.`, { song: 'victory' }));
-    beats.push(this.beat(`You gain ${xp} experience and ${this.prize.gold} gold.`));
+    const { gold: won } = this.prize;
+    beats.push(this.beat(won === 0 ? `You gain ${xp} experience.` : `You gain ${xp} experience and ${won} gold.`));
   }
 
   private fight(beats: Beat[]): void {
@@ -221,7 +238,7 @@ export class Battle {
       beats.push(this.beat(`The ${m} uses ${act.name}!`));
       const n = Math.min(this.rng.int(act.min, act.max), this.monster.hp - this.mHp);
       this.mHp += n;
-      beats.push(this.beat(`The ${m} recovers ${n} HP.`, { sfx: 'heal' }));
+      beats.push(this.beat(`The ${m} recovers ${n} HP.`, { sfx: 'mend' }));
       return;
     }
     beats.push(this.beat(`The ${this.monster.name} attacks!`));

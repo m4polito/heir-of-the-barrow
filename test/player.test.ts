@@ -2,7 +2,7 @@ import { ITEMS } from '../src/data/items';
 import { STORY } from '../src/data/story';
 import { describe, it, expect } from 'vitest';
 import { LEVELS, levelForXp } from '../src/data/levels';
-import { createPlayer, hasFlag, setFlag, applyLevel, applyDeath, settleBattle, spellsKnown, gainXp, xpToNext } from '../src/game/player';
+import { createPlayer, hasFlag, setFlag, clearFlag, applyLevel, applyDeath, settleBattle, spellsKnown, gainXp, xpToNext } from '../src/game/player';
 import { attackOf, defenseOf } from '../src/game/stats';
 import { equip } from '../src/game/inventory';
 
@@ -23,7 +23,7 @@ describe('levels', () => {
 describe('player', () => {
   it('createPlayer', () => {
     const p = createPlayer('Wren', STORY.startingItems);
-    expect(p).toMatchObject({ name: 'Wren', level: 1, hp: 16, maxHp: 16, mp: 0, gold: 40, str: 4, agi: 5, flags: [] });
+    expect(p).toMatchObject({ name: 'Wren', level: 1, hp: 16, maxHp: 16, mp: 0, gold: 40, str: 4, agi: 5, flags: [], torch: 0 });
     expect(p.inventory).toEqual([{ item: 'herb', count: 1 }]);
     expect(p.equipment).toEqual({});
   });
@@ -34,6 +34,13 @@ describe('player', () => {
     expect(p.flags).toEqual([]);
     expect(hasFlag(a, 'f')).toBe(true);
     expect(hasFlag(p, 'f')).toBe(false);
+  });
+  it('clearFlag removes one flag, keeps others, and returns the same player when absent', () => {
+    const p = setFlag(setFlag(createPlayer('x', STORY.startingItems), 'a'), 'b');
+    const q = clearFlag(p, 'a');
+    expect(q.flags).toEqual(['b']);
+    expect(p.flags).toEqual(['a', 'b']);
+    expect(clearFlag(q, 'a')).toBe(q);
   });
   it('applyLevel keeps hp ratio', () => {
     const p = { ...createPlayer('x', STORY.startingItems), hp: 10 };
@@ -82,6 +89,10 @@ describe('applyDeath and settleBattle', () => {
     expect(q.mp).toBe(5);
     expect(q).toMatchObject({ xp: p.xp, level: p.level, inventory: p.inventory, equipment: p.equipment, flags: p.flags });
     expect(p).toEqual(before);
+  });
+  it('applyDeath puts out a lit torch', () => {
+    expect(applyDeath({ ...base(), torch: 36 }).torch).toBe(0);
+    expect(applyDeath({ ...base(), torch: 0 }).torch).toBe(0);
   });
   const end = (hp: number, mp = 0, itemsUsed: readonly string[] = []) => ({ hp, mp, itemsUsed });
   it('settleBattle applies hp and reward', () => {

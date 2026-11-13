@@ -49,3 +49,14 @@ describe('validateActions', () => {
     expect(() => validateActions([A[2]!])).toThrow();
   });
 });
+
+describe('validateActions numeric checks', () => {
+  it('rejects values that are not finite numbers, and a fractional cooldown', () => {
+    expect(() => validateActions([ATTACK, { do: 'blast', name: 'X', min: NaN, max: 8, weight: 1 }])).toThrow();
+    expect(() => validateActions([ATTACK, { do: 'blast', name: 'X', min: 1, max: Infinity, weight: 1 }])).toThrow();
+    expect(() => validateActions([ATTACK, { do: 'mend', name: 'X', min: 1, max: 2, weight: Infinity }])).toThrow();
+    expect(() => validateActions([ATTACK, { do: 'attack', weight: 1, cooldown: NaN }])).toThrow();
+    expect(() => validateActions([ATTACK, { do: 'attack', weight: 1, cooldown: 1.5 }])).toThrow();
+    expect(() => validateActions([ATTACK, { do: 'attack', weight: 1, cooldown: 2 }])).not.toThrow();
+  });
+});

@@ -4,11 +4,12 @@ import { DIALOGS } from '../src/data/dialog/hollowmere';
 import { NPC_SPRITES } from '../src/data/sprites/npcs';
 import { STORY } from '../src/data/story';
 import { TILE_IDS } from '../src/data/tiles';
-import { isWalkable, warpAt, type GameMap } from '../src/game/map';
+import { ITEMS } from '../src/data/items';
+import { isWalkable, warpAt, chestFlag, type GameMap } from '../src/game/map';
 
 const BY_ID: Record<string, GameMap> = MAPS;
 const ALL = Object.entries(BY_ID);
-const INTERIORS = ALL.filter(([id]) => id !== 'hollowmere' && id !== 'marsh');
+const INTERIORS = ALL.filter(([id]) => id !== 'hollowmere' && id !== 'marsh' && !id.startsWith('barrow_'));
 const key = (x: number, y: number) => `${x},${y}`;
 
 function reach(map: GameMap, sx: number, sy: number): Set<string> {
@@ -28,8 +29,8 @@ function reach(map: GameMap, sx: number, sy: number): Set<string> {
 }
 
 describe('map registry', () => {
-  it('has all six maps keyed by id', () => {
-    expect(Object.keys(MAPS).sort()).toEqual(['elder_house', 'forge', 'hollowmere', 'inn', 'marsh', 'shop']);
+  it('has all eight maps keyed by id', () => {
+    expect(Object.keys(MAPS).sort()).toEqual(['barrow_1', 'barrow_2', 'elder_house', 'forge', 'hollowmere', 'inn', 'marsh', 'shop']);
     for (const [id, map] of ALL) expect(map.id).toBe(id);
   });
   it('every warp targets an existing map and entry', () => {
@@ -56,7 +57,7 @@ describe('interiors', () => {
     expect(reached.size).toBe(walkable);
     for (const e of Object.values(map.entry)) expect(reached.has(key(e.x, e.y))).toBe(true);
   });
-  it('every door-tile warp is walkable, every door tile has a warp, and only gate and town warps are off doors', () => {
+  it('every door-tile warp is walkable, every door tile has a warp, and only the gate, the town and the Barrow warps are off doors', () => {
     const offDoor: string[] = [];
     for (const [id, map] of ALL) {
       const doors = new Set<string>();
@@ -72,7 +73,7 @@ describe('interiors', () => {
       }
       for (const d of doors) expect(warps.has(d), `${id} door ${d} has warp`).toBe(true);
     }
-    expect(offDoor.sort()).toEqual(['hollowmere@11,19', 'hollowmere@12,19', 'marsh@12,20']);
+    expect(offDoor.sort()).toEqual(['barrow_1@20,2', 'barrow_1@3,22', 'barrow_2@20,2', 'hollowmere@11,19', 'hollowmere@12,19', 'marsh@12,20', 'marsh@40,6']);
   });
   it('hollowmere has six warps: four doors and the two-tile south gate', () => {
     expect(MAPS.hollowmere.triggers.filter((t) => t.kind === 'warp').length).toBe(6);
@@ -170,5 +171,32 @@ describe('story-free engine', () => {
   it('save.ts does not import nameEntry (the name grid lives in a leaf module)', () => {
     const [, text] = files.find(([f]) => f.endsWith('/game/save.ts'))!;
     expect(/from\s*['"]\.\/nameEntry['"]/.test(text)).toBe(false);
+  });
+});
+
+describe('chests', () => {
+  const chests = ALL.flatMap(([, map]) => map.triggers.flatMap((t) => (t.kind === 'chest' ? [{ map, t }] : [])));
+  it('every chest trigger sits on a chest tile and holds exactly one of gold and an item', () => {
+    for (const { map, t } of chests) {
+      expect(map.tiles[t.y * map.width + t.x], t.id).toBe(TILE_IDS.chest);
+      expect(Number(t.gold !== undefined) + Number(t.item !== undefined), t.id).toBe(1);
+      if (t.gold !== undefined) expect(t.gold, t.id).toBeGreaterThan(0);
+      if (t.item !== undefined) expect(Object.keys(ITEMS), t.id).toContain(t.item);
+    }
+  });
+  it('every chest tile has a trigger', () => {
+    for (const [id, map] of ALL)
+      map.tiles.forEach((tile, i) => {
+        if (tile !== TILE_IDS.chest) return;
+        const x = i % map.width, y = Math.floor(i / map.width);
+        expect(chests.some((c) => c.map === map && c.t.x === x && c.t.y === y), `${id} ${x},${y}`).toBe(true);
+      });
+  });
+  it('chest ids are unique and short enough to save', () => {
+    const ids = chests.map((c) => c.t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) expect(id.length).toBeLessThanOrEqual(26);
+    expect(ids).toContain('copse');
+    expect(chestFlag('copse')).toBe('chest_copse');
   });
 });

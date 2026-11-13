@@ -15,6 +15,8 @@ export interface MonsterDef {
   dodge: number;
   runFactor: number;
   boss?: boolean;
+  /** Song id played in battle; defaults to 'battle'. */
+  song?: string;
   actions?: MonsterAction[];
 }
 
