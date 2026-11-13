@@ -9,6 +9,19 @@ import { sellRows } from '../src/game/shop';
 const empty = (): PlayerState => ({ ...createPlayer('x', STORY.startingItems), inventory: [] });
 
 describe('inventory', () => {
+  it('a key item already held is not added twice, and both calls succeed', () => {
+    const once = addItem(ITEMS, empty(), 'journal_page');
+    const twice = addItem(ITEMS, once.player, 'journal_page');
+    expect(once.ok && twice.ok).toBe(true);
+    expect(twice.player.inventory).toEqual([{ item: 'journal_page', count: 1 }]);
+  });
+
+  it('an ordinary stack-1 item added twice makes two entries', () => {
+    const r = addItem(ITEMS, addItem(ITEMS, empty(), 'wooden_club').player, 'wooden_club');
+    expect(r.ok).toBe(true);
+    expect(r.player.inventory).toHaveLength(2);
+  });
+
   it('stacks 7 herbs as [6, 1]', () => {
     const r = addItem(ITEMS, empty(), 'herb', 7);
     expect(r.ok).toBe(true);

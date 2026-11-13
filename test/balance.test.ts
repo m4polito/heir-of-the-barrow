@@ -104,13 +104,20 @@ describe('the whole trip: four Barrow fights, then the Warden', () => {
     );
 
   it('level 6 usually crosses the Barrow and wins', () => {
-    expect(trip(6, 31).winRate).toBeGreaterThanOrEqual(0.75);
+    const r = trip(6, 31);
+    expect(r.winRate).toBeGreaterThanOrEqual(0.75);
+    expect(r.reachRate).toBeGreaterThanOrEqual(r.winRate);
+    expect(r.reachRate).toBeGreaterThanOrEqual(0.9);
   }, 60000);
   it('level 5 rarely does', () => {
-    expect(trip(5, 32).winRate).toBeLessThan(0.3);
+    const r = trip(5, 32);
+    expect(r.winRate).toBeLessThan(0.3);
+    expect(r.reachRate).toBeGreaterThanOrEqual(r.winRate);
   }, 60000);
   it('level 7 almost always does', () => {
-    expect(trip(7, 33).winRate).toBeGreaterThanOrEqual(0.88);
+    const r = trip(7, 33);
+    expect(r.winRate).toBeGreaterThanOrEqual(0.88);
+    expect(r.reachRate).toBeGreaterThanOrEqual(r.winRate);
   }, 60000);
 });
 

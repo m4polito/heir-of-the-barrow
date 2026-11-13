@@ -18,6 +18,7 @@ import { monsterArt } from '../src/data/sprites/monsters';
 import { validateActions } from '../src/game/battle/ai';
 import { applyLevel, createPlayer, hasFlag } from '../src/game/player';
 import { addItem } from '../src/game/inventory';
+import { sellPrice } from '../src/game/shop';
 import type { Trigger } from '../src/game/map';
 
 const FLAG = 'warden_defeated';
@@ -119,7 +120,7 @@ describe('the Warden guards its tile', () => {
     });
     expect(flagWhenDialogOpened).toBe(true);
     const after = t.events.slice(mark).filter((e) => e.startsWith('song:'));
-    expect(after[0]).toBe('song:victory');
+    expect(after.slice(0, 2)).toEqual(['song:victory', 'song:levelup']);
     expect(after.filter((e) => e === 'song:marsh')).toHaveLength(1);
     expect(after[after.length - 1]).toBe('song:marsh');
     expect(t.game.player.level).toBeGreaterThan(level);
@@ -252,6 +253,7 @@ describe('reading the journal page', () => {
   it('opens its page, keeps it, sets the flag; it sells for nothing', () => {
     const t = setup({ patch: { inventory: [{ item: 'journal_page', count: 1 }] } });
     expect(ITEMS.journal_page.price).toBe(0);
+    expect(sellPrice(ITEMS.journal_page)).toBe(0);
     t.stack.push(new ItemsState(t.game));
     t.tick('confirm');
     expect(t.stack.top).toBeInstanceOf(DialogState);

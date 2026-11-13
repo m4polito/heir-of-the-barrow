@@ -84,11 +84,14 @@ export interface ExpeditionOpts {
   bossPolicy: Policy;
 }
 
-/** Between fights: cast the heal spell while at least 13 HP are missing and MP allows. */
+/** The HP gap at which the simulated hero casts the heal spell between fights. */
+const REST_HEAL_AT = 13;
+
+/** Between fights: cast the heal spell while at least REST_HEAL_AT HP are missing and MP allows. */
 function restBetweenFights(rng: Rng, p: PlayerState): PlayerState {
   const heal = Object.values(SPELLS).find((s) => s.effect.kind === 'heal' && spellsKnown(p.level).includes(s.id));
   if (!heal) return p;
-  while (p.maxHp - p.hp >= 13 && p.mp >= heal.mp) {
+  while (p.maxHp - p.hp >= REST_HEAL_AT && p.mp >= heal.mp) {
     const r = castInField(rng, SPELLS, p, heal.id);
     if (!r.ok) break;
     p = r.player;

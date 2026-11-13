@@ -56,6 +56,10 @@ export class ExploreState implements State {
   private grace = ENCOUNTER_GRACE;
   /** Frames until the next bump may sound; 0 means the next refused step sounds at once. */
   private bumpWait = 0;
+  /** Set when a warp places the hero: a held key may not carry the hero straight back onto a warp tile. */
+  private arrivalLock = false;
+  /** Set when this update's refused step was the silent arrival-lock refusal, which is not a bump. */
+  private lockRefused = false;
   readonly npcs: NpcState[];
 
   constructor(
@@ -113,6 +117,7 @@ export class ExploreState implements State {
           this.playMapSong();
           this.grace = ENCOUNTER_GRACE;
           this.enteredMap = true;
+          this.arrivalLock = true;
         },
       }),
     );
@@ -323,10 +328,19 @@ export class ExploreState implements State {
     const held = (a: Dir) => input.held(a);
     const map = this._map;
     const before = this._hero;
+    if (this.arrivalLock && !(['up', 'down', 'left', 'right'] as const).some(held)) this.arrivalLock = false;
+    this.lockRefused = false;
     this._hero = updateHero(
       this._hero,
       held,
-      (x, y) => isWalkable(map, x, y) && !this.npcAt(x, y),
+      (x, y) => {
+        if (!isWalkable(map, x, y) || this.npcAt(x, y)) return false;
+        if (this.arrivalLock && warpAt(map, x, y)) {
+          this.lockRefused = true;
+          return false;
+        }
+        return true;
+      },
       (x, y) => this.onStep(x, y),
     );
     this.updateBump(input, before);
@@ -375,7 +389,7 @@ export class ExploreState implements State {
     const anyHeld = (['up', 'down', 'left', 'right'] as const).some((d) => input.held(d));
     const hero = this._hero;
     const stepping = hero.stepFrame > 0 || hero.x !== before.x || hero.y !== before.y;
-    if (!anyHeld || stepping) {
+    if (!anyHeld || stepping || this.lockRefused) {
       this.bumpWait = 0;
       return;
     }

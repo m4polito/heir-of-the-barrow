@@ -23,6 +23,7 @@ export function addItem(items: ItemTable, p: PlayerState, id: string, n = 1): In
   const def = items[id];
   if (!def) return { player: p, ok: false };
   const cap = def.stack;
+  if (def.kind === 'key' && p.inventory.some((s) => s.item === id && s.count >= cap)) return { player: p, ok: true };
   const inv: InventorySlot[] = p.inventory.map((s) => ({ ...s }));
   let left = n;
   for (const s of inv) {

@@ -53,7 +53,7 @@ export const BARROW_1: GameMap = {
   },
   npcs: [],
   triggers: [
-    { kind: 'warp', x: 3, y: 22, to: 'marsh', entry: 'barrow' },
+    { kind: 'warp', x: 3, y: 22, to: 'marsh', entry: 'barrow', sfx: 'stairs' },
     { kind: 'warp', x: 20, y: 2, to: 'barrow_2', entry: 'stairs', sfx: 'stairs' },
     { kind: 'chest', x: 2, y: 13, id: 'barrow_gold', gold: 90 },
     { kind: 'chest', x: 22, y: 8, id: 'barrow_torch', item: 'torch' },

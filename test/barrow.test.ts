@@ -158,6 +158,19 @@ describe('the Barrow floors', () => {
     });
   });
 
+  it('every warp on a stair tile plays the stairs sound', () => {
+    let seen = 0;
+    for (const m of Object.values(BY_ID))
+      for (const t of m.triggers) {
+        if (t.kind !== 'warp') continue;
+        const id = tileId(m, t.x, t.y);
+        if (id !== TILE_IDS.stairsUp && id !== TILE_IDS.stairsDown) continue;
+        seen++;
+        expect(t.sfx, `${m.id} ${t.x},${t.y}`).toBe('stairs');
+      }
+    expect(seen).toBeGreaterThanOrEqual(3);
+  });
+
   it.each(FLOORS)('%s: every walkable tile is reachable from its entries', (_id, m) => {
     const reached = dist(m, entries(m));
     let walkable = 0;
