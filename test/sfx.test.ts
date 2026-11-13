@@ -154,3 +154,16 @@ describe('dungeon effects', () => {
         if (other !== id) expect(JSON.stringify(steps), `${id} vs ${other}`).not.toBe(JSON.stringify(SFX[id]));
   });
 });
+
+describe('torch effect', () => {
+  it('is the pinned phrase and differs from every other effect', () => {
+    expect(SFX.torch).toEqual([
+      { ch: 'noise', preset: 'h', frames: 2, vol: 8 },
+      { ch: 'p1', note: 'D4', duty: 0.125, frames: 2, vol: 7 },
+      { ch: 'p1', note: 'A4', duty: 0.125, frames: 2, vol: 7 },
+      { ch: 'p1', note: 'F#5', duty: 0.125, frames: 6, vol: 7 },
+    ]);
+    for (const [other, steps] of Object.entries(SFX))
+      if (other !== 'torch') expect(JSON.stringify(steps), `torch vs ${other}`).not.toBe(JSON.stringify(SFX.torch));
+  });
+});

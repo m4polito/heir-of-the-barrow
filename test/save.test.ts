@@ -49,6 +49,18 @@ describe('save round trip', () => {
     expect(s.torchSteps).toBe(0);
   });
 
+  it('carries the torch steps through a save', () => {
+    const p = { ...hero(), torch: 137 };
+    const s = parseSave(JSON.stringify(toSave(p, at)), ctx)!;
+    expect(s.torchSteps).toBe(137);
+    expect(fromSave(s)).toEqual(p);
+  });
+
+  it('a Phase 5 save (torchSteps 0) loads with no torch', () => {
+    const text = JSON.stringify({ ...toSave(hero(), at), torchSteps: 0 });
+    expect(fromSave(parseSave(text, ctx)!).torch).toBe(0);
+  });
+
   it('keeps a debug-raised level 5 hero with 0 xp at level 5 stats', () => {
     const p: PlayerState = { ...applyLevel(hero(), 5), xp: 0 };
     const q = fromSave(parseSave(JSON.stringify(toSave(p, at)), ctx)!);

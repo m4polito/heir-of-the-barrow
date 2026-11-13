@@ -102,6 +102,16 @@ describe('menu from explore', () => {
   });
 });
 
+/** The text the top state draws right now. */
+function shownText(game: ReturnType<typeof setup>['game'], stack: StateStack): string {
+  const drawn: string[] = [];
+  (game.font as unknown as { drawText: (c: unknown, t: string) => void }).drawText = (_c, t) => void drawn.push(t);
+  const ctx = new Proxy({}, { get: () => () => {} }) as unknown as CanvasRenderingContext2D;
+  for (let i = 0; i < 60; i++) stack.update(keys()); // let the text print out
+  stack.top!.render(ctx, 1);
+  return drawn.join(' ');
+}
+
 /** Confirm through a dialog until it is gone. */
 function dismiss(stack: StateStack) {
   for (let i = 0; i < 200 && stack.top instanceof DialogState; i++) stack.update(keys('confirm'));
@@ -152,6 +162,42 @@ describe('items and equip', () => {
     expect(playSfx).toHaveBeenCalledWith('error');
     expect(game.player.inventory.some((s) => s.item === 'torch')).toBe(true);
     expect(game.player.hp).toBe(1);
+  });
+
+  describe('the Torch', () => {
+    const withTorch = (dark: boolean) => {
+      const t = setup();
+      t.game.player = addItem(ITEMS, t.game.player, 'torch').player;
+      t.game.fieldCtx = () => ({ dark });
+      const playSfx = vi.spyOn(t.game.audio, 'playSfx');
+      const items = new ItemsState(t.game);
+      t.stack.push(items);
+      items.update(keys('down'));
+      items.update(keys('confirm'));
+      const count = () => t.game.player.inventory.find((s) => s.item === 'torch')?.count ?? 0;
+      return { ...t, playSfx, count };
+    };
+    it('lights on a dark map: text, sound, one fewer', () => {
+      const t = withTorch(true);
+      expect(t.stack.top).toBeInstanceOf(DialogState);
+      expect(t.playSfx).toHaveBeenCalledWith('torch');
+      expect(t.game.player.torch).toBe(200);
+      expect(t.count()).toBe(0);
+      expect(shownText(t.game, t.stack)).toContain('You light the Torch.');
+    });
+    it('is refused on a lit map with an error sound', () => {
+      const t = withTorch(false);
+      expect(t.stack.top).toBeInstanceOf(DialogState);
+      expect(t.playSfx).toHaveBeenCalledWith('error');
+      expect(t.playSfx).not.toHaveBeenCalledWith('torch');
+      expect(t.game.player.torch).toBe(0);
+      expect(t.count()).toBe(1);
+      expect(shownText(t.game, t.stack)).toContain('There is no need for light here.');
+    });
+    it('the map screen reports its own map as lit or dark', () => {
+      const t = setup();
+      expect(t.game.fieldCtx!()).toEqual({ dark: false });
+    });
   });
 
   it('using the last of two stacks leaves the cursor on a valid row', () => {

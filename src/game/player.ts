@@ -22,6 +22,8 @@ export interface PlayerState {
   equipment: Partial<Record<EquipSlot, string>>;
   inventory: InventorySlot[];
   flags: string[];
+  /** Steps of torchlight left. */
+  torch: number;
 }
 
 export function createPlayer(name: string, startingItems: readonly { item: string; count: number }[]): PlayerState {
@@ -40,6 +42,7 @@ export function createPlayer(name: string, startingItems: readonly { item: strin
     equipment: {},
     inventory: startingItems.map((s) => ({ item: s.item, count: s.count })),
     flags: [],
+    torch: 0,
   };
 }
 

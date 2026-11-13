@@ -23,7 +23,7 @@ describe('levels', () => {
 describe('player', () => {
   it('createPlayer', () => {
     const p = createPlayer('Wren', STORY.startingItems);
-    expect(p).toMatchObject({ name: 'Wren', level: 1, hp: 16, maxHp: 16, mp: 0, gold: 40, str: 4, agi: 5, flags: [] });
+    expect(p).toMatchObject({ name: 'Wren', level: 1, hp: 16, maxHp: 16, mp: 0, gold: 40, str: 4, agi: 5, flags: [], torch: 0 });
     expect(p.inventory).toEqual([{ item: 'herb', count: 1 }]);
     expect(p.equipment).toEqual({});
   });

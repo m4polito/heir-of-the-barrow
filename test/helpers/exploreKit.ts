@@ -7,7 +7,7 @@ import { createRng } from '../../src/engine/rng';
 import { ExploreState } from '../../src/game/explore';
 import { createGame } from '../../src/game/game';
 import { createPlayer, type PlayerState } from '../../src/game/player';
-import { parseAsciiMap, type GameMap, type Trigger, type NpcPlacement } from '../../src/game/map';
+import { parseAsciiMap, type GameMap, type Trigger, type NpcPlacement, type EncounterTable } from '../../src/game/map';
 import type { DialogScript } from '../../src/game/dialog/script';
 import type { Dir } from '../../src/engine/constants';
 import { ITEMS } from '../../src/data/items';
@@ -52,8 +52,13 @@ const LEGEND = {
   '~': TILE_IDS.water,
 };
 
-export function roomMap(triggers: Trigger[], npcs: NpcPlacement[] = []): GameMap {
+export function roomMap(
+  triggers: Trigger[],
+  npcs: NpcPlacement[] = [],
+  extra: { dark?: boolean; encounters?: EncounterTable } = {},
+): GameMap {
   return {
+    ...extra,
     id: 'room',
     ...parseAsciiMap(ROWS, LEGEND),
     music: 'marsh',
@@ -71,10 +76,12 @@ export function setupRoom(opts: {
   dialogs?: Record<string, DialogScript>;
   extraMaps?: Record<string, GameMap>;
   sprites?: { get(art: PixelArt): unknown };
+  dark?: boolean;
+  encounters?: EncounterTable;
 }) {
   const stack = new StateStack();
   const sounds: string[] = [];
-  const room = roomMap(opts.triggers ?? [], opts.npcs);
+  const room = roomMap(opts.triggers ?? [], opts.npcs, { dark: opts.dark, encounters: opts.encounters });
   const game = createGame({
     stack,
     input: {} as Input,

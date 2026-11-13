@@ -21,7 +21,8 @@ export type SfxId =
   | 'save'
   | 'bump'
   | 'stairs'
-  | 'chest';
+  | 'chest'
+  | 'torch';
 
 /** `frames` are 60 fps frames; a step lasts frames / 60 seconds. */
 export interface SfxStep {
@@ -94,5 +95,6 @@ export const SFX: Record<SfxId, SfxStep[]> = {
   ],
   bump: [{ ch: 'tri', note: 'G2', frames: 3, vol: 10 }, { ch: 'tri', note: 'D2', frames: 3, vol: 10 }],
   stairs: [p1('E4', 3, 8, 0.5), p1('C4', 3, 8, 0.5), p1('A3', 3, 8, 0.5), p1('F3', 5, 8, 0.5)],
+  torch: [{ ch: 'noise', preset: 'h', frames: 2, vol: 8 }, p1('D4', 2, 7, 0.125), p1('A4', 2, 7, 0.125), p1('F#5', 6, 7, 0.125)],
   chest: [{ ch: 'noise', preset: 'k', frames: 1, vol: 9 }, p1('G5', 2, 8, 0.25), p1('D6', 6, 8, 0.25)],
 };

@@ -53,7 +53,7 @@ export class ItemsState implements State {
           }),
         );
       } else {
-        showFieldResult(this.game, useItemInField(this.game.rng, this.game.items, player, slot.item));
+        showFieldResult(this.game, useItemInField(this.game.rng, this.game.items, player, slot.item, this.game.fieldCtx?.() ?? { dark: false }));
       }
     } else if (input.pressed('cancel')) {
       audio.playSfx('menuCancel');

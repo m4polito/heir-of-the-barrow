@@ -104,7 +104,7 @@ export class Battle {
       if (it && this.itemCount(it.id) < 1) throw new Error('cannot act: none left');
       const why = this.refusal(cmd);
       if (why) throw new Error(`cannot act: ${why}`);
-      if (sp?.effect.kind === 'warp') throw new Error('cannot act: not for battle');
+      if (sp && sp.effect.kind !== 'heal' && sp.effect.kind !== 'damage') throw new Error('cannot act: not for battle');
       if (it && it.effect.kind !== 'heal') throw new Error('cannot act: not for battle');
     }
     if (cmd === 'run') {
@@ -160,6 +160,8 @@ export class Battle {
         return;
       case 'damage':
       case 'warp':
+      case 'light':
+      case 'read':
         throw new Error('cannot act: not for battle');
       default: {
         const unreachable: never = effect;

@@ -186,6 +186,7 @@ describe('warp sounds', () => {
       extraMaps: { other },
     });
     t.hold(12, 'up');
+    expect(t.count('bump')).toBe(0); // the frame a warp starts, with the direction still held
     return t.sounds.filter((s) => s === 'stairs' || s === 'door');
   };
   it('plays the trigger sfx', () => {

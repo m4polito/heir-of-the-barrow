@@ -48,10 +48,12 @@ export interface Game {
   player: PlayerState;
   debug: { noEncounters: boolean };
   debugOpen?: () => void;
+  /** Set by the map screen: facts about the current map that field items depend on. */
+  fieldCtx?: () => { dark: boolean };
 }
 
 export function createGame(
-  deps: Omit<Game, 'player' | 'debug' | 'debugOpen'> & { player: PlayerState },
+  deps: Omit<Game, 'player' | 'debug' | 'debugOpen' | 'fieldCtx'> & { player: PlayerState },
 ): Game {
   return { ...deps, debug: { noEncounters: false } };
 }

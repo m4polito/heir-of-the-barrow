@@ -18,6 +18,7 @@ import { toSave, saveKey, writeSave } from './save';
 import { setFlag, hasFlag, applyDeath, GOLD_MAX } from './player';
 import { addItem } from './inventory';
 import { encounterStep, ENCOUNTER_GRACE } from './encounter';
+import { lightRadius, darkRects, TORCH_RADIUS } from './light';
 import { backdropArt } from '../data/sprites/backdrops';
 import { BattleState } from './battle/battleState';
 import type { BattleOutcome } from './battle/battle';
@@ -86,7 +87,13 @@ export class ExploreState implements State {
     return this._map.id;
   }
 
+  /** Tiles of light around the hero, or null on a map that is not dark. */
+  get lightRadius(): number | null {
+    return lightRadius(this._map.dark === true, this.game.player.torch, TORCH_RADIUS);
+  }
+
   enter(): void {
+    this.game.fieldCtx = () => ({ dark: this._map.dark === true });
     this.playMapSong();
   }
 
@@ -311,14 +318,7 @@ export class ExploreState implements State {
       this._hero,
       held,
       (x, y) => isWalkable(map, x, y) && !this.npcAt(x, y),
-      (x, y) => {
-        const w = warpAt(map, x, y);
-        if (w) {
-          this.warpTo(w.to, w.entry, w.sfx);
-          return true;
-        }
-        return this.rollEncounter(x, y);
-      },
+      (x, y) => this.onStep(x, y),
     );
     this.updateBump(input, before);
     for (let i = 0; i < this.npcs.length; i++) {
@@ -333,6 +333,25 @@ export class ExploreState implements State {
           !this.reserved(x, y),
       );
     }
+  }
+
+  /** A step has completed: burn the torch, then warp or roll for a battle. Returns true if something took over. */
+  private onStep(x: number, y: number): boolean {
+    const { game } = this;
+    const burned = this._map.dark === true && game.player.torch > 0;
+    if (burned) game.player = { ...game.player, torch: game.player.torch - 1 };
+    const w = warpAt(this._map, x, y);
+    let took = false;
+    if (w) {
+      this.warpTo(w.to, w.entry, w.sfx);
+      took = true;
+    } else {
+      took = this.rollEncounter(x, y);
+    }
+    if (burned && game.player.torch === 0 && !took && game.stack.top === this) {
+      this.showLines(['Your torch gutters out.']);
+    }
+    return took;
   }
 
   /** A thud when a held direction is refused: at once, then every BUMP_REPEAT frames. */
@@ -404,7 +423,16 @@ export class ExploreState implements State {
         ctx.drawImage(sprites.get(HERO_SPRITES[this._hero.facing][this._hero.walkFrame]), hx - ox, hy - oy),
     });
     items.sort((a, b) => a.y - b.y || Number(a.hero) - Number(b.hero));
-    for (const it of items) it.draw();
+    const radius = this.lightRadius;
+    if (radius === null) {
+      for (const it of items) it.draw();
+    } else {
+      // Tiles and villagers, then the dark over them, then the hero on top of it.
+      for (const it of items) if (!it.hero) it.draw();
+      ctx.fillStyle = '#000';
+      for (const r of darkRects(hx - ox, hy - oy, radius)) ctx.fillRect(r.x, r.y, r.w, r.h);
+      for (const it of items) if (it.hero) it.draw();
+    }
     if (this.game.debug.noEncounters) this.game.font.drawText(ctx, 'ENC OFF', 192, 8);
   }
 }

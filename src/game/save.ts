@@ -60,7 +60,7 @@ export function toSave(
     x: at.x,
     y: at.y,
     facing: at.facing,
-    torchSteps: 0,
+    torchSteps: p.torch,
   };
 }
 
@@ -80,6 +80,7 @@ export function fromSave(s: SaveData): PlayerState {
     equipment: { ...s.equipment },
     inventory: s.inventory.map((i) => ({ item: i.item, count: i.count })),
     flags: [...s.flags],
+    torch: s.torchSteps,
   };
 }
 

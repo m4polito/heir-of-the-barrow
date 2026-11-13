@@ -54,15 +54,13 @@ describe('bump', () => {
 
   it('plays on the first refused update after a successful step', () => {
     const t = setupRoom({ pos: { x: 4, y: 4, facing: 'up' } });
-    // (5,4) is open, (6,4) is wall: one step, then the refusal
-    let steps = 0;
-    for (let i = 0; i < 30 && t.count('bump') === 0; i++) {
-      t.hold(1, 'right');
-      steps++;
-    }
+    // (5,4) is open, (6,4) is wall: the step takes 8 updates (1 to start, 7 more),
+    // the 9th update completes it and is refused at once, so the bump is the 9th update's
+    t.hold(8, 'right');
+    expect(t.count('bump')).toBe(0);
+    t.hold(1, 'right');
     expect(t.explore.hero.x).toBe(5);
     expect(t.count('bump')).toBe(1);
-    expect(steps).toBeLessThanOrEqual(9);
   });
 
   it('is silent while a dialog is on top', () => {
