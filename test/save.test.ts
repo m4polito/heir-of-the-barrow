@@ -8,6 +8,7 @@ import type { PlayerState } from '../src/game/player';
 import { fromSave, parseSave, readSave, saveKey, toSave, writeSave } from '../src/game/save';
 import type { SaveContext, SaveData } from '../src/game/save';
 import type { Dir } from '../src/engine/constants';
+import { PLAY_FRAMES_MAX } from '../src/game/playTime';
 
 const ctx: SaveContext = { items: ITEMS, maps: MAPS };
 const at = { map: 'elder_house', x: 6, y: 4, facing: 'up' as Dir };
@@ -214,5 +215,34 @@ describe('parseSave pack and key entries', () => {
   });
   it('rejects 9 key entries', () => {
     expect(parseSave(withInv(Array.from({ length: 9 }, () => page)), ctx)).toBeNull();
+  });
+});
+
+describe('play time in the save', () => {
+  it('round-trips through toSave, JSON, parseSave and fromSave', () => {
+    const p = { ...hero(), playFrames: 123456 };
+    const s = parseSave(JSON.stringify(toSave(p, at)), ctx)!;
+    expect(s.playFrames).toBe(123456);
+    expect(fromSave(s)).toEqual(p);
+  });
+  it('toSave always writes it', () => {
+    expect(goodSave().playFrames).toBe(0);
+  });
+  it('a save with no playFrames field (every save made before it) loads with 0', () => {
+    const old: Record<string, unknown> = { ...goodSave() };
+    delete old.playFrames;
+    const text = JSON.stringify(old);
+    expect(text).not.toContain('playFrames');
+    const s = parseSave(text, ctx);
+    expect(s).not.toBeNull();
+    expect(fromSave(s!).playFrames).toBe(0);
+  });
+  it.each([-1, 1.5, '7', null, PLAY_FRAMES_MAX + 1])('rejects playFrames %j', (bad) => {
+    expect(parseSave(JSON.stringify({ ...goodSave(), playFrames: bad }), ctx)).toBeNull();
+  });
+  it('accepts 0 and the cap', () => {
+    for (const ok of [0, PLAY_FRAMES_MAX]) {
+      expect(parseSave(JSON.stringify({ ...goodSave(), playFrames: ok }), ctx)?.playFrames).toBe(ok);
+    }
   });
 });

@@ -6,6 +6,7 @@ import { INVENTORY_SLOTS, KEY_ITEM_SLOTS } from './inventory';
 import type { ItemTable } from './items';
 import { isWalkable } from './map';
 import type { GameMap } from './map';
+import { PLAY_FRAMES_MAX } from './playTime';
 import { NAME_GRID, NAME_MAX } from './nameGrid';
 
 export const SAVE_VERSION = 1;
@@ -34,6 +35,8 @@ export interface SaveData {
   y: number;
   facing: Dir;
   torchSteps: number;
+  /** Absent in saves made before play time was counted; loads as 0. */
+  playFrames?: number;
 }
 
 export interface SaveContext {
@@ -61,6 +64,7 @@ export function toSave(
     y: at.y,
     facing: at.facing,
     torchSteps: p.torch,
+    playFrames: p.playFrames,
   };
 }
 
@@ -81,6 +85,7 @@ export function fromSave(s: SaveData): PlayerState {
     inventory: s.inventory.map((i) => ({ item: i.item, count: i.count })),
     flags: [...s.flags],
     torch: s.torchSteps,
+    playFrames: s.playFrames ?? 0,
   };
 }
 
@@ -117,6 +122,8 @@ function validate(raw: unknown, ctx: SaveContext): SaveData | null {
   if (!isInt(xp, 0, XP_MAX) || !isInt(gold, 0, GOLD_MAX)) return null;
   if (!isInt(hp, 1, 65535) || !isInt(mp, 0, 65535)) return null;
   if (!isInt(torchSteps, 0, TORCH_STEPS_MAX)) return null;
+  const playFrames: unknown = has(raw, 'playFrames') ? raw.playFrames : 0;
+  if (!isInt(playFrames, 0, PLAY_FRAMES_MAX)) return null;
 
   const equipment: Partial<Record<EquipSlot, string>> = {};
   if (!isRecord(raw.equipment)) return null;
@@ -166,6 +173,7 @@ function validate(raw: unknown, ctx: SaveContext): SaveData | null {
     y,
     facing: facing as Dir,
     torchSteps,
+    playFrames,
   };
 }
 

@@ -1,4 +1,5 @@
 import type { ItemTable } from './items';
+import { formatPlayTime } from './playTime';
 import { xpToNext, type PlayerState } from './player';
 
 export function attackOf(items: ItemTable, p: PlayerState): number {
@@ -25,5 +26,6 @@ export function statusLines(items: ItemTable, p: PlayerState): string[] {
     'ATK  ' + attackOf(items, p),
     'DEF  ' + defenseOf(items, p),
     'NEXT ' + (xpToNext(p) ?? '-'),
+    'TIME ' + formatPlayTime(p.playFrames),
   ];
 }

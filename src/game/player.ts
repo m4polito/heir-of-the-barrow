@@ -24,6 +24,8 @@ export interface PlayerState {
   flags: string[];
   /** Steps of torchlight left. */
   torch: number;
+  /** Whole 60 fps update steps played; see playTime.ts. */
+  playFrames: number;
 }
 
 export function createPlayer(name: string, startingItems: readonly { item: string; count: number }[]): PlayerState {
@@ -43,6 +45,7 @@ export function createPlayer(name: string, startingItems: readonly { item: strin
     inventory: startingItems.map((s) => ({ item: s.item, count: s.count })),
     flags: [],
     torch: 0,
+    playFrames: 0,
   };
 }
 
