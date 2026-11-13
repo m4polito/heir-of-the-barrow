@@ -282,3 +282,119 @@ describe('INN_SONG', () => {
     }
   });
 });
+
+describe('barrow and warden', () => {
+  const soundedAt = (rows: (string | null)[]) =>
+    rows.map((c, i) => [i, c] as const).filter(([, c]) => c !== null && c !== 'off') as [number, string][];
+  const tick = (rows: (string | null)[]) => rows.map((c, i) => [i, c] as const).filter(([, c]) => c !== null);
+  const byChannel = (song: (typeof SONGS)['barrow'], ch: string) => song.tracks.find((t) => t.channel === ch)!;
+
+  for (const id of ['barrow', 'warden'] as const) {
+    it(`${id} is a valid 128-row song looping from row 0`, () => {
+      const song = SONGS[id];
+      expect(() => validateSong(song)).not.toThrow();
+      expect(song.id).toBe(id);
+      expect(song.loopFrom).toBe(0);
+      expect(song.loop).not.toBe(false);
+      for (const t of song.tracks) expect(t.rows.length).toBe(128);
+    });
+  }
+
+  it('barrow tempo and voices', () => {
+    expect(SONGS.barrow.tempo).toBe(60);
+    expect(pinned(SONGS.barrow)).toEqual([
+      ['p1', 0.25, 6],
+      ['p2', 0.125, 4],
+      ['tri', undefined, expect.any(Number)],
+      ['noise', undefined, expect.any(Number)],
+    ]);
+  });
+
+  it('barrow triangle drone sounds only D2 (bars 1-4, 7-8) and C2 (bars 5-6)', () => {
+    const tri = byChannel(SONGS.barrow, 'tri').rows;
+    const notes = soundedAt(tri);
+    for (const [row, n] of notes) {
+      const bar = Math.floor(row / 16);
+      expect(n, `row ${row}`).toBe(bar === 4 || bar === 5 ? 'C2' : 'D2');
+    }
+    expect(new Set(notes.map(([, n]) => n))).toEqual(new Set(['D2', 'C2']));
+  });
+
+  it('barrow pulse 1 sounds only in bars 2, 4 and 6 with the pinned figures', () => {
+    const p1 = byChannel(SONGS.barrow, 'p1').rows;
+    const bars = (b: number) => soundedAt(p1.slice(b * 16, b * 16 + 16)).map(([, n]) => n);
+    for (let b = 0; b < 8; b++) {
+      if (b === 1 || b === 5) expect(bars(b)).toEqual(['D4', 'F4', 'E4']);
+      else if (b === 3) expect(bars(b)).toEqual(['D4', 'F4', 'A4']);
+      else expect(bars(b), `bar ${b + 1}`).toEqual([]);
+    }
+  });
+
+  it('barrow pulse 2 answers once, with a held A3 in bar 8, and releases before the loop', () => {
+    const p2 = byChannel(SONGS.barrow, 'p2').rows;
+    expect(soundedAt(p2)).toHaveLength(1);
+    const [row, n] = soundedAt(p2)[0]!;
+    expect(n).toBe('A3');
+    expect(Math.floor(row / 16)).toBe(7);
+    expect(p2[127]).toBe('off');
+  });
+
+  it('barrow noise has 8 to 14 ticks and no equal gaps within a bar', () => {
+    const ticks = tick(byChannel(SONGS.barrow, 'noise').rows).map(([i]) => i);
+    expect(ticks.length).toBeGreaterThanOrEqual(8);
+    expect(ticks.length).toBeLessThanOrEqual(14);
+    for (let b = 0; b < 8; b++) {
+      const inBar = ticks.filter((r) => Math.floor(r / 16) === b);
+      const gaps = inBar.slice(1).map((r, i) => r - inBar[i]!);
+      expect(new Set(gaps).size, `bar ${b + 1} gaps ${gaps}`).toBe(gaps.length);
+    }
+  });
+
+  it('warden pulse 1 opens with BATTLE_MOTIF an octave down, at twice the battle theme gaps', () => {
+    const down = BATTLE_MOTIF.map((n) => n.replace(/\d+$/, (o) => String(Number(o) - 1)));
+    const p1 = soundedAt(byChannel(SONGS.warden, 'p1').rows).slice(0, BATTLE_MOTIF.length);
+    expect(p1.map(([, n]) => n)).toEqual(down);
+    const battle = soundedAt(SONGS.battle.tracks[0]!.rows.slice(32)).slice(0, BATTLE_MOTIF.length);
+    const gaps = (a: [number, string][]) => a.slice(1).map(([r], i) => r - a[i]![0]);
+    expect(gaps(p1)).toEqual(gaps(battle).map((g) => g * 2));
+  });
+
+  it('warden returns to the motif in bar 5', () => {
+    const rows = byChannel(SONGS.warden, 'p1').rows.slice(64, 80);
+    expect(soundedAt(rows).slice(0, 4).map(([, n]) => n)).toEqual(['A3', 'C4', 'E4', 'F4']);
+  });
+
+  it('warden triangle plays each bar root on every beat, below C3', () => {
+    const roots = ['A', 'A', 'F', 'E', 'A', 'D', 'A#', 'E'];
+    const tri = byChannel(SONGS.warden, 'tri').rows;
+    for (let b = 0; b < 8; b++) {
+      for (const r of [0, 4, 8, 12]) {
+        const n = tri[b * 16 + r];
+        expect(n, `bar ${b + 1} beat ${r / 4 + 1}`).not.toBeNull();
+        expect(n!.replace(/\d+$/, '')).toBe(roots[b]);
+        expect(noteToMidi(n!)).toBeLessThan(noteToMidi('C3'));
+      }
+    }
+    for (const [, n] of soundedAt(tri)) expect(noteToMidi(n)).toBeLessThan(noteToMidi('C3'));
+  });
+
+  it('warden pulse 2 holds two long chord tones per bar', () => {
+    const p2 = byChannel(SONGS.warden, 'p2').rows;
+    for (let b = 0; b < 8; b++) {
+      const bar = soundedAt(p2.slice(b * 16, b * 16 + 16));
+      expect(bar.map(([r]) => r), `bar ${b + 1}`).toEqual([0, 8]);
+    }
+  });
+
+  it('warden noise: kick on every beat but 3, snare on beat 3', () => {
+    const noise = byChannel(SONGS.warden, 'noise').rows;
+    for (let b = 0; b < 8; b++) {
+      expect([0, 4, 8, 12].map((r) => noise[b * 16 + r])).toEqual(['k', 'k', 's', 'k']);
+    }
+  });
+
+  it('warden is slower than the battle theme', () => {
+    expect(SONGS.warden.tempo).toBe(104);
+    expect(SONGS.warden.tempo).toBeLessThan(SONGS.battle.tempo);
+  });
+});
