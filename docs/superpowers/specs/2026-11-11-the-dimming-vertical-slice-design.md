@@ -291,7 +291,7 @@ actions: [
 - Intended win condition: level 6–7 with the Bronze Sword and Leather Armor, two or three Herbs, Heal spell. Beatable at 5 with luck; not at 4. **The intent governs the numbers**: with the §9.5 formulas and §10 tables, a level 6 hero (ATK 27, DEF 14) has a long fight: about 14 rounds at level 6 in simulation, healing turns included. A unit test simulates the fight at levels 4, 5, 6 and 7 with the intended gear and asserts the win rates are near 0%, under 50%, over 70%, and over 90% respectively; if tuning moves the tables, the test moves with them.
 
 ### 9.9 Death
-"You have fallen." Fade to black. Respawn in Maren's house facing her at full HP/MP, gold halved (floor), XP and items kept. Maren speaks a death-specific line. No game over screen.
+"You have fallen." Fade to black. Respawn in Maren's house facing her at full HP/MP, gold halved (floor), XP and items kept. A lit Torch goes out (Homeward leaves it lit). Maren speaks a death-specific line. No game over screen.
 
 ### 9.10 Victory
 Message sequence: "The Mireling is defeated." → "You gain N experience and N gold." → level-up fanfare and stat-gain lines if applicable → "You learned Heal!" if applicable. Then return to Explore.
@@ -342,9 +342,9 @@ Garrik stocks the Bronze Sword so a grinding player can buy it, *and* the chest 
 | Herb | Restore 20–30 HP | 10 |
 | Torch | Dungeon visibility radius 3 for 200 steps | 8 |
 
-Torch rules as built: the light is a square, one tile around the hero in the dark and three with a lit Torch. A Torch burns for 200 steps, counted only on dark maps. Lighting one outside the dark ("There is no need for light here.") or while one burns ("Your torch still burns.") is refused and costs nothing. When it runs out: "Your torch gutters out." The steps left are saved.
+Torch rules as built: the light is a square, one tile around the hero in the dark and three with a lit Torch. A Torch burns for 200 steps, counted only on dark maps. Lighting one outside the dark ("There is no need for light here.") or while one burns ("Your torch still burns.") is refused and costs nothing. When it runs out: "Your torch gutters out." The steps left are saved. Death puts the Torch out.
 
-Inventory: 8 slots; consumables stack up to 6 per slot; unequipped equipment occupies a slot. "You cannot carry more." refusals. Key items (Aldric's Journal) take no slot, are held once, cannot be sold, and are read from Items without being used up.
+Inventory: 8 slots; consumables stack up to 6 per slot; unequipped equipment occupies a slot. "You cannot carry more." refusals. Key items (Aldric's Journal, listed under that name) take no slot, are held once, are not offered in a shop's sell list, and are read from Items without being used up.
 
 ### 10.5 Monster stats
 | Monster | HP | ATK | DEF | AGI | XP | Gold | Dodge | Zone |
@@ -368,7 +368,7 @@ Hesta speaks two lines, then asks: "A bed is 6 gold, if you need one. Stay?" (af
 
 ### 11.3 Save/Load
 - Saving happens **only by talking to Maren**: "Shall I remember your journey?" Yes → write save, "It is written." The trip home is part of the game's rhythm.
-- Save = JSON in `localStorage` under a versioned key, containing: `version`, hero name, level, XP, HP, MP, gold, equipment, inventory, flags, map id, position, facing, torch steps remaining (written as 0 until Phase 6). The mute preference keeps its own storage entry, because it must apply before Continue is chosen. Strength, agility and the HP and MP maximums are not stored; they are rebuilt from the level, and stored HP and MP are held to those maximums on load. A save that cannot be read (damaged, another version, an unknown item or map) is ignored, not deleted: Continue is not offered. Maren asks straight after her first line; a successful save plays its own sound with "It is written."; if the browser refuses to store the save she says "The page will not take the ink. Nothing was written." Nothing saves automatically, so reloading the page returns to the last save.
+- Save = JSON in `localStorage` under a versioned key, containing: `version`, hero name, level, XP, HP, MP, gold, equipment, inventory, flags, map id, position, facing, torch steps remaining, and total play time (an optional field; a save without it loads as 0). Play time counts update steps while a game is in progress, so it does not advance on the title screen or while the tab is hidden, and Status shows it as `TIME h:mm`. The mute preference keeps its own storage entry, because it must apply before Continue is chosen. Strength, agility and the HP and MP maximums are not stored; they are rebuilt from the level, and stored HP and MP are held to those maximums on load. A save that cannot be read (damaged, another version, an unknown item or map) is ignored, not deleted: Continue is not offered. Maren asks straight after her first line; a successful save plays its own sound with "It is written."; if the browser refuses to store the save she says "The page will not take the ink. Nothing was written." Nothing saves automatically, so reloading the page returns to the last save.
 - **Title → Continue** loads it. One slot in the slice.
 - **Password system: deferred past the slice** (owner's decision). A later phase adds a classic text password as a portable save: the save struct bit-packed with a checksum, a 32-character unambiguous alphabet, under 40 characters, offered by Maren after saving and entered from the title screen. The save struct should be designed so every field has a small fixed range (e.g. gold capped at 65535, flags as an indexed list) so that bit-packing later is a codec change, not a schema change.
 
@@ -407,7 +407,7 @@ Rows are a fixed subdivision (16th notes). A sequencer schedules notes ahead of 
 | `fallen` | Death | Short descending phrase |
 
 ### 12.4 Sound effects
-Menu move, menu confirm, menu cancel, text blip, door open, stairs, chest open, bump (blocked), encounter sting (precedes battle wipe), hero hit, monster hit, miss, critical, spell cast, heal, monster mend, torch lit, run success, run fail, buy, save, error/refusal.
+Menu move, menu confirm, menu cancel, text blip, door open, stairs down (falling), stairs up (rising), chest open, bump (blocked), encounter sting (precedes battle wipe), hero hit, monster hit, miss, critical, spell cast, heal, monster mend, torch lit, run success, run fail, buy, save, error/refusal.
 
 ### 12.5 Mixing
 Master gain with mute. Music about 6 dB under SFX. SFX play on separate voices so they never steal music channels.

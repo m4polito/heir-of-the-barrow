@@ -6,9 +6,26 @@ Written for the owner's play-test and for the session that acts on its feedback.
 
 - Branch `phase-6` from `master` (`a318e59`). **Not merged, not pushed. The repository has no git remote and none was added.**
 - **Tasks 1 to 10 complete and reviewed.** The whole-branch review (Opus) found no Critical issue and one Important one (the hero bounced between floors when a key was held through the stairs); one fix wave (`6c53597`, with a follow-up `6b45d88`) fixed it with three smaller items and the test gaps queued from the task reviews.
-- Suite at the phase stop: 60 files / 936 tests green; `npx tsc --noEmit` clean; `npm run build` green; the production bundle contains no debug-overlay strings.
+- Suite at the phase stop: 61 files / 974 tests green; `npx tsc --noEmit` clean; `npm run build` green; the production bundle contains no debug-overlay strings.
 - **Next step: the owner's play-test** (list at the end of this file), then fixes from the feedback, then merge. Putting the game online waits for the owner.
 - Dev server: `npm run dev` from the uppercase path `C:/Projects/VSCode/WarriorsQuest`.
+
+## Play-test result (owner, 2026-11-13)
+
+"Phase 6 works well." Answers and changes, all made on `phase-6` before the merge:
+
+- **Torch:** death puts it out; Homeward leaves it lit. Done (`2c27885`).
+- **The item is "Aldric's Journal"** wherever it is listed. Done (`2c27885`). The name is one character too long for the shop's sell row, so key items are now left out of the sell list (they could not be sold anyway).
+- **Stairs:** climbing plays a rising figure; going down keeps the falling one. Done (`2c27885`).
+- **Fight length:** 14.4 rounds at level 6 accepted.
+- **Warden sprite:** the bare left arm read as detached; both arms now join the body at the shoulders and roughly mirror each other. Done (`2c27885`).
+- **Play time:** a total counter, saved as an optional field (old saves load with 0), shown as `TIME h:mm` in Status. It counts update steps while a game is in progress: not on the title screen, not during name entry, and not while the tab is hidden. Done (`e008537`).
+- **Pacing report:** below.
+- Then, on the owner's instruction: merge into `master`, a public GitHub repository `heir-of-the-barrow`, and GitHub Pages. See "Online" at the end of this file.
+
+**Owner checks for these changes, not performed by anyone:** the Warden's arms read as attached; climbing sounds rising and descending sounds falling; the item reads "Aldric's Journal" in Items and is absent from the shop's Sell list; after dying with a lit Torch a new one can be lit in the Barrow; Status shows TIME, and it advances by a minute after a minute of play, stays still on the title screen and while the tab is hidden, and carries on after save, reload and Continue; a save made before this change still offers Continue and shows TIME 0:00.
+
+Questions 1 to 4 below are answered by this.
 
 ## Balance: measured with the real battle code
 
@@ -25,6 +42,54 @@ Written for the owner's play-test and for the session that acts on its feedback.
 - The Warden is HP 52, ATK 26, DEF 16; Mend heals 10–16 with a 4-turn wait. The Barrow Mireling is HP 22, ATK 16, DEF 12.
 - Round counts include the turns the hero spends healing. The spec aimed for 10 to 13 rounds; level 7 is inside that and level 6 is one round over.
 - The shortest walk from the Barrow's mouth to the Warden is 64 steps (36 on floor 1, 28 on floor 2), which at the Barrow's encounter rate is about three fights.
+
+## Pacing estimate: a natural playthrough without debug
+
+Requested by the owner after the play-test (they levelled with debug). This is arithmetic from the encounter rates, rewards and prices in the game data, not a recorded playthrough. The fight counts are firm; the minutes rest on two assumptions that nobody has timed: about 20 seconds for a road fight and 30 for a marsh fight, walking included.
+
+How often fights come (a step takes 8 frames; three quiet steps follow every fight):
+
+| Ground | One fight per | Monster | XP | Gold |
+|---|---|---|---|---|
+| Road | about 35 steps | Mireling | 2 | 2–4 |
+| Grass | about 19 steps | Mireling | 2 | 2–4 |
+| Marsh and hills | about 14 steps | Bog Mireling | 7 | 6–10 |
+| Barrow floor | about 24 steps | Barrow Mireling | 18 | 12–18 |
+
+Levels, for a player who fights Mirelings to level 3 and then moves into the marsh (which the balance tests open at level 3):
+
+| Reach | XP | Fights for this step | Fights in all | Minutes in all (estimate) |
+|---|---|---|---|---|
+| Level 2 | 8 | 4 Mirelings | 4 | 4 |
+| Level 3 | 22 | 7 more Mirelings | 11 | 7 |
+| Level 4 | 50 | 4 Bog Mirelings | 15 | 10 |
+| Level 5 | 105 | 8 more | 23 | 15 |
+| Level 6 | 210 | 15 more | 38 | 25 |
+| Level 7 | 420 | 30 more in the marsh, or 12 in the Barrow | | |
+
+- The minutes include about three for the opening, the town and the first shopping trip, and a walk back to the inn every five or six fights.
+- The Barrow run itself (the road, 64 steps of corridor plus the chest detours, about five fights, the Warden at about 14 rounds) adds roughly 8 to 10 minutes. A first clean run from New Game to the journal page comes to about 35 minutes; each death adds the walk back.
+
+Gold (start 40; average 3 per Mireling, 8 per Bog Mireling; chests 40 in the copse and 90 in the Barrow):
+
+| When | Gold in hand | What it buys |
+|---|---|---|
+| Start | 40 | Wooden Club (30), leaving 10 |
+| Level 3, after 11 fights | about 43, less 6 for each night at the inn | Iron Knife: 60, or 45 after trading in the Club. One to three more fights away. |
+| Level 3, with the copse chest | about 83 | Iron Knife at once, leaving about 38 |
+| Level 4, fight 15 or so (with the copse chest) | about 70 | Leather Armor (70) |
+| Late level 4, fight 23 or so (without the chest) | about 72 | Leather Armor (70) |
+| Level 5 to 6, 15 fights | about 120 more | Herbs (10 each), Torches (8 each), inn nights; about 70 to 100 left over |
+
+- **Iron Knife:** affordable at about level 3, twelve to fourteen fights in, sooner with the copse chest.
+- **Leather Armor:** affordable at level 4 with the copse chest, or just before level 5 without it. Each inn night (6 gold) pushes it back by about one fight.
+- **Bronze Sword (180):** not affordable from battle gold by level 6 (about 330 gold earned in all, about 145 spent on the Club, Knife and Armor, the rest on Herbs, Torches and the inn). It comes from the Barrow's second floor, as designed. That means a level 6 hero walks into the Barrow with the Iron Knife and fights the first floor's Mirelings with it (measured at level 5 with the Knife: 95% wins but 21 HP a fight; level 6 is easier but was not measured with the Knife). The whole-trip balance test assumes the Sword from the start of the trip, so it is kinder than a real first descent.
+
+What stands out:
+
+- **Level 5 to 6 is the long stretch:** fifteen marsh fights, about eight minutes, with nothing new to buy once the Armor is on. The Barrow is the alternative (six Barrow fights give the same XP) but is hard at level 5.
+- **Levels 1 to 3 are eleven fights against the same monster** for 2 XP each. Short (about four minutes of fighting), but the least varied part.
+- **The copse chest matters:** it moves the Armor forward by about eight fights.
 
 ## Questions for the owner
 
