@@ -12,7 +12,9 @@ export type DialogId =
   | 'tobin'
   | 'villager_a'
   | 'villager_b'
-  | 'sealed_door';
+  | 'sealed_door'
+  | 'warden_fallen'
+  | 'journal_page_1';
 
 export const DIALOGS: Record<DialogId, DialogScript> = {
   maren_intro: [
@@ -137,4 +139,7 @@ export const DIALOGS: Record<DialogId, DialogScript> = {
   ],
 
   sealed_door: ['The way down is shut. For now.'],
+
+  warden_fallen: [{ give: 'journal_page' }, 'You found a page.'],
+  journal_page_1: ['A page.', { set: 'journal_read' }],
 };

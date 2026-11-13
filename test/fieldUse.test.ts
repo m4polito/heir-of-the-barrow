@@ -57,8 +57,8 @@ describe('useItemInField', () => {
     expect(herbs(p)).toBe(2);
   });
   it('refuses an item with no use', () => {
-    const p = { ...lv3(), inventory: [{ item: 'journal_page', count: 1 }] };
-    expect(useItemInField(seqRng([]), ITEMS, p, 'journal_page', LIT)).toEqual({ ok: false, text: 'You cannot use that now.' });
+    const p = { ...lv3(), inventory: [{ item: 'wooden_club', count: 1 }] };
+    expect(useItemInField(seqRng([]), ITEMS, p, 'wooden_club', LIT)).toEqual({ ok: false, text: 'You cannot use that now.' });
   });
   it('throws for an item not held', () => {
     expect(() => useItemInField(seqRng([]), ITEMS, lv3(), 'torch', LIT)).toThrow();

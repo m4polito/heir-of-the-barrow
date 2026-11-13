@@ -4,7 +4,7 @@ import type { Input } from '../engine/input';
 import { TILE_IDS, TILES, ANIM_FRAME_LEN } from '../data/tiles';
 import { HERO_SPRITES } from '../data/sprites/hero';
 import { npcArt } from '../data/sprites/npcs';
-import { isWalkable, tileAt, warpAt, chestAt, lookAt, chestFlag, type GameMap, type ChestTrigger } from './map';
+import { isWalkable, tileAt, warpAt, chestAt, lookAt, bossAt, chestFlag, type GameMap, type ChestTrigger, type BossTrigger } from './map';
 import type { SfxId } from '../data/sfx';
 import { createHero, updateHero, heroPixelOffset, facingTile, opposite, heroIdle, type HeroState } from './hero';
 import { createNpc, updateNpc, npcPixelOffset, type NpcState } from './npc';
@@ -118,8 +118,8 @@ export class ExploreState implements State {
     );
   }
 
-  /** Fade out, fight `monsterId` on `backdrop`, and handle the outcome. */
-  startBattle(monsterId: string, backdrop: string): void {
+  /** Fade out, fight `monsterId` on `backdrop`, and handle the outcome; `onWon` runs after a victory. */
+  startBattle(monsterId: string, backdrop: string, onWon?: () => void): void {
     const { game } = this;
     const monster = game.monsters[monsterId];
     if (!monster) throw new Error(`Unknown monster: ${monsterId}`);
@@ -131,12 +131,12 @@ export class ExploreState implements State {
       new TransitionState(stack, {
         frames: 30,
         inFrames: 10,
-        onMid: () => stack.push(new BattleState(game, { monster, backdrop, onEnd: (o) => this.endBattle(o) })),
+        onMid: () => stack.push(new BattleState(game, { monster, backdrop, onEnd: (o) => this.endBattle(o, onWon) })),
       }),
     );
   }
 
-  private endBattle(outcome: BattleOutcome): void {
+  private endBattle(outcome: BattleOutcome, onWon?: () => void): void {
     const { game } = this;
     if (outcome === 'lost') {
       game.player = applyDeath(game.player);
@@ -146,6 +146,15 @@ export class ExploreState implements State {
     }
     this.grace = ENCOUNTER_GRACE;
     this.playMapSong();
+    if (outcome === 'won') onWon?.();
+  }
+
+  /** A boss tile whose flag is unset starts its fight; a win sets the flag, then shows the dialog once the map is back on top. */
+  private startBoss(b: BossTrigger): void {
+    this.startBattle(b.monster, b.backdrop, () => {
+      this.game.player = setFlag(this.game.player, b.flag);
+      this.pendingDialog = b.dialog;
+    });
   }
 
   private rollEncounter(x: number, y: number): boolean {
@@ -346,7 +355,12 @@ export class ExploreState implements State {
       this.warpTo(w.to, w.entry, w.sfx);
       took = true;
     } else {
-      took = this.rollEncounter(x, y);
+      const boss = bossAt(this._map, x, y);
+      if (!boss) took = this.rollEncounter(x, y);
+      else if (!hasFlag(game.player, boss.flag)) {
+        this.startBoss(boss);
+        took = true;
+      }
     }
     if (burned && game.player.torch === 0 && !took && game.stack.top === this) {
       this.showLines(['Your torch gutters out.']);

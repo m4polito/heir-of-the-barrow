@@ -8,6 +8,7 @@ import { ExploreState } from '../../src/game/explore';
 import { createGame } from '../../src/game/game';
 import { createPlayer, type PlayerState } from '../../src/game/player';
 import { parseAsciiMap, type GameMap, type Trigger, type NpcPlacement, type EncounterTable } from '../../src/game/map';
+import type { MonsterDef } from '../../src/game/battle/monster';
 import type { DialogScript } from '../../src/game/dialog/script';
 import type { Dir } from '../../src/engine/constants';
 import { ITEMS } from '../../src/data/items';
@@ -78,6 +79,7 @@ export function setupRoom(opts: {
   sprites?: { get(art: PixelArt): unknown };
   dark?: boolean;
   encounters?: EncounterTable;
+  monsters?: Record<string, MonsterDef>;
 }) {
   const stack = new StateStack();
   const sounds: string[] = [];
@@ -95,7 +97,7 @@ export function setupRoom(opts: {
     items: ITEMS,
     spells: SPELLS,
     shops: SHOPS,
-    monsters: MONSTERS,
+    monsters: opts.monsters ?? MONSTERS,
     story: STORY,
     player: { ...createPlayer(STORY.defaultHeroName, []), ...opts.patch },
   });

@@ -9,9 +9,9 @@ import { createPlayer } from '../src/game/player';
 import { buy, buyCheck } from '../src/game/shop';
 import { attackOf, defenseOf } from '../src/game/stats';
 import { fightOnly, healer, heroAt, simulate } from './helpers/simulate';
-import { WARDEN } from './helpers/warden';
 
 const N = 4000;
+const WARDEN = MONSTERS.barrow_warden;
 
 describe('early-game balance', () => {
   it('road: an unarmed level 1 hero with the shield beats a Mireling quickly and cheaply', () => {

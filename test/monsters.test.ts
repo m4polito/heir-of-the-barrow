@@ -33,17 +33,18 @@ describe('monster table', () => {
       if (m.actions) expect(() => validateActions(m.actions!)).not.toThrow();
     }
   });
-  it('has exactly three monsters', () => {
-    expect(Object.keys(MONSTERS)).toHaveLength(3);
+  it('has the three ordinary monsters and the Warden', () => {
+    expect(Object.keys(MONSTERS)).toEqual(['mireling', 'bog_mireling', 'barrow_mireling', 'barrow_warden']);
   });
 });
 
 describe('monster art', () => {
-  it('each monster compiles at 24x24', () => {
+  it('each monster compiles at its sprite size', () => {
     for (const m of Object.values(MONSTERS)) {
       const out = compilePixelArt(monsterArt(m.sprite, m.palette), PALETTE);
-      expect(out.w).toBe(24);
-      expect(out.h).toBe(24);
+      const size = m.sprite === 'warden' ? 32 : 24;
+      expect(out.w).toBe(size);
+      expect(out.h).toBe(size);
     }
   });
   it('three palettes share rows but differ in colours', () => {
