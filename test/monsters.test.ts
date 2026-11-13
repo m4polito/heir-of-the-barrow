@@ -17,7 +17,7 @@ import { wrapText } from '../src/ui/wrap';
 const ROWS = [
   ['mireling', 'Mireling', 0, 4, 5, 1, 3, 2, [2, 4], 1 / 32, 'A Mireling slumps out of the reeds.'],
   ['bog_mireling', 'Bog Mireling', 1, 14, 11, 6, 6, 7, [6, 10], 1 / 16, 'A Bog Mireling drags itself from the mud.'],
-  ['barrow_mireling', 'Barrow Mireling', 2, 24, 20, 14, 10, 18, [12, 18], 1 / 16, 'A Barrow Mireling unfolds from the dark.'],
+  ['barrow_mireling', 'Barrow Mireling', 2, 22, 16, 12, 10, 18, [12, 18], 1 / 16, 'A Barrow Mireling unfolds from the dark.'],
 ] as const;
 
 describe('monster table', () => {
