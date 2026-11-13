@@ -56,7 +56,7 @@ export class ExploreState implements State {
   private grace = ENCOUNTER_GRACE;
   /** Frames until the next bump may sound; 0 means the next refused step sounds at once. */
   private bumpWait = 0;
-  /** Set when a warp places the hero: a held key may not carry the hero straight back onto a warp tile. */
+  /** Set when a warp places the hero: the first step off the arrival tile may not land on a warp tile. Clears at the first completed step or when no key is held. */
   private arrivalLock = false;
   /** Set when this update's refused step was the silent arrival-lock refusal, which is not a bump. */
   private lockRefused = false;
@@ -361,6 +361,7 @@ export class ExploreState implements State {
   /** A step has completed: burn the torch, then warp or roll for a battle. Returns true if something took over. */
   private onStep(x: number, y: number): boolean {
     const { game } = this;
+    this.arrivalLock = false; // the hero has left the arrival tile
     const burned = this._map.dark === true && game.player.torch > 0;
     if (burned) game.player = { ...game.player, torch: game.player.torch - 1 };
     const w = warpAt(this._map, x, y);

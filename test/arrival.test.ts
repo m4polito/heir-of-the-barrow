@@ -5,7 +5,7 @@ import { AudioManager } from '../src/engine/audio/audio';
 import { createRng } from '../src/engine/rng';
 import { ExploreState } from '../src/game/explore';
 import { createGame } from '../src/game/game';
-import { createPlayer } from '../src/game/player';
+import { createPlayer, setFlag } from '../src/game/player';
 import { setupRoom, keys } from './helpers/exploreKit';
 import { MAPS } from '../src/data/maps';
 import { DIALOGS } from '../src/data/dialog/hollowmere';
@@ -19,7 +19,7 @@ import { STORY } from '../src/data/story';
 const lock = (e: ExploreState) => (e as unknown as { arrivalLock: boolean }).arrivalLock;
 const setLock = (e: ExploreState, v: boolean) => void ((e as unknown as { arrivalLock: boolean }).arrivalLock = v);
 
-function barrow() {
+function barrow(start: { map: string; x: number; y: number; facing: 'up' | 'down' } | null = null, maps: typeof MAPS = MAPS) {
   const stack = new StateStack();
   const sounds: string[] = [];
   const game = createGame({
@@ -29,7 +29,7 @@ function barrow() {
     audio: new AudioManager(null),
     sprites: { get: () => ({}) } as never,
     rng: createRng(1),
-    maps: MAPS,
+    maps,
     dialogs: DIALOGS,
     songs: SONGS,
     items: ITEMS,
@@ -37,13 +37,15 @@ function barrow() {
     shops: SHOPS,
     monsters: MONSTERS,
     story: STORY,
-    player: { ...createPlayer(STORY.defaultHeroName, []), torch: 200 },
+    player: setFlag({ ...createPlayer(STORY.defaultHeroName, []), torch: 200 }, STORY.opening.flag),
   });
   game.audio.playSfx = (id: string) => void sounds.push(id);
   game.audio.playSong = () => {};
   game.audio.stopSong = () => {};
   game.debug.noEncounters = true;
-  const explore = new ExploreState(game, 'barrow_1', 'stairs');
+  const explore = start
+    ? new ExploreState(game, start.map, { x: start.x, y: start.y, facing: start.facing })
+    : new ExploreState(game, 'barrow_1', 'stairs');
   stack.push(explore);
   const hold = (n: number, ...k: string[]) => {
     for (let i = 0; i < n; i++) stack.update(keys({ held: k }));
@@ -74,6 +76,18 @@ describe('holding a direction through a warp', () => {
     expect(t.count('stairs')).toBe(2);
   });
 
+  it('leaving the elder house holding Down: house to town to the gate, two warps, no bump, no stop', () => {
+    // The opening flag is set so the house's auto dialog does not fire and encounters are off. The town's
+    // villagers are removed in a copy of the maps: Bram stands on the gate road at (12,18), a wanderer could block it.
+    const maps = { ...MAPS, hollowmere: { ...MAPS.hollowmere!, npcs: [] } } as typeof MAPS;
+    const t = barrow({ map: 'elder_house', x: 6, y: 7, facing: 'down' }, maps);
+    // Held Down throughout, until the hero is in the marsh (past it the way may be blocked, which bumps).
+    for (let i = 0; i < 600 && t.explore.mapId !== 'marsh'; i++) t.hold(1, 'down');
+    expect(t.explore.mapId).toBe('marsh');
+    expect(t.count('door')).toBe(2);
+    expect(t.count('bump')).toBe(0);
+  });
+
   it('with the lock set, a direction toward an ordinary tile walks normally', () => {
     const t = setupRoom({ pos: { x: 2, y: 2, facing: 'up' } });
     setLock(t.explore, true);
@@ -92,8 +106,19 @@ describe('holding a direction through a warp', () => {
     });
   };
 
-  it('lock set, held toward a warp tile: the hero stays and nothing sounds', () => {
+  it('lock set, one completed step, then held toward a warp tile: the warp is taken', () => {
     const t = warpRoom();
+    t.explore.hero.x = 2; // one tile left of the column of the warp
+    setLock(t.explore, true);
+    t.hold(8, 'right'); // a step onto (3,2), an ordinary tile, runs to its last frame
+    expect(lock(t.explore)).toBe(true);
+    t.hold(30, 'up'); // it completes, clearing the lock, and the hero walks onto the warp tile
+    expect(t.sounds).toContain('door');
+  });
+
+  it('lock set, held toward a warp tile: the hero turns, stays and nothing sounds', () => {
+    const t = warpRoom();
+    t.explore.hero.facing = 'down';
     setLock(t.explore, true);
     t.hold(60, 'up');
     expect(t.explore.hero).toMatchObject({ x: 3, y: 2 });
